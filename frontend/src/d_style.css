@@ -716,8 +716,22 @@ a {
 .d_card {
   background: var(--d-white);
   border-radius: var(--d-radius);
-  box-shadow: var(--d-shadow-sm);
-  overflow: visible;       /* allow table horizontal scroll to work */
+  box-shadow: 0 2px 12px rgba(26,60,94,0.08), 0 1px 3px rgba(0,0,0,0.04);
+  overflow: visible;
+  border: 1px solid var(--d-light-border);
+  position: relative;
+}
+
+/* Amber top accent line */
+.d_card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--d-primary) 0%, var(--d-accent) 100%);
+  border-radius: var(--d-radius) var(--d-radius) 0 0;
 }
 
 /* Re-clip only the rounded corners, not overflow */
@@ -727,17 +741,19 @@ a {
 }
 
 .d_card_header {
-  padding: 16px 20px;
+  padding: 15px 20px;
   border-bottom: 1px solid var(--d-light-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: var(--d-white);
+  border-radius: 0;
 }
 
 .d_card_title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--d-text-main);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--d-primary);
   margin: 0;
   display: flex;
   align-items: center;
@@ -745,97 +761,185 @@ a {
 }
 
 .d_card_title .d_card_icon {
-  color: var(--d-primary);
-  font-size: 16px;
+  color: var(--d-accent);
+  font-size: 17px;
 }
 
 .d_card_body {
   padding: 20px;
 }
 
-/* ---------- TABLE ---------- */
+/* ============================================
+   TABLE — Unique Design
+   ============================================ */
+
+/* Outer wrap: horizontal scroll only, no vertical */
 .d_table_wrap {
-  overflow-x: auto;        /* horizontal scroll ONLY on the table */
+  overflow-x: auto;
   overflow-y: visible;
   -webkit-overflow-scrolling: touch;
   width: 100%;
   border-radius: 0 0 var(--d-radius) var(--d-radius);
+  position: relative;
 }
 
-/* Custom scrollbar for table */
-.d_table_wrap::-webkit-scrollbar {
-  height: 5px;
-}
-.d_table_wrap::-webkit-scrollbar-thumb {
-  background: var(--d-light-border);
-  border-radius: 4px;
-}
-.d_table_wrap::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* Thin amber scrollbar on the table */
+.d_table_wrap::-webkit-scrollbar        { height: 4px; }
+.d_table_wrap::-webkit-scrollbar-thumb  { background: var(--d-accent); border-radius: 4px; }
+.d_table_wrap::-webkit-scrollbar-track  { background: var(--d-light); }
 
+/* ---- Base table ---- */
 .d_table {
   width: 100%;
-  min-width: 750px;        /* forces horizontal scroll on small screens */
-  border-collapse: collapse;
+  min-width: 750px;
+  border-collapse: separate;   /* needed for border-radius on cells */
+  border-spacing: 0;
   font-size: 13.5px;
 }
 
+/* ---- HEADER ---- */
+.d_table thead tr {
+  background: linear-gradient(135deg, var(--d-primary) 0%, var(--d-primary-light) 100%);
+}
+
 .d_table thead th {
-  background: var(--d-light);
-  padding: 10px 14px;
+  padding: 13px 16px;
   text-align: left;
-  font-weight: 600;
-  color: var(--d-text-muted);
-  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.90);
+  font-size: 11.5px;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  border-bottom: 1px solid var(--d-light-border);
-  white-space: nowrap;    /* no text-wrap on headers */
+  letter-spacing: 0.9px;
+  white-space: nowrap;
+  border-bottom: 3px solid var(--d-accent);
+  position: relative;
 }
 
+/* Divider between header cells */
+.d_table thead th + th::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  height: 50%;
+  width: 1px;
+  background: rgba(255,255,255,0.15);
+}
+
+/* First header cell — rounded top-left */
+.d_table thead th:first-child {
+  border-radius: var(--d-radius) 0 0 0;
+}
+
+/* Last header cell — rounded top-right */
+.d_table thead th:last-child {
+  border-radius: 0 var(--d-radius) 0 0;
+}
+
+/* Sort icon hint on hover */
+.d_table thead th:not(:last-child):hover {
+  color: var(--d-accent);
+  cursor: pointer;
+}
+
+/* ---- BODY ROWS ---- */
+
+/* Even rows — very subtle blue tint */
+.d_table tbody tr:nth-child(even) td {
+  background: #f7f9fc;
+}
+
+/* Odd rows — white */
+.d_table tbody tr:nth-child(odd) td {
+  background: #ffffff;
+}
+
+/* All cells */
 .d_table tbody td {
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--d-light-border);
+  padding: 11px 16px;
   color: var(--d-text-main);
-  white-space: nowrap;    /* no text-wrap on cells */
+  white-space: nowrap;
+  border-bottom: 1px solid #edf2f7;
+  font-size: 13.5px;
+  transition: background 0.18s ease, padding-left 0.18s ease;
+  position: relative;
 }
 
+/* ROW HOVER — accent left glow + subtle highlight */
+.d_table tbody tr:hover td {
+  background: #eef3ff !important;
+}
+
+/* Left accent bar on hovered row — only first cell */
+.d_table tbody tr:hover td:first-child {
+  padding-left: 20px;
+}
+
+.d_table tbody tr:hover td:first-child::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--d-accent);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Last row — no bottom border */
 .d_table tbody tr:last-child td {
   border-bottom: none;
 }
 
-.d_table tbody tr:hover td {
-  background: #fafbfc;
+/* Last row rounded bottom corners */
+.d_table tbody tr:last-child td:first-child { border-radius: 0 0 0 var(--d-radius); }
+.d_table tbody tr:last-child td:last-child  { border-radius: 0 0 var(--d-radius) 0; }
+
+/* ---- SERIAL NUMBER COLUMN (first td) ---- */
+.d_table tbody td:first-child {
+  font-weight: 700;
+  color: var(--d-primary);
+  font-size: 12px;
+  min-width: 48px;
+}
+
+/* ---- EMPTY STATE ---- */
+.d_table tbody tr.d_empty td {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--d-text-muted);
+  font-size: 14px;
+  background: #fff;
 }
 
 /* ---------- ACTION BUTTONS ---------- */
 .d_action_btns {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .d_icon_btn {
   width: 30px;
   height: 30px;
   border: none;
-  border-radius: 6px;
+  border-radius: 7px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 15px;
   cursor: pointer;
-  transition: all var(--d-transition);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-.d_icon_btn.d_edit  { background: rgba(26,60,94,0.08);  color: var(--d-primary); }
-.d_icon_btn.d_del   { background: rgba(220,53,69,0.08); color: var(--d-danger); }
-.d_icon_btn.d_view  { background: rgba(23,162,184,0.1); color: var(--d-info); }
+.d_icon_btn.d_edit  { background: #e8f0fe; color: #1a3c5e; border: 1px solid #c5d5f5; }
+.d_icon_btn.d_del   { background: #fdecea; color: #dc3545; border: 1px solid #f5c5c8; }
+.d_icon_btn.d_view  { background: #e3f6fa; color: #17a2b8; border: 1px solid #b8e8f0; }
 
-.d_icon_btn.d_edit:hover { background: var(--d-primary); color: var(--d-white); }
-.d_icon_btn.d_del:hover  { background: var(--d-danger);  color: var(--d-white); }
-.d_icon_btn.d_view:hover { background: var(--d-info);    color: var(--d-white); }
+.d_icon_btn.d_edit:hover  { background: var(--d-primary); color: #fff; border-color: var(--d-primary); box-shadow: 0 3px 8px rgba(26,60,94,0.35); transform: translateY(-1px); }
+.d_icon_btn.d_del:hover   { background: var(--d-danger);  color: #fff; border-color: var(--d-danger);  box-shadow: 0 3px 8px rgba(220,53,69,0.35);  transform: translateY(-1px); }
+.d_icon_btn.d_view:hover  { background: var(--d-info);    color: #fff; border-color: var(--d-info);    box-shadow: 0 3px 8px rgba(23,162,184,0.35); transform: translateY(-1px); }
 
 /* ---------- SEARCH BOX ---------- */
 .d_search_box {
@@ -919,21 +1023,47 @@ a {
 
 /* ---------- BADGE ---------- */
 .d_badge {
-  padding: 3px 9px;
+  padding: 3px 10px;
   border-radius: 20px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  letter-spacing: 0.3px;
+  border: 1px solid transparent;
 }
 
-.d_badge.d_primary { background: rgba(26,60,94,0.1);  color: var(--d-primary); }
-.d_badge.d_success { background: rgba(40,167,69,0.12); color: var(--d-success); }
-.d_badge.d_danger  { background: rgba(220,53,69,0.12); color: var(--d-danger); }
-.d_badge.d_warning { background: rgba(255,193,7,0.18); color: #9a7100; }
-.d_badge.d_info    { background: rgba(23,162,184,0.12);color: var(--d-info); }
-.d_badge.d_accent  { background: rgba(244,161,36,0.15);color: var(--d-accent-dark); }
+.d_badge.d_primary {
+  background: rgba(26,60,94,0.08);
+  color: var(--d-primary);
+  border-color: rgba(26,60,94,0.15);
+}
+.d_badge.d_success {
+  background: rgba(40,167,69,0.10);
+  color: #1e7e34;
+  border-color: rgba(40,167,69,0.20);
+}
+.d_badge.d_danger {
+  background: rgba(220,53,69,0.10);
+  color: #b02a37;
+  border-color: rgba(220,53,69,0.20);
+}
+.d_badge.d_warning {
+  background: rgba(255,193,7,0.15);
+  color: #856404;
+  border-color: rgba(255,193,7,0.35);
+}
+.d_badge.d_info {
+  background: rgba(23,162,184,0.10);
+  color: #0e7d96;
+  border-color: rgba(23,162,184,0.20);
+}
+.d_badge.d_accent {
+  background: rgba(244,161,36,0.12);
+  color: var(--d-accent-dark);
+  border-color: rgba(244,161,36,0.25);
+}
 
 /* ---------- ALERT BOX ---------- */
 .d_alert {
@@ -1049,7 +1179,7 @@ a {
 
   .d_table tbody td,
   .d_table thead th {
-    padding: 9px 10px;
+    padding: 9px 12px;
     font-size: 12.5px;
   }
 
@@ -1091,8 +1221,8 @@ a {
   .d_navbar_title      { font-size: 13px; }
   .d_navbar_breadcrumb { display: none; }
 
-  .d_table tbody td { padding: 8px 8px; font-size: 12px; }
-  .d_table thead th { padding: 8px 8px; font-size: 11px; }
+  .d_table tbody td { padding: 8px 10px; font-size: 12px; }
+  .d_table thead th { padding: 10px 10px; font-size: 11px; }
 
   .d_icon_btn { width: 26px; height: 26px; font-size: 13px; }
 }
