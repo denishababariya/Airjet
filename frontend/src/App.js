@@ -4,121 +4,123 @@ import './d_style.css';
 import Layout from './components/Layout';
 
 // Pages
-import Dashboard       from './pages/Dashboard';
-import EmployeeMaster  from './pages/EmployeeMaster';
-import Department      from './pages/Department';
-import Designation     from './pages/Designation';
-import SalaryInformation from './pages/SalaryInformation';
-import DocumentsStorage  from './pages/DocumentsStorage';
-import RolePermissions from './pages/RolePermissions';
-import Attendance      from './pages/Attendance';
-import Payroll         from './pages/Payroll';
-import Purchase        from './pages/Purchase';
-import Sales           from './pages/Sales';
-import SpareParts      from './pages/SpareParts';
-import Warehouse       from './pages/Warehouse';
-import Service         from './pages/Service';
-import Accounts        from './pages/Accounts';
-import Reports         from './pages/Reports';
+import Dashboard      from './pages/Dashboard';
+import EmployeeMaster from './pages/EmployeeMaster';
+import Department     from './pages/Department';
+import Designation    from './pages/Designation';
+import Attendance     from './pages/Attendance';
+import Payroll        from './pages/Payroll';
+import Purchase       from './pages/Purchase';
+import Sales          from './pages/Sales';
+import SpareParts     from './pages/SpareParts';
+import Warehouse      from './pages/Warehouse';
+import Service        from './pages/Service';
+import Accounts       from './pages/Accounts';
+import Reports        from './pages/Reports';
+import Profile        from './pages/Profile';
+import Settings       from './pages/Settings';
+import Login          from './pages/Login';
+import Register       from './pages/Register';
 
-const renderPage = (activeMenu) => {
-  switch (activeMenu) {
-    // Dashboard
-    case 'dashboard':           return <Dashboard />;
+/**
+ * Map every sidebar child label → { component, defaultTab }
+ * Tab value must match the tab keys used inside each page component.
+ */
+const PAGE_MAP = {
+  // ── Dashboard ──────────────────────────────────────────────
+  dashboard:           { component: Dashboard },
+  'My Profile':        { component: Profile },
+  'Settings':          { component: Settings },
+  'Login':             { component: Login },
+  'Register':          { component: Register },
 
-    // Employee Management
-    case 'Employee Master':     return <EmployeeMaster />;
-    case 'Department':          return <Department />;
-    case 'Designation':         return <Designation />;
-    case 'Salary Information':  return <SalaryInformation />;
-    case 'Documents Storage':   return <DocumentsStorage />;
+  // ── Employees ──────────────────────────────────────────────
+  employee:            { component: EmployeeMaster },
+  'Employee Master':   { component: EmployeeMaster },
+  'Department':        { component: Department },
+  'Designation':       { component: Designation },
 
-    // Role & Permissions (all sub-items → same page)
-    case 'roles':
-    case 'Super Admin':
-    case 'Admin':
-    case 'Purchase Manager':
-    case 'Sales Manager':
-    case 'Inventory Manager':
-    case 'Accountant':
-    case 'HR Manager':          return <RolePermissions />;
+  // ── Attendance ─────────────────────────────────────────────
+  attendance:          { component: Attendance, defaultTab: 'records' },
+  'Check In/Out':      { component: Attendance, defaultTab: 'records' },
+  'Leave Tracking':    { component: Attendance, defaultTab: 'leave' },
+  'Overtime Calculation': { component: Attendance, defaultTab: 'overtime' },
 
-    // Attendance
-    case 'attendance':
-    case 'Check In/Out':
-    case 'Leave Tracking':
-    case 'Late Entry Report':
-    case 'Overtime Calculation': return <Attendance />;
+  // ── Payroll ────────────────────────────────────────────────
+  payroll:             { component: Payroll, defaultTab: 'salary' },
+  'Salary Generation': { component: Payroll, defaultTab: 'salary' },
+  'Allowances':        { component: Payroll, defaultTab: 'allowances' },
+  'Deductions':        { component: Payroll, defaultTab: 'deductions' },
+  'Payslip Download':  { component: Payroll, defaultTab: 'payslip' },
 
-    // Payroll
-    case 'payroll':
-    case 'Salary Generation':
-    case 'Allowances':
-    case 'Deductions':
-    case 'Payslip Download':    return <Payroll />;
+  // ── Purchase ───────────────────────────────────────────────
+  purchase:            { component: Purchase, defaultTab: 'suppliers' },
+  'Suppliers':         { component: Purchase, defaultTab: 'suppliers' },
+  'Purchase Orders':   { component: Purchase, defaultTab: 'orders' },
+  'GRN':               { component: Purchase, defaultTab: 'grn' },
+  'Returns':           { component: Purchase, defaultTab: 'returns' },
 
-    // Purchase
-    case 'purchase':
-    case 'Suppliers':
-    case 'Purchase Orders':
-    case 'GRN':
-    case 'Returns':             return <Purchase />;
+  // ── Sales ──────────────────────────────────────────────────
+  sales:               { component: Sales, defaultTab: 'customers' },
+  'Customers':         { component: Sales, defaultTab: 'customers' },
+  'Quotations':        { component: Sales, defaultTab: 'quotations' },
+  'Sales Orders':      { component: Sales, defaultTab: 'orders' },
+  'Invoices':          { component: Sales, defaultTab: 'invoices' },
 
-    // Sales
-    case 'sales':
-    case 'Customers':
-    case 'Quotations':
-    case 'Sales Orders':
-    case 'Invoices':            return <Sales />;
+  // ── Spare Parts ────────────────────────────────────────────
+  spareparts:          { component: SpareParts, defaultTab: 'parts' },
+  'Part Number':       { component: SpareParts, defaultTab: 'parts' },
+  'Category':          { component: SpareParts, defaultTab: 'category' },
+  'Brand':             { component: SpareParts, defaultTab: 'brand' },
+  'Compatible Models': { component: SpareParts, defaultTab: 'models' },
 
-    // Spare Parts
-    case 'spareparts':
-    case 'Part Number':
-    case 'Category':
-    case 'Brand':
-    case 'Compatible Machine Models': return <SpareParts />;
+  // ── Warehouse ──────────────────────────────────────────────
+  warehouse:           { component: Warehouse, defaultTab: 'warehouses' },
+  'Warehouses':        { component: Warehouse, defaultTab: 'warehouses' },
+  'Stock Transfers':   { component: Warehouse, defaultTab: 'transfers' },
+  'Stock Audits':      { component: Warehouse, defaultTab: 'audits' },
 
-    // Warehouse
-    case 'warehouse':
-    case 'Multiple Warehouses':
-    case 'Stock Transfers':
-    case 'Stock Audits':        return <Warehouse />;
+  // ── Service ────────────────────────────────────────────────
+  service:             { component: Service, defaultTab: 'tickets' },
+  'Service Tickets':   { component: Service, defaultTab: 'tickets' },
+  'Engineer Assignment': { component: Service, defaultTab: 'assignment' },
+  'Service Reports':   { component: Service, defaultTab: 'reports' },
 
-    // Service
-    case 'service':
-    case 'Complaints':
-    case 'Service Tickets':
-    case 'Engineer Assignment':
-    case 'Service Reports':     return <Service />;
+  // ── Accounts ───────────────────────────────────────────────
+  accounts:            { component: Accounts, defaultTab: 'receivables' },
+  'Receivables':       { component: Accounts, defaultTab: 'receivables' },
+  'Payables':          { component: Accounts, defaultTab: 'payables' },
+  'Ledger':            { component: Accounts, defaultTab: 'ledger' },
+  'GST Reports':       { component: Accounts, defaultTab: 'gst' },
+  'Profit & Loss':     { component: Accounts, defaultTab: 'pl' },
 
-    // Accounts
-    case 'accounts':
-    case 'Receivables':
-    case 'Payables':
-    case 'Ledger':
-    case 'GST Reports':
-    case 'Profit & Loss':       return <Accounts />;
-
-    // Reports
-    case 'reports':
-    case 'Sales':
-    case 'Purchase':
-    case 'Inventory':
-    case 'Employee':
-    case 'Attendance':
-    case 'Payroll':
-    case 'Service':             return <Reports />;
-
-    default:                    return <Dashboard />;
-  }
+  // ── Reports ────────────────────────────────────────────────
+  reports:             { component: Reports, defaultTab: 'sales' },
+  'Sales Report':      { component: Reports, defaultTab: 'sales' },
+  'Purchase Report':   { component: Reports, defaultTab: 'purchase' },
+  'Inventory Report':  { component: Reports, defaultTab: 'inventory' },
+  'Payroll Report':    { component: Reports, defaultTab: 'payroll' },
 };
 
 function App() {
-  const [activeMenu, setActiveMenu] = useState('dashboard');
+  const [activeMenu, setActiveMenu] = useState(() => {
+    const saved = localStorage.getItem('activeMenu');
+    return saved || 'dashboard';
+  });
+
+  const handleSetMenu = (menu) => {
+    setActiveMenu(menu);
+    localStorage.setItem('activeMenu', menu);
+  };
+
+  const entry = PAGE_MAP[activeMenu] || { component: Dashboard };
+  const PageComponent = entry.component;
+  const defaultTab    = entry.defaultTab;
 
   return (
-    <Layout activeMenu={activeMenu} setActiveMenu={setActiveMenu}>
-      {renderPage(activeMenu)}
+    <Layout activeMenu={activeMenu} setActiveMenu={handleSetMenu}>
+      {/* key forces remount when tab changes so defaultTab prop is fresh */}
+      <PageComponent key={activeMenu} defaultTab={defaultTab} setActiveMenu={handleSetMenu} />
     </Layout>
   );
 }

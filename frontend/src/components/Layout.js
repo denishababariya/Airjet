@@ -33,6 +33,13 @@ const Layout = ({ children, activeMenu, setActiveMenu }) => {
     (isDesktop && collapsed) ? 'd_collapsed' : '',
   ].filter(Boolean).join(' ');
 
+  // Don't show sidebar/navbar for Login and Register pages
+  const isAuthPage = activeMenu === 'Login' || activeMenu === 'Register';
+
+  if (isAuthPage) {
+    return <div className="d_auth_wrapper">{children}</div>;
+  }
+
   return (
     <div className="d_wrapper">
       {/* Mobile overlay */}
@@ -63,17 +70,13 @@ const Layout = ({ children, activeMenu, setActiveMenu }) => {
           mobileOpen={mobileOpen}
           setMobileOpen={setMobileOpen}
           activeMenu={activeMenu}
+          setActiveMenu={setActiveMenu}
         />
 
         {/* Scrollable content area — ONLY this scrolls vertically */}
         <main className="d_content">
           {children}
         </main>
-
-        {/* Sticky bottom footer */}
-        <footer className="d_footer">
-          &copy; {new Date().getFullYear()} <strong>Airjet ERP</strong> — Spare Parts Management System. All rights reserved.
-        </footer>
       </div>
     </div>
   );

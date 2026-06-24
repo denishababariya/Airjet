@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   MdNotifications, MdSearch, MdFullscreen, MdSettings,
-  MdPerson, MdLogout, MdPassword, MdKeyboardArrowDown,
+  MdPerson, MdLogout, MdKeyboardArrowDown,
 } from 'react-icons/md';
 
-const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu }) => {
+const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu, setActiveMenu }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
@@ -97,17 +97,37 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
 
           {profileOpen && (
             <div className="d_profile_dropdown">
-              <div className="d_dropdown_item">
+              <div
+                className="d_dropdown_item"
+                onClick={() => {
+                  setActiveMenu('My Profile');
+                  setProfileOpen(false);
+                }}
+                style={{ cursor: 'pointer' }}
+              >
                 <MdPerson /> My Profile
               </div>
-              <div className="d_dropdown_item">
+              <div
+                className="d_dropdown_item"
+                onClick={() => {
+                  setActiveMenu('Settings');
+                  setProfileOpen(false);
+                }}
+                style={{ cursor: 'pointer' }}
+              >
                 <MdSettings /> Settings
               </div>
-              <div className="d_dropdown_item">
-                <MdPassword /> Change Password
-              </div>
               <div className="d_dropdown_divider" />
-              <div className="d_dropdown_item d_logout">
+              <div
+                className="d_dropdown_item d_logout"
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to logout?')) {
+                    setActiveMenu('Login');
+                    setProfileOpen(false);
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
                 <MdLogout /> Logout
               </div>
             </div>

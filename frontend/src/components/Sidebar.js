@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import {
-  MdDashboard, MdPeople, MdSecurity, MdAccessTime, MdPayments,
+  MdDashboard, MdPeople, MdAccessTime, MdPayments,
   MdShoppingCart, MdPointOfSale, MdInventory2, MdWarehouse,
   MdBuildCircle, MdAccountBalance, MdBarChart, MdChevronRight,
-  MdKeyboardArrowDown, MdSettings, MdLogout
 } from 'react-icons/md';
-import { FaGear } from 'react-icons/fa6';
 
 const menuConfig = [
   {
@@ -18,16 +16,12 @@ const menuConfig = [
     section: 'HR & Payroll',
     items: [
       {
-        label: 'Employee Management', icon: <MdPeople />, id: 'employee',
-        children: ['Employee Master', 'Department', 'Designation', 'Salary Information', 'Documents Storage'],
-      },
-      {
-        label: 'Role & Permissions', icon: <MdSecurity />, id: 'roles',
-        children: ['Super Admin', 'Admin', 'Purchase Manager', 'Sales Manager', 'Inventory Manager', 'Accountant', 'HR Manager'],
+        label: 'Employees', icon: <MdPeople />, id: 'employee',
+        children: ['Employee Master', 'Department', 'Designation'],
       },
       {
         label: 'Attendance', icon: <MdAccessTime />, id: 'attendance',
-        children: ['Check In/Out', 'Leave Tracking', 'Late Entry Report', 'Overtime Calculation'],
+        children: ['Check In/Out', 'Leave Tracking', 'Overtime Calculation'],
       },
       {
         label: 'Payroll', icon: <MdPayments />, id: 'payroll',
@@ -53,11 +47,11 @@ const menuConfig = [
     items: [
       {
         label: 'Spare Parts', icon: <MdInventory2 />, id: 'spareparts',
-        children: ['Part Number', 'Category', 'Brand', 'Compatible Machine Models'],
+        children: ['Part Number', 'Category', 'Brand', 'Compatible Models'],
       },
       {
         label: 'Warehouse', icon: <MdWarehouse />, id: 'warehouse',
-        children: ['Multiple Warehouses', 'Stock Transfers', 'Stock Audits'],
+        children: ['Warehouses', 'Stock Transfers', 'Stock Audits'],
       },
     ],
   },
@@ -66,7 +60,7 @@ const menuConfig = [
     items: [
       {
         label: 'Service', icon: <MdBuildCircle />, id: 'service',
-        children: ['Complaints', 'Service Tickets', 'Engineer Assignment', 'Service Reports'],
+        children: ['Service Tickets', 'Engineer Assignment', 'Service Reports'],
       },
       {
         label: 'Accounts & GST', icon: <MdAccountBalance />, id: 'accounts',
@@ -74,17 +68,19 @@ const menuConfig = [
       },
       {
         label: 'Reports', icon: <MdBarChart />, id: 'reports',
-        children: ['Sales', 'Purchase', 'Inventory', 'Employee', 'Attendance', 'Payroll', 'Service'],
+        children: ['Sales Report', 'Purchase Report', 'Inventory Report', 'Payroll Report'],
       },
     ],
   },
 ];
 
 const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu }) => {
-  const [openMenus, setOpenMenus] = useState({ dashboard: false });
+  // Only ONE menu open at a time — store the single open id (or null)
+  const [openMenu, setOpenMenu] = useState(null);
 
   const toggleMenu = (id) => {
-    setOpenMenus(prev => ({ ...prev, [id]: !prev[id] }));
+    // If already open → close it; else open this one and close previous
+    setOpenMenu(prev => (prev === id ? null : id));
   };
 
   const handleItemClick = (id, hasChildren) => {
@@ -98,7 +94,7 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu }) => {
   const sidebarClass = [
     'd_sidebar',
     collapsed ? 'd_collapsed' : '',
-    mobileOpen  ? 'd_mobile_open' : '',
+    mobileOpen ? 'd_mobile_open' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -120,7 +116,7 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu }) => {
 
             {section.items.map((item) => {
               const hasChildren = item.children && item.children.length > 0;
-              const isOpen      = openMenus[item.id];
+              const isOpen      = openMenu === item.id;   // ← single open check
               const isActive    = activeMenu === item.id;
 
               return (
@@ -165,7 +161,7 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu }) => {
       </nav>
 
       {/* Footer */}
-      <div className="d_sidebar_footer">
+      <div className="d_sidebar_footer" onClick={() => setActiveMenu('My Profile')} style={{ cursor: 'pointer' }}>
         <div className="d_sidebar_footer_avatar">SA</div>
         <div className="d_sidebar_footer_info">
           <div className="d_sidebar_footer_name">Super Admin</div>
