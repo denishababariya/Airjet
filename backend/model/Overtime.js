@@ -1,42 +1,42 @@
 const mongoose = require("mongoose");
 
-const employeeSchema = new mongoose.Schema({
+const overtimeSchema = new mongoose.Schema({
   id: {
     type: String,
     unique: true,
     required: true
   },
-  name: {
+  emp: {
     type: String,
     required: true
   },
-  dept: {
+  empId: {
     type: String,
     required: true
   },
-  desig: {
+  date: {
     type: String,
     required: true
   },
-  phone: {
+  extraHours: {
     type: String,
     required: true
   },
-  email: {
+  reason: {
     type: String,
     required: true
   },
-  joiningDate: {
-    type: Date
-  },
-  status: {
+  rate: {
     type: String,
-    enum: ['Active', 'Inactive', 'On Leave'],
-    default: 'Active'
+    required: true
+  },
+  amount: {
+    type: String,
+    required: true
   }
 }, {
   timestamps: true
 });
 
-const Employee = mongoose.model("Employee", employeeSchema);
-module.exports = Employee;
+const Overtime = mongoose.model("Overtime", overtimeSchema);
+module.exports = Overtime;

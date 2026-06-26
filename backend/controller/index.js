@@ -1,64 +1,64 @@
-const User = require('../model');
+const Employee = require('../model');
 
-// Get all users
-exports.getAllUsers = async (req, res) => {
+// Get all employees
+exports.getAllEmployees = async (req, res) => {
   try {
-    const users = await User.find();
-    res.json(users);
+    const employees = await Employee.find();
+    res.json(employees);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// Get user by ID
-exports.getUserById = async (req, res) => {
+// Get employee by ID
+exports.getEmployeeById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    const employee = await Employee.findById(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
     }
-    res.json(user);
+    res.json(employee);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// Create new user
-exports.createUser = async (req, res) => {
+// Create new employee
+exports.createEmployee = async (req, res) => {
   try {
-    const user = new User(req.body);
-    const savedUser = await user.save();
-    res.status(201).json(savedUser);
+    const employee = new Employee(req.body);
+    const savedEmployee = await employee.save();
+    res.status(201).json(savedEmployee);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
 
-// Update user
-exports.updateUser = async (req, res) => {
+// Update employee
+exports.updateEmployee = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(
+    const employee = await Employee.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
     }
-    res.json(user);
+    res.json(employee);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
 
-// Delete user
-exports.deleteUser = async (req, res) => {
+// Delete employee
+exports.deleteEmployee = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    const employee = await Employee.findByIdAndDelete(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
     }
-    res.json({ message: 'User deleted successfully' });
+    res.json({ message: 'Employee deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

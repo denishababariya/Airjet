@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const employeeSchema = new mongoose.Schema({
+const customerSchema = new mongoose.Schema({
   id: {
     type: String,
     unique: true,
@@ -10,15 +10,7 @@ const employeeSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  dept: {
-    type: String,
-    required: true
-  },
-  desig: {
-    type: String,
-    required: true
-  },
-  phone: {
+  contact: {
     type: String,
     required: true
   },
@@ -26,17 +18,17 @@ const employeeSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  joiningDate: {
-    type: Date
+  address: {
+    type: String
   },
   status: {
     type: String,
-    enum: ['Active', 'Inactive', 'On Leave'],
+    enum: ['Active', 'Inactive'],
     default: 'Active'
   }
 }, {
   timestamps: true
 });
 
-const Employee = mongoose.model("Employee", employeeSchema);
-module.exports = Employee;
+const Customer = mongoose.model("Customer", customerSchema);
+module.exports = Customer;

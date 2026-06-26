@@ -1,42 +1,47 @@
 const mongoose = require("mongoose");
 
-const employeeSchema = new mongoose.Schema({
+const leaveSchema = new mongoose.Schema({
   id: {
     type: String,
     unique: true,
     required: true
   },
-  name: {
+  emp: {
     type: String,
     required: true
   },
-  dept: {
+  empId: {
     type: String,
     required: true
   },
-  desig: {
+  from: {
     type: String,
     required: true
   },
-  phone: {
+  to: {
     type: String,
     required: true
   },
-  email: {
+  days: {
+    type: Number,
+    required: true
+  },
+  type: {
     type: String,
     required: true
   },
-  joiningDate: {
-    type: Date
+  reason: {
+    type: String,
+    required: true
   },
   status: {
     type: String,
-    enum: ['Active', 'Inactive', 'On Leave'],
-    default: 'Active'
+    enum: ['Pending', 'Approved', 'Rejected'],
+    default: 'Pending'
   }
 }, {
   timestamps: true
 });
 
-const Employee = mongoose.model("Employee", employeeSchema);
-module.exports = Employee;
+const Leave = mongoose.model("Leave", leaveSchema);
+module.exports = Leave;

@@ -17,7 +17,7 @@ const initAssignments = [
   { id:'ASG002', engineer:'Nikhil Rao',   empId:'EMP007', assigned:1, inProgress:1, resolved:6, expertise:'Sensor, Electrical',        available:'Yes' },
   { id:'ASG003', engineer:'Karan Mehta',  empId:'EMP005', assigned:0, inProgress:0, resolved:3, expertise:'Motor, Bearing',            available:'Yes' },
 ];
-
+ 
 const initServiceReports = [
   { id:'SR-001', ticket:'SRV-003', customer:'Modi Fabric Industries', engineer:'Divya Verma',  date:'18-Jun-2026', parts:'Nozzle Set x2',      hours:'4h 30m', cost:'₹3,200', status:'Completed' },
   { id:'SR-002', ticket:'SRV-002', customer:'National Weaving Works', engineer:'Nikhil Rao',   date:'19-Jun-2026', parts:'Weft Sensor x1',     hours:'2h 15m', cost:'₹1,800', status:'In Progress' },
