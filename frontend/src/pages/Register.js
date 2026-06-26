@@ -7,6 +7,10 @@ import {
   MdBusiness,
   MdVisibility,
   MdVisibilityOff,
+  MdInventory,
+  MdAttachMoney,
+  MdPeople,
+  MdBuild,
 } from "react-icons/md";
 
 const Register = ({ onRegister, setActiveMenu }) => {
@@ -67,7 +71,7 @@ const Register = ({ onRegister, setActiveMenu }) => {
     setTimeout(() => {
       setLoading(false);
       if (onRegister) onRegister(formData);
-      if (setActiveMenu) setActiveMenu('dashboard');
+      if (setActiveMenu) setActiveMenu("dashboard");
     }, 1000);
   };
 
@@ -314,20 +318,28 @@ const Register = ({ onRegister, setActiveMenu }) => {
             </p>
             <div className="d_info_features">
               <div className="d_feature_item">
-                <div className="d_feature_icon">🚀</div>
-                <div className="d_feature_text">Quick Setup</div>
+                <div className="d_feature_icon">
+                  <MdInventory />
+                </div>
+                <div className="d_feature_text">Inventory Management</div>
               </div>
               <div className="d_feature_item">
-                <div className="d_feature_icon">📊</div>
-                <div className="d_feature_text">Real-time Analytics</div>
+                <div className="d_feature_icon">
+                  <MdAttachMoney />
+                </div>
+                <div className="d_feature_text">Sales & Purchases</div>
               </div>
               <div className="d_feature_item">
-                <div className="d_feature_icon">🔒</div>
-                <div className="d_feature_text">Secure & Reliable</div>
+                <div className="d_feature_icon">
+                  <MdPeople />
+                </div>
+                <div className="d_feature_text">HR & Payroll</div>
               </div>
               <div className="d_feature_item">
-                <div className="d_feature_icon">💬</div>
-                <div className="d_feature_text">24/7 Support</div>
+                <div className="d_feature_icon">
+                  <MdBuild />
+                </div>
+                <div className="d_feature_text">Service Management</div>
               </div>
             </div>
           </div>

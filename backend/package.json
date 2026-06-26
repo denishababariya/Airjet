@@ -8,14 +8,18 @@
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["airjet", "api", "backend"],
+  "keywords": [
+    "airjet",
+    "api",
+    "backend"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "body-parser": "^2.3.0",
     "cors": "^2.8.6",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.6.1",
     "express": "^5.2.1",
     "mongoose": "^8.24.0",
     "multer": "^2.2.0",

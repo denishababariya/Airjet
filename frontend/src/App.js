@@ -21,6 +21,8 @@ import Profile        from './pages/Profile';
 import Settings       from './pages/Settings';
 import Login          from './pages/Login';
 import Register       from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ChangePassword from './pages/ChangePassword';
 
 /**
  * Map every sidebar child label → { component, defaultTab }
@@ -33,6 +35,8 @@ const PAGE_MAP = {
   'Settings':          { component: Settings },
   'Login':             { component: Login },
   'Register':          { component: Register },
+  'ForgotPassword':    { component: ForgotPassword },
+  'ChangePassword':    { component: ChangePassword },
 
   // ── Employees ──────────────────────────────────────────────
   employee:            { component: EmployeeMaster },

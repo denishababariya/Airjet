@@ -5,6 +5,10 @@ import {
   MdVisibility,
   MdVisibilityOff,
   MdBusiness,
+  MdInventory,
+  MdAttachMoney,
+  MdPeople,
+  MdBuild,
 } from "react-icons/md";
 
 const Login = ({ onLogin, setActiveMenu }) => {
@@ -124,7 +128,11 @@ const Login = ({ onLogin, setActiveMenu }) => {
                 />
                 <span>Remember me</span>
               </label>
-              <button type="button" className="d_forgot_link">
+              <button
+                type="button"
+                className="d_forgot_link"
+                onClick={() => setActiveMenu && setActiveMenu("ForgotPassword")}
+              >
                 Forgot Password?
               </button>
             </div>
@@ -165,19 +173,19 @@ const Login = ({ onLogin, setActiveMenu }) => {
             </p>
             <div className="d_info_features">
               <div className="d_feature_item">
-                <div className="d_feature_icon">📦</div>
+                <div className="d_feature_icon"><MdInventory /></div>
                 <div className="d_feature_text">Inventory Management</div>
               </div>
               <div className="d_feature_item">
-                <div className="d_feature_icon">💰</div>
+                <div className="d_feature_icon"><MdAttachMoney /></div>
                 <div className="d_feature_text">Sales & Purchases</div>
               </div>
               <div className="d_feature_item">
-                <div className="d_feature_icon">👥</div>
+                <div className="d_feature_icon"><MdPeople />  </div>
                 <div className="d_feature_text">HR & Payroll</div>
               </div>
               <div className="d_feature_item">
-                <div className="d_feature_icon">🔧</div>
+                <div className="d_feature_icon"><MdBuild /></div>
                 <div className="d_feature_text">Service Management</div>
               </div>
             </div>

@@ -34,7 +34,7 @@ const Layout = ({ children, activeMenu, setActiveMenu }) => {
   ].filter(Boolean).join(' ');
 
   // Don't show sidebar/navbar for Login and Register pages
-  const isAuthPage = activeMenu === 'Login' || activeMenu === 'Register';
+  const isAuthPage = activeMenu === 'Login' || activeMenu === 'Register' || activeMenu === 'ForgotPassword' || activeMenu === 'ChangePassword';
 
   if (isAuthPage) {
     return <div className="d_auth_wrapper">{children}</div>;
