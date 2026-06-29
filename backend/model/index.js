@@ -1,32 +1,7 @@
-const mongoose = require("mongoose");
+module.exports = {
+  ...require("./User.model.js"),
+  ...require("./Empl.model.js"),
+  ...require("./Designation.model.js"),
+  ...require("./Depart.model.js"),
 
-const userSchema = new mongoose.Schema({
-
-  name : {
-    type : String,
-    required : true
-  },
-  email : {
-    type: String,
-    required : true
-  },
-  password : {
-    type: String,
-    required : true
-  },
-  role : {
-    type: String,
-    enum:["user","admin","manager","hr"],
-    default : "user"
-  },
-  isActive : {
-    type: Boolean,
-    default: true
-  }
-
-}, {
-  timestamps: true
-});
-
-const User = mongoose.model("User",userSchema);
-module.exports = User;
+};
