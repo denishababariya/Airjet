@@ -598,7 +598,7 @@ a {
 
 
 
-/* Collapsed tooltip */
+/* Collapsed state */
 
 .d_sidebar.d_collapsed .d_nav_link {
 
@@ -631,6 +631,122 @@ a {
   display: none;
 
 }
+
+
+
+/* ---- HOVER EXPAND (collapsed → fly-out) ---- */
+
+/* When collapsed sidebar is hovered, expand it */
+
+.d_sidebar.d_collapsed:hover {
+
+  width: var(--d-sidebar-w);
+
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+
+  z-index: 1055;
+
+}
+
+
+
+/* Show hidden text/labels on hover */
+
+.d_sidebar.d_collapsed:hover .d_brand_text {
+
+  display: flex;
+
+}
+
+
+
+.d_sidebar.d_collapsed:hover .d_nav_label {
+
+  display: block;
+
+}
+
+
+
+.d_sidebar.d_collapsed:hover .d_section_title {
+
+  display: block;
+
+}
+
+
+
+.d_sidebar.d_collapsed:hover .d_sidebar_footer_info {
+
+  display: block;
+
+}
+
+
+
+/* Restore arrow flex */
+
+.d_sidebar.d_collapsed:hover .d_nav_arrow {
+
+  display: flex;
+
+}
+
+
+
+/* Restore normal nav link layout on hover */
+
+.d_sidebar.d_collapsed:hover .d_nav_link {
+
+  justify-content: flex-start;
+
+  padding: 10px 18px;
+
+  border-left: 3px solid transparent;
+
+}
+
+
+
+.d_sidebar.d_collapsed:hover .d_nav_link:hover {
+
+  border-left-color: var(--d-accent);
+
+}
+
+
+
+.d_sidebar.d_collapsed:hover .d_nav_link.d_active {
+
+  border-left-color: var(--d-accent);
+
+}
+
+
+
+/* Re-enable submenus on hover-expand */
+
+.d_sidebar.d_collapsed:hover .d_submenu {
+
+  display: block;
+
+}
+
+
+
+/* Restore footer layout on hover */
+
+.d_sidebar.d_collapsed:hover .d_sidebar_footer {
+
+  justify-content: flex-start;
+
+  padding: 12px 14px;
+
+}
+
+
+
+/* Push main content — sidebar uses fixed positioning so no layout shift needed */
 
 
 

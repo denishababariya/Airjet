@@ -1,1 +1,3 @@
-module.exports = { user: require('./user.controller') }
+module.exports = {
+  ...require("./depart.controller.js"),
+};

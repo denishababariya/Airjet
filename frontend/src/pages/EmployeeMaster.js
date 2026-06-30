@@ -9,6 +9,7 @@ const initData = [
   { id: 'EMP004', name: 'Sneha Joshi',   dept: 'Accounts',  desig: 'Accountant',        phone: '9876543213', email: 'sneha@airjet.in',   status: 'Inactive' },
   { id: 'EMP005', name: 'Karan Mehta',   dept: 'Inventory', desig: 'Inventory Manager', phone: '9876543214', email: 'karan@airjet.in',   status: 'Active' },
   { id: 'EMP006', name: 'Divya Verma',   dept: 'Service',   desig: 'Service Engineer',  phone: '9876543215', email: 'divya@airjet.in',   status: 'Active' },
+  { id: 'EMP007', name: 'Gaurav Sharma',   dept: 'Manager',   desig: 'Service Engineer',  phone: '9876543205', email: 'gaurav@airjet.in',   status: 'Active' },
 ];
 
 const blank = { name: '', dept: '', desig: '', phone: '', email: '', joiningDate: '', status: 'Active' };
@@ -27,6 +28,7 @@ const EmployeeMaster = () => {
     e.id.toLowerCase().includes(search.toLowerCase()) ||
     e.dept.toLowerCase().includes(search.toLowerCase())
   );
+  
 
   const openAdd = () => { setForm(blank); setEditId(null); setErrors({}); setModal(true); };
   const openEdit = (emp) => {
