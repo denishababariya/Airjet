@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 
-const Layout = ({ children, activeMenu, setActiveMenu }) => {
+const Layout = ({ children, activeMenu, setActiveMenu, currentUser, onLogout, hasAdminAccess }) => {
   const [collapsed,  setCollapsed]  = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isDesktop,  setIsDesktop]  = useState(window.innerWidth >= 992);
@@ -59,6 +59,8 @@ const Layout = ({ children, activeMenu, setActiveMenu }) => {
           setActiveMenu(menu);
           if (!isDesktop) setMobileOpen(false);
         }}
+        currentUser={currentUser}
+        hasAdminAccess={hasAdminAccess}
       />
 
       {/* Main — fixed height column: navbar + scrollable content + footer */}
@@ -71,6 +73,8 @@ const Layout = ({ children, activeMenu, setActiveMenu }) => {
           setMobileOpen={setMobileOpen}
           activeMenu={activeMenu}
           setActiveMenu={setActiveMenu}
+          currentUser={currentUser}
+          onLogout={onLogout}
         />
 
         {/* Scrollable content area — ONLY this scrolls vertically */}

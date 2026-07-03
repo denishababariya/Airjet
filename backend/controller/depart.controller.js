@@ -8,6 +8,6 @@ const createDepart = async (req,res) => {
     res.status(201).json(data);
 }
 
-module.export = {
+module.exports = {
     createDepart
 }

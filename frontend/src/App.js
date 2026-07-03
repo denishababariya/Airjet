@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './d_style.css';
 import Layout from './components/Layout';
@@ -106,25 +106,71 @@ const PAGE_MAP = {
   'Payroll Report':    { component: Reports, defaultTab: 'payroll' },
 };
 
+// Check if user has access to admin panel
+const hasAdminAccess = (role) => {
+  return ['Admin', 'Manager', 'Head', 'HR'].includes(role);
+};
+
 function App() {
   const [activeMenu, setActiveMenu] = useState(() => {
     const saved = localStorage.getItem('activeMenu');
-    return saved || 'dashboard';
+    return saved || 'Login';
+  });
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('currentUser');
+    return saved ? JSON.parse(saved) : null;
   });
 
-  const handleSetMenu = (menu) => {
-    setActiveMenu(menu);
-    localStorage.setItem('activeMenu', menu);
+  // Handle login
+  const handleLogin = (userData) => {
+    setCurrentUser(userData);
+    localStorage.setItem('currentUser', JSON.stringify(userData));
+    setActiveMenu('dashboard');
   };
+
+  // Handle logout
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('activeMenu');
+    setActiveMenu('Login');
+  };
+
+  // Check if user is authenticated on mount
+  useEffect(() => {
+    if (!currentUser && !['Login', 'Register', 'ForgotPassword'].includes(activeMenu)) {
+      setActiveMenu('Login');
+    }
+  }, [currentUser, activeMenu]);
 
   const entry = PAGE_MAP[activeMenu] || { component: Dashboard };
   const PageComponent = entry.component;
   const defaultTab    = entry.defaultTab;
 
+  // Only show Layout for authenticated routes
+  const isAuthPage = ['Login', 'Register', 'ForgotPassword'].includes(activeMenu);
+
+  if (isAuthPage) {
+    return (
+      <PageComponent 
+        key={activeMenu} 
+        defaultTab={defaultTab} 
+        setActiveMenu={setActiveMenu}
+        onLogin={handleLogin}
+      />
+    );
+  }
+
   return (
-    <Layout activeMenu={activeMenu} setActiveMenu={handleSetMenu}>
+    <Layout 
+      activeMenu={activeMenu} 
+      setActiveMenu={setActiveMenu}
+      currentUser={currentUser}
+      onLogout={handleLogout}
+      hasAdminAccess={hasAdminAccess}
+    >
       {/* key forces remount when tab changes so defaultTab prop is fresh */}
-      <PageComponent key={activeMenu} defaultTab={defaultTab} setActiveMenu={handleSetMenu} />
+      <PageComponent key={activeMenu} defaultTab={defaultTab} setActiveMenu={setActiveMenu} currentUser={currentUser} />
     </Layout>
   );
 }

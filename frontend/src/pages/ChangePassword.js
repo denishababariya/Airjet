@@ -90,6 +90,7 @@ const ChangePassword = ({ setActiveMenu }) => {
   const strength = passwordStrength(formData.newPassword);
 
   return (
+    <div className='d-flex align-items-center justify-content-center h-100'>
     <div className="d_login_wrapper">
       <>
         <div className="d_login_card">
@@ -308,6 +309,7 @@ const ChangePassword = ({ setActiveMenu }) => {
           </div>
         </div>
       </>
+    </div>
     </div>
   );
 };

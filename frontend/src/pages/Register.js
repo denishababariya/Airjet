@@ -76,6 +76,7 @@ const Register = ({ onRegister, setActiveMenu }) => {
   };
 
   return (
+    <div className='d-flex align-items-center justify-content-center h-100'>
     <div className="d_login_wrapper">
       <>
         <div className="d_login_card d_register_card">
@@ -345,6 +346,7 @@ const Register = ({ onRegister, setActiveMenu }) => {
           </div>
         </div>
       </>
+    </div>
     </div>
   );
 };

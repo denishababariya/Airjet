@@ -4,7 +4,7 @@ import {
   MdPerson, MdLogout, MdKeyboardArrowDown,
 } from 'react-icons/md';
 
-const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu, setActiveMenu }) => {
+const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu, setActiveMenu, currentUser, onLogout }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
@@ -32,6 +32,9 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
   const pageLabel = activeMenu
     ? activeMenu.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
     : 'Dashboard';
+
+  const userName = currentUser?.employee?.name || 'User';
+  const userRole = currentUser?.role || 'User';
 
   return (
     <header className="d_navbar">
@@ -87,10 +90,10 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
             onClick={() => setProfileOpen(prev => !prev)}
             aria-label="Profile menu"
           >
-            <div className="d_profile_avatar">SA</div>
+            <div className="d_profile_avatar">{userName.charAt(0).toUpperCase()}</div>
             <div>
-              <div className="d_profile_name">Super Admin</div>
-              <div className="d_profile_role">Administrator</div>
+              <div className="d_profile_name">{userName}</div>
+              <div className="d_profile_role">{userRole}</div>
             </div>
             <MdKeyboardArrowDown style={{ color: 'var(--d-text-muted)', fontSize: 16 }} />
           </button>
@@ -122,7 +125,7 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
                 className="d_dropdown_item d_logout"
                 onClick={() => {
                   if (window.confirm('Are you sure you want to logout?')) {
-                    setActiveMenu('Login');
+                    onLogout();
                     setProfileOpen(false);
                   }
                 }}

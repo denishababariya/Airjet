@@ -236,7 +236,7 @@ a {
 
   height: 34px;
 
-  background: var(--d-accent);
+  /* background: var(--d-accent); */
 
   border-radius: 8px;
 
@@ -3616,6 +3616,7 @@ textarea.d_form_control { resize: vertical; min-height: 80px; }
   min-height: 100vh;
   display: flex;
   align-items: center;
+  /* margin: auto; */
   justify-content: center;
   background: linear-gradient(135deg, var(--d-primary-dark) 0%, var(--d-primary) 100%);
   padding: 20px;
@@ -3623,6 +3624,8 @@ textarea.d_form_control { resize: vertical; min-height: 80px; }
 
 .d_login_wrapper {
   display: flex;
+  
+  /* margin: auto; */
   max-width: 1000px;
   width: 100%;
   background: var(--d-white);
@@ -3765,6 +3768,20 @@ textarea.d_form_control { resize: vertical; min-height: 80px; }
 
   border-top: 1px solid var(--d-light-border);
 
+}
+
+.d_login_notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: color-mix(in srgb, var(--d-primary) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--d-primary) 25%, transparent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--d-text-muted);
+  line-height: 1.5;
+  margin-top: 4px;
 }
 
 

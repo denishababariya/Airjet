@@ -11,6 +11,8 @@ import {
   MdLock,
 } from "react-icons/md";
 
+const ALLOWED_ROLES = ["Admin", "Manager"];
+
 const ForgotPassword = ({ setActiveMenu }) => {
   const [formData, setFormData] = useState({
     email: "",
@@ -18,7 +20,8 @@ const ForgotPassword = ({ setActiveMenu }) => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: Success
+  const [apiError, setApiError] = useState("");
+  const [step, setStep] = useState(1); // 1: Email, 2: OTP
   const [resendTimer, setResendTimer] = useState(0);
 
   const handleChange = (e) => {
@@ -28,6 +31,7 @@ const ForgotPassword = ({ setActiveMenu }) => {
       [name]: value,
     });
     setErrors({ ...errors, [name]: "" });
+    setApiError("");
   };
 
   const validateEmail = () => {
@@ -54,12 +58,36 @@ const ForgotPassword = ({ setActiveMenu }) => {
     }
 
     setLoading(true);
-    // Simulate API call to send OTP
-    setTimeout(() => {
-      setLoading(false);
+    setApiError("");
+    try {
+      // Check if user exists and has Admin/Manager role
+      const response = await fetch("http://localhost:5000/api/users/check-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "User not found");
+      }
+
+      // Only Admin or Manager can reset password via this flow
+      if (!ALLOWED_ROLES.includes(data.role)) {
+        throw new Error(
+          "Password reset is only available for Admin or Manager accounts. Please contact your administrator."
+        );
+      }
+
+      // Role is allowed — proceed to OTP step
       setStep(2);
       startResendTimer();
-    }, 1500);
+    } catch (error) {
+      setApiError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOTPSubmit = async (e) => {
@@ -71,22 +99,49 @@ const ForgotPassword = ({ setActiveMenu }) => {
     }
 
     setLoading(true);
-    // Simulate API call to verify OTP
-    setTimeout(() => {
-      setLoading(false);
+    setApiError("");
+    try {
+      const response = await fetch("http://localhost:5000/api/users/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email, otp: formData.otp }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Invalid OTP. Please try again.");
+      }
+
       setActiveMenu && setActiveMenu("ChangePassword");
-    }, 1500);
+    } catch (error) {
+      setApiError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResendOTP = () => {
+  const handleResendOTP = async () => {
     if (resendTimer > 0) return;
-    
+
     setLoading(true);
-    // Simulate API call to resend OTP
-    setTimeout(() => {
-      setLoading(false);
+    setApiError("");
+    try {
+      const response = await fetch("http://localhost:5000/api/users/check-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to resend OTP");
+
       startResendTimer();
-    }, 1000);
+    } catch (error) {
+      setApiError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const startResendTimer = () => {
@@ -103,6 +158,7 @@ const ForgotPassword = ({ setActiveMenu }) => {
   };
 
   return (
+    <div className='d-flex align-items-center justify-content-center h-100'>
     <div className="d_login_wrapper">
       <>
         <div className="d_login_card">
@@ -127,6 +183,11 @@ const ForgotPassword = ({ setActiveMenu }) => {
           {step === 1 && (
             <>
               <form onSubmit={handleEmailSubmit} className="d_login_form">
+                {apiError && (
+                  <div className="alert alert-danger" role="alert">
+                    {apiError}
+                  </div>
+                )}
                 <div className="d_form_group mb-3">
                   <label className="d_form_label">Email Address</label>
                   <div className="d_input_group">
@@ -147,13 +208,18 @@ const ForgotPassword = ({ setActiveMenu }) => {
                   )}
                 </div>
 
+                <div className="d_login_notice mb-3">
+                  <MdLock style={{ fontSize: 15, color: 'var(--d-primary)', flexShrink: 0 }} />
+                  <span>Only <strong>Admin</strong> or <strong>Manager</strong> accounts can reset password via this page.</span>
+                </div>
+
                 <div className="d-flex justify-content-center">
                   <button
                     type="submit"
                     className="d_btn d_btn_primary"
                     disabled={loading}
                   >
-                    {loading ? "Sending OTP..." : "Send OTP"}
+                    {loading ? "Checking..." : "Send OTP"}
                   </button>
                 </div>
               </form>
@@ -176,6 +242,11 @@ const ForgotPassword = ({ setActiveMenu }) => {
           {step === 2 && (
             <>
               <form onSubmit={handleOTPSubmit} className="d_login_form">
+                {apiError && (
+                  <div className="alert alert-danger" role="alert">
+                    {apiError}
+                  </div>
+                )}
                 <div className="d_form_group mb-3">
                   <label className="d_form_label">Enter OTP</label>
                   <div className="d_otp_container">
@@ -260,17 +331,13 @@ const ForgotPassword = ({ setActiveMenu }) => {
           <div className="d_info_content">
             <h2>
               {step === 1
-                ? "Password Recovery"
-                : step === 2
-                ? "OTP Verification"
-                : "Verified"}
+                ? "Admin / Manager Only"
+                : "OTP Verification"}
             </h2>
             <p className="d_info_desc">
               {step === 1
-                ? "Don't worry, it happens to the best of us. Enter your email address and we'll send you an OTP to verify your identity."
-                : step === 2
-                ? "Enter the 6-digit OTP sent to your email. This ensures the security of your account."
-                : "Your identity has been verified. You can now reset your password."}
+                ? "Password reset is restricted to Admin and Manager accounts only. If you are an employee, please contact your Admin or Manager to reset your password."
+                : "Enter the 6-digit OTP sent to your email. This ensures the security of your account."}
             </p>
             <div className="d_info_features">
               <div className="d_feature_item">
@@ -301,6 +368,7 @@ const ForgotPassword = ({ setActiveMenu }) => {
           </div>
         </div>
       </>
+    </div>
     </div>
   );
 };
