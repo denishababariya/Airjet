@@ -2,6 +2,7 @@ const User = require("../model/User.model");
 const Employee = require("../model/Empl.model");
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
 // In-memory OTP store: { email: { otp, expiresAt } }
 // For production, use Redis or a DB collection
@@ -51,8 +52,16 @@ const loginUser = async (req, res) => {
             return res.status(403).json({ error: 'Account is inactive' });
         }
 
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: user._id, role: user.role },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '24h' }
+        );
+
         res.status(200).json({
             message: 'Login successful',
+            token,
             user: {
                 id: user._id,
                 role: user.role,

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('../controller');
+const { authenticate, authorize, authorizeHR, authorizeByLevel } = require('../middleware/auth');
 
 // Health Check Route
 router.get('/health', (req, res) => {

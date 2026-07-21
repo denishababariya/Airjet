@@ -74,7 +74,7 @@ const Service = ({ defaultTab = 'tickets' }) => {
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <h1 className="d_page_title">Service Management</h1>
-          <p className="d_page_subtitle">Manage service tickets, engineer assignments and reports</p>
+          <p className="d_page_subtitle">Manage service tickets,engineer assignment and service reports</p>
         </div>
         <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> New Ticket</button>
       </div>

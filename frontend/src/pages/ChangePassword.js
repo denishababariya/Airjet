@@ -75,6 +75,7 @@ const ChangePassword = ({ setActiveMenu }) => {
     if (/[0-9]/.test(password)) strength++;
     if (/[^A-Za-z0-9]/.test(password)) strength++;
 
+
     const labels = ["", "Weak", "Fair", "Good", "Strong", "Very Strong"];
     const colors = [
       "",

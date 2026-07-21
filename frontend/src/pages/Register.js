@@ -77,276 +77,276 @@ const Register = ({ onRegister, setActiveMenu }) => {
 
   return (
     <div className='d-flex align-items-center justify-content-center h-100'>
-    <div className="d_login_wrapper">
-      <>
-        <div className="d_login_card d_register_card">
-          {/* Logo & Header */}
-          <div className="d_login_header">
-            <div className="d_login_logo">
-              <MdBusiness style={{ fontSize: 48, color: "var(--d-primary)" }} />
+      <div className="d_login_wrapper">
+        <>
+          <div className="d_login_card d_register_card">
+            {/* Logo & Header */}
+            <div className="d_login_header">
+              <div className="d_login_logo">
+                <MdBusiness style={{ fontSize: 48, color: "var(--d-primary)" }} />
+              </div>
+              <h1 className="d_login_title">Create Account</h1>
+              <p className="d_login_subtitle">Join Airjet ERP today</p>
             </div>
-            <h1 className="d_login_title">Create Account</h1>
-            <p className="d_login_subtitle">Join Airjet ERP today</p>
+
+            {/* Register Form */}
+            <form onSubmit={handleSubmit} className="d_login_form">
+              <div className="d_form_row cols-2 mb-3">
+                <div className="d_form_group">
+                  <label className="d_form_label">
+                    First Name <span className="d_req">*</span>
+                  </label>
+                  <div className="d_input_group">
+                    <span className="d_input_icon">
+                      <MdPerson />
+                    </span>
+                    <input
+                      type="text"
+                      className="d_form_control"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      placeholder="First name"
+                    />
+                  </div>
+                  {errors.firstName && (
+                    <span className="d_error_msg">{errors.firstName}</span>
+                  )}
+                </div>
+
+                <div className="d_form_group">
+                  <label className="d_form_label">
+                    Last Name <span className="d_req">*</span>
+                  </label>
+                  <div className="d_input_group">
+                    <span className="d_input_icon">
+                      <MdPerson />
+                    </span>
+                    <input
+                      type="text"
+                      className="d_form_control"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      placeholder="Last name"
+                    />
+                  </div>
+                  {errors.lastName && (
+                    <span className="d_error_msg">{errors.lastName}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="d_form_group mb-3">
+                <label className="d_form_label">
+                  Email Address <span className="d_req">*</span>
+                </label>
+                <div className="d_input_group">
+                  <span className="d_input_icon">
+                    <MdEmail />
+                  </span>
+                  <input
+                    type="email"
+                    className="d_form_control"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Enter your email"
+                  />
+                </div>
+                {errors.email && (
+                  <span className="d_error_msg">{errors.email}</span>
+                )}
+              </div>
+
+              <div className="d_form_group mb-3">
+                <label className="d_form_label">
+                  Phone Number <span className="d_req">*</span>
+                </label>
+                <div className="d_input_group">
+                  <span className="d_input_icon">
+                    <MdPhone />
+                  </span>
+                  <input
+                    type="tel"
+                    className="d_form_control"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
+                {errors.phone && (
+                  <span className="d_error_msg">{errors.phone}</span>
+                )}
+              </div>
+
+              <div className="d_form_row cols-2 mb-3">
+                <div className="d_form_group">
+                  <label className="d_form_label">
+                    Password <span className="d_req">*</span>
+                  </label>
+                  <div className="d_input_group">
+                    <span className="d_input_icon">
+                      <MdLock />
+                    </span>
+                    <input
+                      type={showPassword.password ? "text" : "password"}
+                      className="d_form_control"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Create password"
+                    />
+                    <button
+                      type="button"
+                      className="d_password_toggle"
+                      onClick={() =>
+                        setShowPassword({
+                          ...showPassword,
+                          password: !showPassword.password,
+                        })
+                      }
+                    >
+                      {showPassword.password ? (
+                        <MdVisibilityOff />
+                      ) : (
+                        <MdVisibility />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <span className="d_error_msg">{errors.password}</span>
+                  )}
+                </div>
+
+                <div className="d_form_group">
+                  <label className="d_form_label">
+                    Confirm Password <span className="d_req">*</span>
+                  </label>
+                  <div className="d_input_group">
+                    <span className="d_input_icon">
+                      <MdLock />
+                    </span>
+                    <input
+                      type={showPassword.confirm ? "text" : "password"}
+                      className="d_form_control"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="Confirm password"
+                    />
+                    <button
+                      type="button"
+                      className="d_password_toggle"
+                      onClick={() =>
+                        setShowPassword({
+                          ...showPassword,
+                          confirm: !showPassword.confirm,
+                        })
+                      }
+                    >
+                      {showPassword.confirm ? (
+                        <MdVisibilityOff />
+                      ) : (
+                        <MdVisibility />
+                      )}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <span className="d_error_msg">{errors.confirmPassword}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="d_form_group mb-3">
+                <label className="d_checkbox">
+                  <input
+                    type="checkbox"
+                    name="agreeTerms"
+                    checked={formData.agreeTerms}
+                    onChange={handleChange}
+                  />
+                  <span>
+                    I agree to the{" "}
+                    <button type="button" className="d_link">
+                      Terms of Service
+                    </button>{" "}
+                    and{" "}
+                    <button type="button" className="d_link">
+                      Privacy Policy
+                    </button>
+                  </span>
+                </label>
+                {errors.agreeTerms && (
+                  <span className="d_error_msg">{errors.agreeTerms}</span>
+                )}
+              </div>
+
+              <div className="d-flex justify-content-center">
+                <button
+                  type="submit"
+                  className="d_btn d_btn_primary"
+                  disabled={loading}
+                >
+                  {loading ? "Creating Account..." : "Create Account"}
+                </button>
+              </div>
+            </form>
+
+            {/* Footer */}
+            <div className="d_login_footer">
+              <p className="d_login_text">
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  className="d_login_link"
+                  onClick={() => setActiveMenu && setActiveMenu("Login")}
+                >
+                  Sign in here
+                </button>
+              </p>
+            </div>
           </div>
 
-          {/* Register Form */}
-          <form onSubmit={handleSubmit} className="d_login_form">
-            <div className="d_form_row cols-2 mb-3">
-              <div className="d_form_group">
-                <label className="d_form_label">
-                  First Name <span className="d_req">*</span>
-                </label>
-                <div className="d_input_group">
-                  <span className="d_input_icon">
-                    <MdPerson />
-                  </span>
-                  <input
-                    type="text"
-                    className="d_form_control"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    placeholder="First name"
-                  />
+          {/* Info Side */}
+          <div className="d_login_info">
+            <div className="d_info_content">
+              <h2>Start Your Journey</h2>
+              <p className="d_info_desc">
+                Create your account to access powerful tools for managing your
+                spare parts business. Get started in minutes.
+              </p>
+              <div className="d_info_features">
+                <div className="d_feature_item">
+                  <div className="d_feature_icon">
+                    <MdInventory />
+                  </div>
+                  <div className="d_feature_text">Inventory Management</div>
                 </div>
-                {errors.firstName && (
-                  <span className="d_error_msg">{errors.firstName}</span>
-                )}
-              </div>
-
-              <div className="d_form_group">
-                <label className="d_form_label">
-                  Last Name <span className="d_req">*</span>
-                </label>
-                <div className="d_input_group">
-                  <span className="d_input_icon">
-                    <MdPerson />
-                  </span>
-                  <input
-                    type="text"
-                    className="d_form_control"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    placeholder="Last name"
-                  />
+                <div className="d_feature_item">
+                  <div className="d_feature_icon">
+                    <MdAttachMoney />
+                  </div>
+                  <div className="d_feature_text">Sales & Purchases</div>
                 </div>
-                {errors.lastName && (
-                  <span className="d_error_msg">{errors.lastName}</span>
-                )}
-              </div>
-            </div>
-
-            <div className="d_form_group mb-3">
-              <label className="d_form_label">
-                Email Address <span className="d_req">*</span>
-              </label>
-              <div className="d_input_group">
-                <span className="d_input_icon">
-                  <MdEmail />
-                </span>
-                <input
-                  type="email"
-                  className="d_form_control"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter your email"
-                />
-              </div>
-              {errors.email && (
-                <span className="d_error_msg">{errors.email}</span>
-              )}
-            </div>
-
-            <div className="d_form_group mb-3">
-              <label className="d_form_label">
-                Phone Number <span className="d_req">*</span>
-              </label>
-              <div className="d_input_group">
-                <span className="d_input_icon">
-                  <MdPhone />
-                </span>
-                <input
-                  type="tel"
-                  className="d_form_control"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="+91 98765 43210"
-                />
-              </div>
-              {errors.phone && (
-                <span className="d_error_msg">{errors.phone}</span>
-              )}
-            </div>
-
-            <div className="d_form_row cols-2 mb-3">
-              <div className="d_form_group">
-                <label className="d_form_label">
-                  Password <span className="d_req">*</span>
-                </label>
-                <div className="d_input_group">
-                  <span className="d_input_icon">
-                    <MdLock />
-                  </span>
-                  <input
-                    type={showPassword.password ? "text" : "password"}
-                    className="d_form_control"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Create password"
-                  />
-                  <button
-                    type="button"
-                    className="d_password_toggle"
-                    onClick={() =>
-                      setShowPassword({
-                        ...showPassword,
-                        password: !showPassword.password,
-                      })
-                    }
-                  >
-                    {showPassword.password ? (
-                      <MdVisibilityOff />
-                    ) : (
-                      <MdVisibility />
-                    )}
-                  </button>
+                <div className="d_feature_item">
+                  <div className="d_feature_icon">
+                    <MdPeople />
+                  </div>
+                  <div className="d_feature_text">HR & Payroll</div>
                 </div>
-                {errors.password && (
-                  <span className="d_error_msg">{errors.password}</span>
-                )}
-              </div>
-
-              <div className="d_form_group">
-                <label className="d_form_label">
-                  Confirm Password <span className="d_req">*</span>
-                </label>
-                <div className="d_input_group">
-                  <span className="d_input_icon">
-                    <MdLock />
-                  </span>
-                  <input
-                    type={showPassword.confirm ? "text" : "password"}
-                    className="d_form_control"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm password"
-                  />
-                  <button
-                    type="button"
-                    className="d_password_toggle"
-                    onClick={() =>
-                      setShowPassword({
-                        ...showPassword,
-                        confirm: !showPassword.confirm,
-                      })
-                    }
-                  >
-                    {showPassword.confirm ? (
-                      <MdVisibilityOff />
-                    ) : (
-                      <MdVisibility />
-                    )}
-                  </button>
+                <div className="d_feature_item">
+                  <div className="d_feature_icon">
+                    <MdBuild />
+                  </div>
+                  <div className="d_feature_text">Service Management</div>
                 </div>
-                {errors.confirmPassword && (
-                  <span className="d_error_msg">{errors.confirmPassword}</span>
-                )}
-              </div>
-            </div>
-
-            <div className="d_form_group mb-3">
-              <label className="d_checkbox">
-                <input
-                  type="checkbox"
-                  name="agreeTerms"
-                  checked={formData.agreeTerms}
-                  onChange={handleChange}
-                />
-                <span>
-                  I agree to the{" "}
-                  <button type="button" className="d_link">
-                    Terms of Service
-                  </button>{" "}
-                  and{" "}
-                  <button type="button" className="d_link">
-                    Privacy Policy
-                  </button>
-                </span>
-              </label>
-              {errors.agreeTerms && (
-                <span className="d_error_msg">{errors.agreeTerms}</span>
-              )}
-            </div>
-
-            <div className="d-flex justify-content-center">
-              <button
-                type="submit"
-                className="d_btn d_btn_primary"
-                disabled={loading}
-              >
-                {loading ? "Creating Account..." : "Create Account"}
-              </button>
-            </div>
-          </form>
-
-          {/* Footer */}
-          <div className="d_login_footer">
-            <p className="d_login_text">
-              Already have an account?{" "}
-              <button
-                type="button"
-                className="d_login_link"
-                onClick={() => setActiveMenu && setActiveMenu("Login")}
-              >
-                Sign in here
-              </button>
-            </p>
-          </div>
-        </div>
-
-        {/* Info Side */}
-        <div className="d_login_info">
-          <div className="d_info_content">
-            <h2>Start Your Journey</h2>
-            <p className="d_info_desc">
-              Create your account to access powerful tools for managing your
-              spare parts business. Get started in minutes.
-            </p>
-            <div className="d_info_features">
-              <div className="d_feature_item">
-                <div className="d_feature_icon">
-                  <MdInventory />
-                </div>
-                <div className="d_feature_text">Inventory Management</div>
-              </div>
-              <div className="d_feature_item">
-                <div className="d_feature_icon">
-                  <MdAttachMoney />
-                </div>
-                <div className="d_feature_text">Sales & Purchases</div>
-              </div>
-              <div className="d_feature_item">
-                <div className="d_feature_icon">
-                  <MdPeople />
-                </div>
-                <div className="d_feature_text">HR & Payroll</div>
-              </div>
-              <div className="d_feature_item">
-                <div className="d_feature_icon">
-                  <MdBuild />
-                </div>
-                <div className="d_feature_text">Service Management</div>
               </div>
             </div>
           </div>
-        </div>
-      </>
-    </div>
+        </>
+      </div>
     </div>
   );
 };
