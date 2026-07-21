@@ -12,4 +12,5 @@ module.exports = {
   ...require("./erp.controller.js"),
   ...require("./supplier.controller.js"),
   ...require("./reports.controller.js"),
+  ...require("./dashboard.controller.js"),
 };

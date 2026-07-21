@@ -1,4 +1,5 @@
 const emp = require("../model/Empl.model");
+const { syncEmployeeAcrossModules, deleteEmployeeFromModules, getEmployeeFromAllModules } = require("../services/dataSync.service");
 
 const generateEmpId = () => 'EMP' + Date.now().toString().slice(-6);
 
@@ -10,6 +11,10 @@ const createEmployee = async (req, res) => {
       phoneNo: req.body.phoneNo ? Number(req.body.phoneNo) : req.body.phoneNo,
     };
     const savedEmployee = await emp.create(payload);
+    
+    // Sync employee data across all modules
+    await syncEmployeeAcrossModules(savedEmployee, 'create');
+    
     const populated = await emp.findById(savedEmployee._id)
       .populate('department')
       .populate('designation');
@@ -57,6 +62,10 @@ const updateEmployee = async (req, res) => {
     if (!employee) {
       return res.status(404).json({ error: "Employee not found" });
     }
+    
+    // Sync updated employee data across all modules
+    await syncEmployeeAcrossModules(employee, 'update');
+    
     res.status(200).json(employee);
   } catch (error) {
     res.status(500).json({ error: error.message || "Error updating employee" });
@@ -70,9 +79,35 @@ const deleteEmployee = async (req, res) => {
     if (!employee) {
       return res.status(404).json({ error: "Employee not found" });
     }
+    
+    // Delete employee data from all modules
+    await deleteEmployeeFromModules(id);
+    
     res.status(200).json({ message: "Employee deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Error deleting employee" });
+  }
+};
+
+const getEmployeeModuleData = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const employee = await emp.findById(id)
+      .populate('department')
+      .populate('designation');
+    
+    if (!employee) {
+      return res.status(404).json({ error: "Employee not found" });
+    }
+    
+    const moduleData = await getEmployeeFromAllModules(id);
+    
+    res.status(200).json({
+      employee,
+      moduleData
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching employee data from modules" });
   }
 };
 
@@ -82,4 +117,5 @@ module.exports = {
   getEmployeeById,
   updateEmployee,
   deleteEmployee,
+  getEmployeeModuleData,
 };

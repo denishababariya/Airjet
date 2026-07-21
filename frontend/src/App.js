@@ -141,14 +141,23 @@ function App() {
   // Check if user is authenticated on mount
   useEffect(() => {
     const token = auth.getToken();
+    const savedUser = auth.getCurrentUser();
+    
+    // If token exists but no currentUser, restore from localStorage
+    if (token && !currentUser && savedUser) {
+      setCurrentUser(savedUser);
+    }
+    
+    // If no token and not on auth page, redirect to Login
     if (!token && !AUTH_PAGES.includes(activeMenu)) {
       setActiveMenu('Login');
     }
-    if (token && !currentUser) {
-      const saved = auth.getCurrentUser();
-      if (saved) setCurrentUser(saved);
+    
+    // If token exists and on auth page, redirect to dashboard
+    if (token && AUTH_PAGES.includes(activeMenu)) {
+      setActiveMenu('dashboard');
     }
-  }, [currentUser, activeMenu]);
+  }, []);
 
   const entry = PAGE_MAP[activeMenu] || { component: Dashboard };
   const PageComponent = entry.component;

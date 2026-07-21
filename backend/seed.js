@@ -1,14 +1,14 @@
-const Department = require('../model/Depart.model');
-const Designation = require('../model/Designation.model');
-const Employee = require('../model/Empl.model');
-const User = require('../model/User.model');
-const Customer = require('../model/Customer.model');
-const Stock = require('../model/Stock.model');
-const SpareParts = require('../model/SpareParts.model');
-const Income = require('../model/Income.model');
-const Supplier = require('../model/Supplier.model');
-const ErpRecord = require('../model/ErpRecord.model');
-const Attendance = require('../model/Attendance.model');
+const Department = require('./model/Depart.model');
+const Designation = require('./model/Designation.model');
+const Employee = require('./model/Empl.model');
+const User = require('./model/User.model');
+const Customer = require('./model/Customer.model');
+const Stock = require('./model/Stock.model');
+const SpareParts = require('./model/SpareParts.model');
+const Income = require('./model/Income.model');
+const Supplier = require('./model/Supplier.model');
+const ErpRecord = require('./model/ErpRecord.model');
+const Attendance = require('./model/Attendance.model');
 const bcrypt = require('bcrypt');
 
 const erp = (module, recordType, data) => ({ module, recordType, ...data });
@@ -83,8 +83,8 @@ async function seedDatabase() {
   ]);
 
   await Income.insertMany([
-    { id: 'INC001', incomeType: 'Purchase', amount: 124500, date: new Date('2026-06-20'), description: 'Techno Parts Pvt Ltd', paymentStatus: 'Pending', paymentMethod: 'Bank Transfer' },
-    { id: 'INC002', incomeType: 'Purchase', amount: 210000, date: new Date('2026-06-15'), description: 'Airjet Components Ltd', paymentStatus: 'Partial', paymentMethod: 'Bank Transfer' },
+    { id: 'INC001', incomeType: 'Purchase', amount: 124500, date: new Date('2026-06-20'), description: 'Techno Parts Pvt Ltd', paymentStatus: 'Pending', paymentMethod: 'Bank Transfer', invoiceNumber: 'INC-001' },
+    { id: 'INC002', incomeType: 'Purchase', amount: 210000, date: new Date('2026-06-15'), description: 'Airjet Components Ltd', paymentStatus: 'Partial', paymentMethod: 'Bank Transfer', invoiceNumber: 'INC-002' },
     { id: 'INC003', incomeType: 'Sales', amount: 24500, date: new Date('2026-06-20'), description: 'Shree Textile Mills', paymentStatus: 'Pending', paymentMethod: 'Bank Transfer', invoiceNumber: 'INV-001' },
   ]);
 

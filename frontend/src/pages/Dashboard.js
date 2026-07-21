@@ -5,43 +5,17 @@ import {
   MdArrowUpward, MdArrowDownward, MdBuildCircle,
   MdAccessTime, MdAccountBalance, MdCheckCircle,
 } from 'react-icons/md';
-import { stockApi, incomeApi, sparePartsApi, employeesApi } from '../utils/api';
+import { dashboardApi, sparePartsApi } from '../utils/api';
 
-const topParts = [
-  { part: 'Reed Valve Assembly',  partNo: 'AJ-RV-001', sold: 142, revenue: '₹71,000', status: 'In Stock' },
-  { part: 'Air Jet Nozzle Set',   partNo: 'AJ-NZ-012', sold: 118, revenue: '₹59,000', status: 'Low Stock' },
-  { part: 'Weft Detector Sensor', partNo: 'AJ-WD-034', sold: 97,  revenue: '₹48,500', status: 'In Stock' },
-  { part: 'Main Shaft Bearing',   partNo: 'AJ-SB-007', sold: 84,  revenue: '₹42,000', status: 'In Stock' },
-  { part: 'Selvage Cutter Blade', partNo: 'AJ-SC-021', sold: 76,  revenue: '₹38,000', status: 'Out of Stock' },
-];
-
-const recentOrders = [
-  { id: 'SO-003', customer: 'National Weaving Works', amount: '₹45,000', date: '23-Jun-2026', status: 'Delivered' },
-  { id: 'SO-002', customer: 'Shree Textile Mills',    amount: '₹38,400', date: '22-Jun-2026', status: 'Processing' },
-  { id: 'SO-001', customer: 'Modi Fabric Industries', amount: '₹22,500', date: '21-Jun-2026', status: 'Confirmed' },
-  { id: 'INV-001',customer: 'Shree Textile Mills',    amount: '₹24,500', date: '20-Jun-2026', status: 'Unpaid' },
-  { id: 'INV-003',customer: 'Modi Fabric Industries', amount: '₹42,000', date: '18-Jun-2026', status: 'Overdue' },
-];
-
-const recentTickets = [
-  { id: 'SRV-001', customer: 'Shree Textile Mills',    machine: 'AirJet AT-200', issue: 'Nozzle blockage',     engineer: 'Divya Verma', status: 'Open' },
-  { id: 'SRV-002', customer: 'National Weaving Works', machine: 'AirJet JP-150', issue: 'Weft sensor failure',  engineer: 'Nikhil Rao',  status: 'In Progress' },
-  { id: 'SRV-003', customer: 'Modi Fabric Industries', machine: 'AirJet AT-300', issue: 'Motor overheating',    engineer: 'Divya Verma', status: 'Resolved' },
-];
-
-const pendingPO = [
-  { id: 'PO-001', supplier: 'Techno Parts Pvt Ltd',  amount: '₹1,24,500', date: '20-Jun-2026', delivery: '28-Jun-2026', status: 'Pending' },
-  { id: 'PO-003', supplier: 'Airjet Components Ltd', amount: '₹2,10,000', date: '15-Jun-2026', delivery: '22-Jun-2026', status: 'In Transit' },
-];
-
-const activityFeed = [
-  { icon: <MdPointOfSale />,   color: '#28a745', text: 'New invoice INV-001 created for Shree Textile Mills',     time: '10 min ago' },
-  { icon: <MdBuildCircle />,   color: '#17a2b8', text: 'Service ticket SRV-004 assigned to Divya Verma',          time: '32 min ago' },
-  { icon: <MdShoppingCart />,  color: '#f4a124', text: 'Purchase order PO-003 status updated to In Transit',      time: '1 hr ago' },
-  { icon: <MdPeople />,        color: '#1a3c5e', text: 'New employee Pooja Desai added to HR department',         time: '2 hr ago' },
-  { icon: <MdWarning />,       color: '#dc3545', text: 'Low stock alert: Air Jet Nozzle Set (8 units remaining)',  time: '3 hr ago' },
-  { icon: <MdCheckCircle />,   color: '#28a745', text: 'Salary generated for June 2026 — 38 employees',           time: '5 hr ago' },
-];
+const ICON_MAP = {
+  MdPointOfSale,
+  MdBuildCircle,
+  MdShoppingCart,
+  MdPeople,
+  MdWarning,
+  MdCheckCircle,
+  MdAccessTime,
+};
 
 const statusBadge = (s) => {
   const map = {
@@ -64,30 +38,48 @@ const Dashboard = ({ currentUser }) => {
     { label: 'Total Stock Items',  value: '0',        icon: <MdInventory2 />,   iconClass: 'd_info',     cardClass: 'd_info',     change: '+0',      dir: 'up' },
   ]);
 
-  const [recentIncome, setRecentIncome] = useState([]);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [recentTickets, setRecentTickets] = useState([]);
+  const [pendingPO, setPendingPO] = useState([]);
+  const [activityFeed, setActivityFeed] = useState([]);
   const [topPartsList, setTopPartsList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
+      setLoading(true);
       try {
-        const [stockRes, incomeRes, spareRes, empRes, incomeListRes, partsRes] = await Promise.allSettled([
-          stockApi.getAll(),
-          incomeApi.getTotal(),
-          sparePartsApi.getLowStock(),
-          employeesApi.getAll(),
-          incomeApi.getAll(),
+        const [dashRes, partsRes, activityRes] = await Promise.allSettled([
+          dashboardApi.getStats(),
           sparePartsApi.getAll(),
+          dashboardApi.getActivity(),
         ]);
 
-        if (incomeListRes.status === 'fulfilled') {
-          const list = (incomeListRes.value.data || []).slice(0, 5).map(i => ({
-            id: i.invoiceNumber || i.id,
-            customer: i.description || 'Customer',
-            amount: `₹${(i.amount || 0).toLocaleString()}`,
-            date: i.date ? new Date(i.date).toLocaleDateString('en-IN') : '-',
-            status: i.paymentStatus || 'Pending',
+        if (dashRes.status === 'fulfilled') {
+          const d = dashRes.value.data;
+          setStats(prev => {
+            const newStats = [...prev];
+            newStats[0] = { ...newStats[0], value: d.stats?.todaySales || '₹0' };
+            newStats[1] = { ...newStats[1], value: d.stats?.todayPurchases || '₹0' };
+            newStats[2] = { ...newStats[2], value: d.stats?.lowStockAlerts || '0 Parts' };
+            newStats[3] = { ...newStats[3], value: d.stats?.pendingPayments || '₹0' };
+            newStats[4] = { ...newStats[4], value: String(d.stats?.totalEmployees || 0) };
+            newStats[5] = { ...newStats[5], value: String(d.stats?.totalStockItems || 0) };
+            return newStats;
+          });
+          setRecentOrders(d.recentOrders || []);
+          setRecentTickets(d.recentTickets || []);
+          setPendingPO(d.pendingPOs || []);
+        }
+
+        if (activityRes.status === 'fulfilled') {
+          const activities = (activityRes.value.data || []).map(a => ({
+            icon: a.icon,
+            color: a.color,
+            text: a.text,
+            time: a.time,
           }));
-          setRecentIncome(list);
+          setActivityFeed(activities);
         }
 
         if (partsRes.status === 'fulfilled') {
@@ -100,30 +92,10 @@ const Dashboard = ({ currentUser }) => {
           }));
           setTopPartsList(parts);
         }
-
-        setStats((prev) => {
-          const newStats = [...prev];
-          if (stockRes.status === 'fulfilled') {
-            const stock = stockRes.value.data;
-            const lowStock = stock.filter(s => s.status === 'Low Stock' || s.status === 'Out of Stock').length;
-            newStats[2] = { ...newStats[2], value: `${lowStock} Parts` };
-            newStats[5] = { ...newStats[5], value: stock.length.toLocaleString() };
-          }
-          if (incomeRes.status === 'fulfilled') {
-            const total = incomeRes.value.data.totalAmount || 0;
-            newStats[0] = { ...newStats[0], value: `₹${total.toLocaleString()}` };
-          }
-          if (spareRes.status === 'fulfilled') {
-            const pending = spareRes.value.data.length;
-            newStats[3] = { ...newStats[3], value: `₹${(pending * 1000).toLocaleString()}` };
-          }
-          if (empRes.status === 'fulfilled') {
-            newStats[4] = { ...newStats[4], value: empRes.value.data.length.toLocaleString() };
-          }
-          return newStats;
-        });
       } catch {
         // Keep default zeroed stats on failure.
+      } finally {
+        setLoading(false);
       }
     };
     load();
@@ -135,6 +107,8 @@ const Dashboard = ({ currentUser }) => {
         <h1 className="d_page_title">Dashboard</h1>
         <p className="d_page_subtitle">Welcome back, {currentUser?.employee?.name || 'User'} — here's what's happening today.</p>
       </div>
+
+      {loading && <div className="text-center py-3">Loading dashboard…</div>}
 
       {/* ── Stat Cards ─────────────────────────────────────────── */}
       <div className="row g-3 mb-4">
@@ -180,7 +154,8 @@ const Dashboard = ({ currentUser }) => {
                     <tr><th>Order ID</th><th>Customer</th><th>Amount</th><th>Date</th><th>Status</th></tr>
                   </thead>
                   <tbody>
-                    {(recentIncome.length ? recentIncome : recentOrders).map((o, i) => (
+                    {recentOrders.length === 0 && <tr className="d_empty"><td colSpan={5}>No orders yet.</td></tr>}
+                    {recentOrders.map((o, i) => (
                       <tr key={i}>
                         <td><code>{o.id}</code></td>
                         <td><strong>{o.customer}</strong></td>
@@ -212,6 +187,7 @@ const Dashboard = ({ currentUser }) => {
                     <tr><th>PO No.</th><th>Supplier</th><th>Amount</th><th>Delivery</th><th>Status</th></tr>
                   </thead>
                   <tbody>
+                    {pendingPO.length === 0 && <tr className="d_empty"><td colSpan={5}>No pending POs.</td></tr>}
                     {pendingPO.map((p, i) => (
                       <tr key={i}>
                         <td><code>{p.id}</code></td>
@@ -247,6 +223,7 @@ const Dashboard = ({ currentUser }) => {
                     <tr><th>Ticket</th><th>Customer</th><th>Machine</th><th>Engineer</th><th>Status</th></tr>
                   </thead>
                   <tbody>
+                    {recentTickets.length === 0 && <tr className="d_empty"><td colSpan={5}>No service tickets.</td></tr>}
                     {recentTickets.map((t, i) => (
                       <tr key={i}>
                         <td><code>{t.id}</code></td>
@@ -272,10 +249,11 @@ const Dashboard = ({ currentUser }) => {
               </h2>
             </div>
             <div className="d_card_body" style={{ padding: '8px 16px' }}>
+              {activityFeed.length === 0 && <p className="text-center text-muted py-3">No recent activity</p>}
               {activityFeed.map((a, i) => (
                 <div key={i} className="d_activity_item">
                   <div className="d_activity_icon" style={{ background: a.color + '18', color: a.color }}>
-                    {a.icon}
+                    {ICON_MAP[a.icon] || <MdAccessTime />}
                   </div>
                   <div className="d_activity_content">
                     <p className="d_activity_text">{a.text}</p>
@@ -303,7 +281,8 @@ const Dashboard = ({ currentUser }) => {
                 <tr><th>#</th><th>Part Name</th><th>Part No.</th><th>Units Sold</th><th>Revenue</th><th>Status</th></tr>
               </thead>
               <tbody>
-                {(topPartsList.length ? topPartsList : topParts).map((p, i) => (
+                {topPartsList.length === 0 && <tr className="d_empty"><td colSpan={6}>No parts data available.</td></tr>}
+                {topPartsList.map((p, i) => (
                   <tr key={i}>
                     <td>{i + 1}</td>
                     <td><strong>{p.part}</strong></td>
@@ -324,8 +303,8 @@ const Dashboard = ({ currentUser }) => {
         {[
           { icon: <MdAccountBalance />, label: 'Total Receivables', value: '₹81,500',  color: 'var(--d-success)' },
           { icon: <MdAccountBalance />, label: 'Total Payables',    value: '₹2,11,700', color: 'var(--d-danger)' },
-          { icon: <MdPeople />,         label: 'Total Employees',   value: '42',         color: 'var(--d-primary)' },
-          { icon: <MdBuildCircle />,    label: 'Open Tickets',      value: '2',          color: 'var(--d-warning)' },
+          { icon: <MdPeople />,         label: 'Total Employees',   value: String(stats[4].value),         color: 'var(--d-primary)' },
+          { icon: <MdBuildCircle />,    label: 'Open Tickets',      value: String(stats[5].value),          color: 'var(--d-warning)' },
         ].map((item, i) => (
           <div key={i} className="col-6 col-md-3">
             <div className="d_card" style={{ borderLeft: `4px solid ${item.color}` }}>

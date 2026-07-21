@@ -30,6 +30,7 @@ router.delete('/designations/:id', authenticate, authorize('Admin'), controller.
 router.post('/employees', authenticate, authorize('Admin', 'HR'), controller.createEmployee);
 router.get('/employees', authenticate, controller.getAllEmployees);
 router.get('/employees/:id', authenticate, controller.getEmployeeById);
+router.get('/employees/:id/modules', authenticate, controller.getEmployeeModuleData);
 router.put('/employees/:id', authenticate, authorize('Admin', 'HR'), controller.updateEmployee);
 router.delete('/employees/:id', authenticate, authorize('Admin'), controller.deleteEmployee);
 
@@ -60,10 +61,10 @@ router.put('/users/:id', authenticate, authorize('Admin'), controller.updateUser
 // ──────────────────────────────────────────────────────────────
 // Attendance Routes
 // ──────────────────────────────────────────────────────────────
-router.post('/attendance', authenticate, authorize('Admin', 'HR', 'Manager'), controller.createRecord);
-router.get('/attendance', authenticate, controller.getAllRecords);
-router.put('/attendance/:id', authenticate, authorize('Admin', 'HR', 'Manager'), controller.updateRecord);
-router.delete('/attendance/:id', authenticate, authorize('Admin', 'HR'), controller.deleteRecord);
+router.post('/attendance', authenticate, authorize('Admin', 'HR', 'Manager'), controller.createAttendanceRecord);
+router.get('/attendance', authenticate, controller.getAllAttendanceRecords);
+router.put('/attendance/:id', authenticate, authorize('Admin', 'HR', 'Manager'), controller.updateAttendanceRecord);
+router.delete('/attendance/:id', authenticate, authorize('Admin', 'HR'), controller.deleteAttendanceRecord);
 
 // ──────────────────────────────────────────────────────────────
 // ERP Records (Payroll, Sales docs, GRN, Service, Accounts, etc.)
@@ -134,6 +135,12 @@ router.get('/customers/:id', authenticate, controller.getCustomerById);
 router.put('/customers/:id', authenticate, authorizeByLevel(2), controller.updateCustomer);
 router.delete('/customers/:id', authenticate, authorize('Admin'), controller.deleteCustomer);
 router.patch('/customers/:id/purchase', authenticate, controller.updateCustomerPurchase);
+
+// ──────────────────────────────────────────────────────────────
+// Dashboard Routes
+// ──────────────────────────────────────────────────────────────
+router.get('/dashboard/stats', authenticate, controller.getDashboardStats);
+router.get('/dashboard/activity', authenticate, controller.getRecentActivity);
 
 // ──────────────────────────────────────────────────────────────
 // HR & Password Management Routes

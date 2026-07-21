@@ -84,6 +84,7 @@ export const auth = {
 export const employeesApi = {
   getAll: () => api.get('/employees'),
   getById: (id) => api.get(`/employees/${id}`),
+  getModuleData: (id) => api.get(`/employees/${id}/modules`),
   create: (data) => api.post('/employees', data),
   update: (id, data) => api.put(`/employees/${id}`, data),
   remove: (id) => api.delete(`/employees/${id}`),
@@ -108,6 +109,7 @@ export const usersApi = {
   getMe: () => api.get('/users/me'),
   create: (data) => api.post('/users', data),
   update: (id, data) => api.put(`/users/${id}`, data),
+  remove: (id) => api.delete(`/users/${id}`),
 };
 
 export const attendanceApi = {
@@ -190,6 +192,39 @@ export const reportsApi = {
   purchase: () => api.get('/reports/purchase'),
   inventory: () => api.get('/reports/inventory'),
   payroll: () => api.get('/reports/payroll'),
+};
+
+export const dashboardApi = {
+  getStats: () => api.get('/dashboard/stats'),
+  getActivity: () => api.get('/dashboard/activity'),
+};
+
+export const accountsApi = {
+  getAll: (module, recordType) => api.get('/erp', { params: { module, recordType } }),
+  create: (data) => api.post('/erp', data),
+  update: (id, data) => api.put(`/erp/${id}`, data),
+  remove: (id) => api.delete(`/erp/${id}`),
+};
+
+export const ledgerApi = {
+  getAll: () => api.get('/erp', { params: { module: 'accounts', recordType: 'ledger' } }),
+  create: (data) => api.post('/erp', { ...data, module: 'accounts', recordType: 'ledger' }),
+  update: (id, data) => api.put(`/erp/${id}`, { ...data, module: 'accounts', recordType: 'ledger' }),
+  remove: (id) => api.delete(`/erp/${id}`),
+};
+
+export const gstApi = {
+  getAll: () => api.get('/erp', { params: { module: 'accounts', recordType: 'gst' } }),
+  create: (data) => api.post('/erp', { ...data, module: 'accounts', recordType: 'gst' }),
+  update: (id, data) => api.put(`/erp/${id}`, { ...data, module: 'accounts', recordType: 'gst' }),
+  remove: (id) => api.delete(`/erp/${id}`),
+};
+
+export const profitLossApi = {
+  getAll: () => api.get('/erp', { params: { module: 'accounts', recordType: 'pl' } }),
+  create: (data) => api.post('/erp', { ...data, module: 'accounts', recordType: 'pl' }),
+  update: (id, data) => api.put(`/erp/${id}`, { ...data, module: 'accounts', recordType: 'pl' }),
+  remove: (id) => api.delete(`/erp/${id}`),
 };
 
 export default api;
