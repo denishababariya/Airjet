@@ -157,7 +157,7 @@ function App() {
     if (token && AUTH_PAGES.includes(activeMenu)) {
       setActiveMenu('dashboard');
     }
-  }, []);
+  }, [activeMenu, currentUser]);
 
   const entry = PAGE_MAP[activeMenu] || { component: Dashboard };
   const PageComponent = entry.component;

@@ -4,6 +4,7 @@ const SpareParts = require('../model/SpareParts.model');
 const Income = require('../model/Income.model');
 const ErpRecord = require('../model/ErpRecord.model');
 const Customer = require('../model/Customer.model');
+const { getAllModuleData } = require('../services/universalDataSync.service');
 
 const formatCurrency = (n) => `₹${(n || 0).toLocaleString('en-IN')}`;
 
@@ -133,7 +134,17 @@ const getTimeAgo = (date) => {
   return `${Math.floor(diff / 86400)} days ago`;
 };
 
+const getAllModuleDataController = async (req, res) => {
+  try {
+    const allData = await getAllModuleData();
+    res.status(200).json(allData);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getRecentActivity,
+  getAllModuleData: getAllModuleDataController,
 };

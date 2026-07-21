@@ -1,8 +1,13 @@
 const Customer = require('../model/Customer.model');
+const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModules } = require('../services/universalDataSync.service');
 
 const createCustomer = async (req, res) => {
     try {
         const customer = await Customer.create(req.body);
+        
+        // Sync customer data across relevant modules
+        await syncEntityAcrossModules(customer, 'customer', 'create');
+        
         res.status(201).json(customer);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -43,6 +48,10 @@ const updateCustomer = async (req, res) => {
         if (!customer) {
             return res.status(404).json({ error: 'Customer not found' });
         }
+        
+        // Sync updated customer data across relevant modules
+        await syncEntityAcrossModules(customer, 'customer', 'update');
+        
         res.status(200).json(customer);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -55,6 +64,10 @@ const deleteCustomer = async (req, res) => {
         if (!customer) {
             return res.status(404).json({ error: 'Customer not found' });
         }
+        
+        // Delete customer data from all modules
+        await deleteEntityFromModules(req.params.id, 'customer');
+        
         res.status(200).json({ message: 'Customer deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -102,6 +115,24 @@ const updateCustomerPurchase = async (req, res) => {
     }
 };
 
+const getCustomerModuleData = async (req, res) => {
+    try {
+        const customer = await Customer.findById(req.params.id);
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        
+        const moduleData = await getEntityFromAllModules(req.params.id, 'customer');
+        
+        res.status(200).json({
+            customer,
+            moduleData
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     createCustomer,
     getAllCustomers,
@@ -109,5 +140,6 @@ module.exports = {
     updateCustomer,
     deleteCustomer,
     searchCustomers,
-    updateCustomerPurchase
+    updateCustomerPurchase,
+    getCustomerModuleData
 };

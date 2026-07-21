@@ -29,9 +29,18 @@ api.interceptors.response.use(
       error.message ||
       'Something went wrong';
     error.displayMessage = message;
-    if (error.response?.status === 401 && localStorage.getItem('token')) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('currentUser');
+    
+    // Only clear session if error is about invalid/expired token
+    if (error.response?.status === 401) {
+      const errorMsg = error.response?.data?.error?.toLowerCase() || '';
+      if (
+        errorMsg.includes('invalid token') || 
+        errorMsg.includes('authentication required') ||
+        errorMsg.includes('user not found')
+      ) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('currentUser');
+      }
     }
     return Promise.reject(error);
   }
@@ -123,6 +132,7 @@ export const stockApi = {
   getAll: () => api.get('/stock'),
   getLowStock: () => api.get('/stock/low-stock'),
   getById: (id) => api.get(`/stock/${id}`),
+  getModuleData: (id) => api.get(`/stock/${id}/modules`),
   create: (data) => api.post('/stock', data),
   update: (id, data) => api.put(`/stock/${id}`, data),
   remove: (id) => api.delete(`/stock/${id}`),
@@ -145,6 +155,7 @@ export const sparePartsApi = {
   getLowStock: () => api.get('/spare-parts/low-stock'),
   search: (query) => api.get('/spare-parts/search', { params: { query } }),
   getById: (id) => api.get(`/spare-parts/${id}`),
+  getModuleData: (id) => api.get(`/spare-parts/${id}/modules`),
   create: (data) => api.post('/spare-parts', data),
   update: (id, data) => api.put(`/spare-parts/${id}`, data),
   remove: (id) => api.delete(`/spare-parts/${id}`),
@@ -156,6 +167,7 @@ export const customersApi = {
   getAll: (params = {}) => api.get('/customers', { params }),
   search: (query) => api.get('/customers/search', { params: { query } }),
   getById: (id) => api.get(`/customers/${id}`),
+  getModuleData: (id) => api.get(`/customers/${id}/modules`),
   create: (data) => api.post('/customers', data),
   update: (id, data) => api.put(`/customers/${id}`, data),
   remove: (id) => api.delete(`/customers/${id}`),
@@ -182,6 +194,7 @@ export const erpApi = {
 
 export const suppliersApi = {
   getAll: () => api.get('/suppliers'),
+  getModuleData: (id) => api.get(`/suppliers/${id}/modules`),
   create: (data) => api.post('/suppliers', data),
   update: (id, data) => api.put(`/suppliers/${id}`, data),
   remove: (id) => api.delete(`/suppliers/${id}`),
@@ -197,6 +210,7 @@ export const reportsApi = {
 export const dashboardApi = {
   getStats: () => api.get('/dashboard/stats'),
   getActivity: () => api.get('/dashboard/activity'),
+  getAllModuleData: () => api.get('/dashboard/all-modules'),
 };
 
 export const accountsApi = {

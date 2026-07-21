@@ -1,5 +1,5 @@
 const emp = require("../model/Empl.model");
-const { syncEmployeeAcrossModules, deleteEmployeeFromModules, getEmployeeFromAllModules } = require("../services/dataSync.service");
+const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModules } = require("../services/universalDataSync.service");
 
 const generateEmpId = () => 'EMP' + Date.now().toString().slice(-6);
 
@@ -13,7 +13,7 @@ const createEmployee = async (req, res) => {
     const savedEmployee = await emp.create(payload);
     
     // Sync employee data across all modules
-    await syncEmployeeAcrossModules(savedEmployee, 'create');
+    await syncEntityAcrossModules(savedEmployee, 'employee', 'create');
     
     const populated = await emp.findById(savedEmployee._id)
       .populate('department')
@@ -64,7 +64,7 @@ const updateEmployee = async (req, res) => {
     }
     
     // Sync updated employee data across all modules
-    await syncEmployeeAcrossModules(employee, 'update');
+    await syncEntityAcrossModules(employee, 'employee', 'update');
     
     res.status(200).json(employee);
   } catch (error) {
@@ -81,7 +81,7 @@ const deleteEmployee = async (req, res) => {
     }
     
     // Delete employee data from all modules
-    await deleteEmployeeFromModules(id);
+    await deleteEntityFromModules(id, 'employee');
     
     res.status(200).json({ message: "Employee deleted successfully" });
   } catch (error) {

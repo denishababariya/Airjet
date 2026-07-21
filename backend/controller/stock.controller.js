@@ -1,8 +1,13 @@
 const Stock = require('../model/Stock.model');
+const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModules } = require('../services/universalDataSync.service');
 
 const createStock = async (req, res) => {
     try {
         const stock = await Stock.create(req.body);
+        
+        // Sync stock data across relevant modules
+        await syncEntityAcrossModules(stock, 'stock', 'create');
+        
         res.status(201).json(stock);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -36,6 +41,10 @@ const updateStock = async (req, res) => {
         if (!stock) {
             return res.status(404).json({ error: 'Stock item not found' });
         }
+        
+        // Sync updated stock data across relevant modules
+        await syncEntityAcrossModules(stock, 'stock', 'update');
+        
         res.status(200).json(stock);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -48,6 +57,10 @@ const deleteStock = async (req, res) => {
         if (!stock) {
             return res.status(404).json({ error: 'Stock item not found' });
         }
+        
+        // Delete stock data from all modules
+        await deleteEntityFromModules(req.params.id, 'stock');
+        
         res.status(200).json({ message: 'Stock item deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -91,6 +104,24 @@ const updateStockQuantity = async (req, res) => {
     }
 };
 
+const getStockModuleData = async (req, res) => {
+    try {
+        const stock = await Stock.findById(req.params.id);
+        if (!stock) {
+            return res.status(404).json({ error: 'Stock item not found' });
+        }
+        
+        const moduleData = await getEntityFromAllModules(req.params.id, 'stock');
+        
+        res.status(200).json({
+            stock,
+            moduleData
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     createStock,
     getAllStock,
@@ -98,5 +129,6 @@ module.exports = {
     updateStock,
     deleteStock,
     getLowStockItems,
-    updateStockQuantity
+    updateStockQuantity,
+    getStockModuleData
 };

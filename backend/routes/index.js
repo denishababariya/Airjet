@@ -80,6 +80,7 @@ router.delete('/erp/:id', authenticate, authorize('Admin', 'Manager', 'HR'), con
 // ──────────────────────────────────────────────────────────────
 router.post('/suppliers', authenticate, authorizeByLevel(2), controller.createSupplier);
 router.get('/suppliers', authenticate, controller.getAllSuppliers);
+router.get('/suppliers/:id/modules', authenticate, controller.getSupplierModuleData);
 router.put('/suppliers/:id', authenticate, authorizeByLevel(2), controller.updateSupplier);
 router.delete('/suppliers/:id', authenticate, authorize('Admin'), controller.deleteSupplier);
 
@@ -98,6 +99,7 @@ router.post('/stock', authenticate, authorizeByLevel(2), controller.createStock)
 router.get('/stock', authenticate, controller.getAllStock);
 router.get('/stock/low-stock', authenticate, controller.getLowStockItems);
 router.get('/stock/:id', authenticate, controller.getStockById);
+router.get('/stock/:id/modules', authenticate, controller.getStockModuleData);
 router.put('/stock/:id', authenticate, authorizeByLevel(2), controller.updateStock);
 router.delete('/stock/:id', authenticate, authorize('Admin'), controller.deleteStock);
 router.patch('/stock/:id/quantity', authenticate, authorizeByLevel(2), controller.updateStockQuantity);
@@ -121,6 +123,7 @@ router.get('/spare-parts', authenticate, controller.getAllSpareParts);
 router.get('/spare-parts/search', authenticate, controller.searchSpareParts);
 router.get('/spare-parts/low-stock', authenticate, controller.getLowStockSpareParts);
 router.get('/spare-parts/:id', authenticate, controller.getSparePartById);
+router.get('/spare-parts/:id/modules', authenticate, controller.getSparePartModuleData);
 router.put('/spare-parts/:id', authenticate, authorizeByLevel(2), controller.updateSparePart);
 router.delete('/spare-parts/:id', authenticate, authorize('Admin'), controller.deleteSparePart);
 router.patch('/spare-parts/:id/quantity', authenticate, authorizeByLevel(2), controller.updateSparePartQuantity);
@@ -132,6 +135,7 @@ router.post('/customers', authenticate, authorizeByLevel(2), controller.createCu
 router.get('/customers', authenticate, controller.getAllCustomers);
 router.get('/customers/search', authenticate, controller.searchCustomers);
 router.get('/customers/:id', authenticate, controller.getCustomerById);
+router.get('/customers/:id/modules', authenticate, controller.getCustomerModuleData);
 router.put('/customers/:id', authenticate, authorizeByLevel(2), controller.updateCustomer);
 router.delete('/customers/:id', authenticate, authorize('Admin'), controller.deleteCustomer);
 router.patch('/customers/:id/purchase', authenticate, controller.updateCustomerPurchase);
@@ -141,6 +145,7 @@ router.patch('/customers/:id/purchase', authenticate, controller.updateCustomerP
 // ──────────────────────────────────────────────────────────────
 router.get('/dashboard/stats', authenticate, controller.getDashboardStats);
 router.get('/dashboard/activity', authenticate, controller.getRecentActivity);
+router.get('/dashboard/all-modules', authenticate, controller.getAllModuleData);
 
 // ──────────────────────────────────────────────────────────────
 // HR & Password Management Routes

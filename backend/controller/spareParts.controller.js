@@ -1,8 +1,13 @@
 const SpareParts = require('../model/SpareParts.model');
+const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModules } = require('../services/universalDataSync.service');
 
 const createSparePart = async (req, res) => {
     try {
         const sparePart = await SpareParts.create(req.body);
+        
+        // Sync spare part data across relevant modules
+        await syncEntityAcrossModules(sparePart, 'spareparts', 'create');
+        
         res.status(201).json(sparePart);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -43,6 +48,10 @@ const updateSparePart = async (req, res) => {
         if (!sparePart) {
             return res.status(404).json({ error: 'Spare part not found' });
         }
+        
+        // Sync updated spare part data across relevant modules
+        await syncEntityAcrossModules(sparePart, 'spareparts', 'update');
+        
         res.status(200).json(sparePart);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -55,6 +64,10 @@ const deleteSparePart = async (req, res) => {
         if (!sparePart) {
             return res.status(404).json({ error: 'Spare part not found' });
         }
+        
+        // Delete spare part data from all modules
+        await deleteEntityFromModules(req.params.id, 'spareparts');
+        
         res.status(200).json({ message: 'Spare part deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -119,6 +132,24 @@ const searchSpareParts = async (req, res) => {
     }
 };
 
+const getSparePartModuleData = async (req, res) => {
+    try {
+        const sparePart = await SpareParts.findById(req.params.id);
+        if (!sparePart) {
+            return res.status(404).json({ error: 'Spare part not found' });
+        }
+        
+        const moduleData = await getEntityFromAllModules(req.params.id, 'spareparts');
+        
+        res.status(200).json({
+            sparePart,
+            moduleData
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     createSparePart,
     getAllSpareParts,
@@ -127,5 +158,6 @@ module.exports = {
     deleteSparePart,
     getLowStockSpareParts,
     updateSparePartQuantity,
-    searchSpareParts
+    searchSpareParts,
+    getSparePartModuleData
 };
