@@ -1,75 +1,127 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MdAccessTime, MdAdd, MdEdit, MdDelete } from 'react-icons/md';
 import Modal from '../components/Modal';
+import { attendanceApi, employeesApi } from '../utils/api';
 
-const initRecords = [
-  { id: 'ATT001', emp: 'Rajesh Kumar',  empId: 'EMP001', date: '23-Jun-2026', checkIn: '09:05', checkOut: '18:10', hours: '9h 05m', status: 'Present' },
-  { id: 'ATT002', emp: 'Priya Sharma',  empId: 'EMP002', date: '23-Jun-2026', checkIn: '09:30', checkOut: '18:00', hours: '8h 30m', status: 'Late' },
-  { id: 'ATT003', emp: 'Amit Patel',    empId: 'EMP003', date: '23-Jun-2026', checkIn: '--',    checkOut: '--',    hours: '--',     status: 'Absent' },
-  { id: 'ATT004', emp: 'Karan Mehta',   empId: 'EMP005', date: '23-Jun-2026', checkIn: '08:55', checkOut: '18:05', hours: '9h 10m', status: 'Present' },
-  { id: 'ATT005', emp: 'Divya Verma',   empId: 'EMP006', date: '23-Jun-2026', checkIn: '--',    checkOut: '--',    hours: '--',     status: 'Leave' },
-];
+const statusClass = { Present: 'd_success', Late: 'd_warning', Absent: 'd_danger', Leave: 'd_info', Approved: 'd_success', Pending: 'd_warning' };
 
-const statusClass = { Present: 'd_success', Late: 'd_warning', Absent: 'd_danger', Leave: 'd_info' };
+const TAB_TYPE = { records: 'attendance', leave: 'leave', overtime: 'overtime' };
 
-const initLeave = [
-  { id: 'LVE001', emp: 'Divya Verma',  empId: 'EMP006', from: '23-Jun-2026', to: '25-Jun-2026', days: 3, type: 'Sick Leave',   reason: 'Fever and rest',              status: 'Approved' },
-  { id: 'LVE002', emp: 'Pooja Desai',  empId: 'EMP008', from: '24-Jun-2026', to: '24-Jun-2026', days: 1, type: 'Casual Leave', reason: 'Personal work',               status: 'Pending' },
-  { id: 'LVE003', emp: 'Nikhil Rao',   empId: 'EMP007', from: '26-Jun-2026', to: '27-Jun-2026', days: 2, type: 'Earned Leave', reason: 'Family function',             status: 'Approved' },
-];
-
-const initOvertime = [
-  { id: 'OT001', emp: 'Rajesh Kumar', empId: 'EMP001', date: '20-Jun-2026', extraHours: '2h 30m', reason: 'Month-end sales closing', rate: '₹350/hr', amount: '₹875' },
-  { id: 'OT002', emp: 'Karan Mehta',  empId: 'EMP005', date: '21-Jun-2026', extraHours: '3h 00m', reason: 'Stock audit completion',   rate: '₹300/hr', amount: '₹900' },
-  { id: 'OT003', emp: 'Amit Patel',   empId: 'EMP003', date: '22-Jun-2026', extraHours: '1h 45m', reason: 'Urgent purchase order',    rate: '₹320/hr', amount: '₹560' },
-];
-
-const blank = { emp: '', empId: '', date: '', checkIn: '', checkOut: '', status: 'Present' };
+const blankAttendance = { emp: '', empId: '', date: '', checkIn: '', checkOut: '', status: 'Present' };
+const blankLeave = { emp: '', empId: '', from: '', to: '', days: '', type: 'Casual Leave', reason: '', status: 'Pending' };
+const blankOvertime = { emp: '', empId: '', date: '', extraHours: '', reason: '', rate: '', amount: '' };
 
 const Attendance = ({ defaultTab = 'records' }) => {
-  const [tab, setTab]       = useState(defaultTab);
-  const [data, setData]     = useState(initRecords);
-  const [modal, setModal]   = useState(false);
-  const [form, setForm]     = useState(blank);
+  const [tab, setTab] = useState(defaultTab);
+  const [records, setRecords] = useState([]);
+  const [leaveData, setLeaveData] = useState([]);
+  const [overtimeData, setOvertimeData] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState(blankAttendance);
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
 
-  const openAdd  = () => { setForm(blank); setEditId(null); setErrors({}); setModal(true); };
+  const fetchAll = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [attRes, leaveRes, otRes, empRes] = await Promise.all([
+        attendanceApi.getAll({ recordType: 'attendance' }),
+        attendanceApi.getAll({ recordType: 'leave' }),
+        attendanceApi.getAll({ recordType: 'overtime' }),
+        employeesApi.getAll(),
+      ]);
+      setRecords(attRes.data);
+      setLeaveData(leaveRes.data);
+      setOvertimeData(otRes.data);
+      setEmployees(empRes.data);
+    } catch (err) {
+      setError(err.displayMessage || 'Failed to load attendance');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchAll(); }, []);
+
+  const getBlank = () => tab === 'leave' ? blankLeave : tab === 'overtime' ? blankOvertime : blankAttendance;
+
+  const openAdd = () => { setForm(getBlank()); setEditId(null); setErrors({}); setModal(true); };
+
   const openEdit = (rec) => {
-    setForm({ emp: rec.emp, empId: rec.empId, date: rec.date, checkIn: rec.checkIn === '--' ? '' : rec.checkIn, checkOut: rec.checkOut === '--' ? '' : rec.checkOut, status: rec.status });
-    setEditId(rec.id); setErrors({}); setModal(true);
+    if (tab === 'leave') {
+      setForm({ emp: rec.emp, empId: rec.empId, from: rec.from, to: rec.to, days: rec.days, type: rec.type, reason: rec.reason, status: rec.status });
+    } else if (tab === 'overtime') {
+      setForm({ emp: rec.emp, empId: rec.empId, date: rec.date, extraHours: rec.extraHours, reason: rec.reason, rate: rec.rate, amount: rec.amount });
+    } else {
+      setForm({ emp: rec.emp, empId: rec.empId, date: rec.date, checkIn: rec.checkIn === '--' ? '' : rec.checkIn, checkOut: rec.checkOut === '--' ? '' : rec.checkOut, status: rec.status });
+    }
+    setEditId(rec._id);
+    setErrors({});
+    setModal(true);
   };
 
   const validate = () => {
     const e = {};
-    if (!form.emp.trim())  e.emp  = 'Employee name is required';
-    if (!form.date.trim()) e.date = 'Date is required';
+    if (!form.emp?.trim()) e.emp = 'Employee name is required';
+    if (tab === 'records' && !form.date?.trim()) e.date = 'Date is required';
+    if (tab === 'leave' && !form.from?.trim()) e.from = 'From date is required';
+    if (tab === 'overtime' && !form.date?.trim()) e.date = 'Date is required';
     return e;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    if (editId) {
-      setData(d => d.map(r => r.id === editId ? { ...r, ...form, checkIn: form.checkIn || '--', checkOut: form.checkOut || '--', hours: '--' } : r));
-    } else {
-      const newId = `ATT${String(data.length + 1).padStart(3, '0')}`;
-      setData(d => [...d, { id: newId, ...form, checkIn: form.checkIn || '--', checkOut: form.checkOut || '--', hours: '--' }]);
+    try {
+      const recordType = TAB_TYPE[tab];
+      let payload = { recordType, emp: form.emp, empId: form.empId };
+      if (tab === 'leave') {
+        payload = { ...payload, from: form.from, to: form.to, days: Number(form.days) || 1, type: form.type, reason: form.reason, status: form.status };
+      } else if (tab === 'overtime') {
+        payload = { ...payload, date: form.date, extraHours: form.extraHours, reason: form.reason, rate: form.rate, amount: form.amount };
+      } else {
+        payload = { ...payload, date: form.date, checkIn: form.checkIn || '--', checkOut: form.checkOut || '--', hours: '--', status: form.status };
+      }
+      if (editId) {
+        await attendanceApi.update(editId, payload);
+      } else {
+        await attendanceApi.create(payload);
+      }
+      setModal(false);
+      fetchAll();
+    } catch (err) {
+      setError(err.displayMessage || 'Failed to save record');
     }
-    setModal(false);
   };
 
-  const handleDelete = (id) => { if (window.confirm('Delete record?')) setData(d => d.filter(r => r.id !== id)); };
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete record?')) return;
+    try {
+      await attendanceApi.remove(id);
+      fetchAll();
+    } catch (err) {
+      setError(err.displayMessage || 'Failed to delete');
+    }
+  };
+
+  const onEmpSelect = (empMongoId) => {
+    const emp = employees.find(e => e._id === empMongoId);
+    if (emp) setForm(p => ({ ...p, emp: emp.name, empId: emp.id, employeeId: emp._id }));
+  };
 
   const f = (field) => ({
-    value: form[field],
+    value: form[field] || '',
     onChange: (e) => { setForm(p => ({ ...p, [field]: e.target.value })); setErrors(p => ({ ...p, [field]: '' })); },
   });
 
-  const present = data.filter(r => r.status === 'Present').length;
-  const absent  = data.filter(r => r.status === 'Absent').length;
-  const late    = data.filter(r => r.status === 'Late').length;
-  const leave   = data.filter(r => r.status === 'Leave').length;
+  const present = records.filter(r => r.status === 'Present').length;
+  const absent  = records.filter(r => r.status === 'Absent').length;
+  const late    = records.filter(r => r.status === 'Late').length;
+  const leave   = records.filter(r => r.status === 'Leave').length;
 
   return (
     <div>
@@ -81,11 +133,12 @@ const Attendance = ({ defaultTab = 'records' }) => {
         <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> Add Record</button>
       </div>
 
-      {/* Summary cards */}
+      {error && <div className="alert alert-danger">{error}</div>}
+
       <div className="row g-3 mb-3">
         {[['Present', present, 'd_success'], ['Absent', absent, 'd_danger'], ['Late', late, 'd_warning'], ['On Leave', leave, 'd_info']].map(([lbl, val, cls]) => (
           <div key={lbl} className="col-6 col-md-3">
-            <div className={`d_stat_card`} style={{ borderLeftColor: `var(--${cls.replace('d_', 'd-')})` }}>
+            <div className="d_stat_card" style={{ borderLeftColor: `var(--${cls.replace('d_', 'd-')})` }}>
               <div className="d_stat_value">{val}</div>
               <div className="d_stat_label">{lbl}</div>
             </div>
@@ -94,143 +147,225 @@ const Attendance = ({ defaultTab = 'records' }) => {
       </div>
 
       <div className="d_tabs mb-3">
-        {[['records','Today\'s Records'],['leave','Leave Requests'],['overtime','Overtime']].map(([k,v]) => (
-          <button key={k} className={`d_tab_btn ${tab===k?'d_active':''}`} onClick={() => setTab(k)}>{v}</button>
+        {[['records', "Today's Records"], ['leave', 'Leave Requests'], ['overtime', 'Overtime']].map(([k, v]) => (
+          <button key={k} className={`d_tab_btn ${tab === k ? 'd_active' : ''}`} onClick={() => setTab(k)}>{v}</button>
         ))}
       </div>
 
-      {tab === 'records' && (
-        <div className="d_card">
-          <div className="d_card_header">
-            <h2 className="d_card_title"><MdAccessTime className="d_card_icon" /> Attendance Records</h2>
-          </div>
-          <div className="d_card_body p-0">
-            <div className="d_table_wrap">
-              <table className="d_table">
-                <thead>
-                  <tr><th>ID</th><th>Employee</th><th>Emp ID</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Status</th><th>Actions</th></tr>
-                </thead>
-                <tbody>
-                  {data.map(r => (
-                    <tr key={r.id}>
-                      <td><code>{r.id}</code></td>
-                      <td><strong>{r.emp}</strong></td>
-                      <td><code>{r.empId}</code></td>
-                      <td>{r.date}</td>
-                      <td>{r.checkIn}</td>
-                      <td>{r.checkOut}</td>
-                      <td>{r.hours}</td>
-                      <td><span className={`d_badge ${statusClass[r.status]}`}>{r.status}</span></td>
-                      <td>
-                        <div className="d_action_btns">
-                          <button className="d_icon_btn d_edit" onClick={() => openEdit(r)} title="Edit"><MdEdit /></button>
-                          <button className="d_icon_btn d_del"  onClick={() => handleDelete(r.id)} title="Delete"><MdDelete /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {loading ? <div className="text-center py-4">Loading…</div> : (
+        <>
+          {tab === 'records' && (
+            <div className="d_card">
+              <div className="d_card_header">
+                <h2 className="d_card_title"><MdAccessTime className="d_card_icon" /> Attendance Records ({records.length})</h2>
+              </div>
+              <div className="d_card_body p-0">
+                <div className="d_table_wrap">
+                  <table className="d_table">
+                    <thead>
+                      <tr><th>ID</th><th>Employee</th><th>Emp ID</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Status</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                      {records.length === 0 && <tr className="d_empty"><td colSpan={8}>No records found.</td></tr>}
+                      {records.map(r => (
+                        <tr key={r._id}>
+                          <td><code>{r.id}</code></td>
+                          <td><strong>{r.emp}</strong></td>
+                          <td><code>{r.empId}</code></td>
+                          <td>{r.date}</td>
+                          <td>{r.checkIn}</td>
+                          <td>{r.checkOut}</td>
+                          <td><span className={`d_badge ${statusClass[r.status]}`}>{r.status}</span></td>
+                          <td>
+                            <div className="d_action_btns">
+                              <button className="d_icon_btn d_edit" onClick={() => openEdit(r)}><MdEdit /></button>
+                              <button className="d_icon_btn d_del" onClick={() => handleDelete(r._id)}><MdDelete /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+
+          {tab === 'leave' && (
+            <div className="d_card">
+              <div className="d_card_header">
+                <h2 className="d_card_title"><MdAccessTime className="d_card_icon" /> Leave Requests ({leaveData.length})</h2>
+              </div>
+              <div className="d_card_body p-0">
+                <div className="d_table_wrap">
+                  <table className="d_table">
+                    <thead><tr><th>ID</th><th>Employee</th><th>From</th><th>To</th><th>Days</th><th>Type</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody>
+                      {leaveData.length === 0 && <tr className="d_empty"><td colSpan={9}>No leave requests.</td></tr>}
+                      {leaveData.map(l => (
+                        <tr key={l._id}>
+                          <td><code>{l.id}</code></td>
+                          <td><strong>{l.emp}</strong></td>
+                          <td>{l.from}</td><td>{l.to}</td><td>{l.days}</td>
+                          <td>{l.type}</td><td>{l.reason}</td>
+                          <td><span className={`d_badge ${statusClass[l.status]}`}>{l.status}</span></td>
+                          <td>
+                            <div className="d_action_btns">
+                              <button className="d_icon_btn d_edit" onClick={() => openEdit(l)}><MdEdit /></button>
+                              <button className="d_icon_btn d_del" onClick={() => handleDelete(l._id)}><MdDelete /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'overtime' && (
+            <div className="d_card">
+              <div className="d_card_header">
+                <h2 className="d_card_title"><MdAccessTime className="d_card_icon" /> Overtime Records ({overtimeData.length})</h2>
+              </div>
+              <div className="d_card_body p-0">
+                <div className="d_table_wrap">
+                  <table className="d_table">
+                    <thead><tr><th>ID</th><th>Employee</th><th>Date</th><th>Extra Hours</th><th>Reason</th><th>Rate</th><th>Amount</th><th>Actions</th></tr></thead>
+                    <tbody>
+                      {overtimeData.length === 0 && <tr className="d_empty"><td colSpan={8}>No overtime records.</td></tr>}
+                      {overtimeData.map(o => (
+                        <tr key={o._id}>
+                          <td><code>{o.id}</code></td>
+                          <td><strong>{o.emp}</strong></td>
+                          <td>{o.date}</td><td><strong>{o.extraHours}</strong></td>
+                          <td>{o.reason}</td><td>{o.rate}</td><td><strong>{o.amount}</strong></td>
+                          <td>
+                            <div className="d_action_btns">
+                              <button className="d_icon_btn d_edit" onClick={() => openEdit(o)}><MdEdit /></button>
+                              <button className="d_icon_btn d_del" onClick={() => handleDelete(o._id)}><MdDelete /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      {tab === 'leave' && (
-        <div className="d_card">
-          <div className="d_card_header">
-            <h2 className="d_card_title"><MdAccessTime className="d_card_icon" /> Leave Requests ({initLeave.length})</h2>
-            <button className="d_btn d_btn_primary d_btn_sm" onClick={openAdd}><MdAdd /> Apply Leave</button>
-          </div>
-          <div className="d_card_body p-0">
-            <div className="d_table_wrap">
-              <table className="d_table">
-                <thead><tr><th>ID</th><th>Employee</th><th>From</th><th>To</th><th>Days</th><th>Leave Type</th><th>Reason</th><th>Status</th></tr></thead>
-                <tbody>
-                  {initLeave.map(l => (
-                    <tr key={l.id}>
-                      <td><code>{l.id}</code></td>
-                      <td><strong>{l.emp}</strong></td>
-                      <td>{l.from}</td><td>{l.to}</td><td>{l.days}</td>
-                      <td>{l.type}</td><td>{l.reason}</td>
-                      <td><span className={`d_badge ${l.status === 'Approved' ? 'd_success' : 'd_warning'}`}>{l.status}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {tab === 'overtime' && (
-        <div className="d_card">
-          <div className="d_card_header">
-            <h2 className="d_card_title"><MdAccessTime className="d_card_icon" /> Overtime Records ({initOvertime.length})</h2>
-            <button className="d_btn d_btn_primary d_btn_sm" onClick={openAdd}><MdAdd /> Add Overtime</button>
-          </div>
-          <div className="d_card_body p-0">
-            <div className="d_table_wrap">
-              <table className="d_table">
-                <thead><tr><th>ID</th><th>Employee</th><th>Date</th><th>Extra Hours</th><th>Reason</th><th>Rate</th><th>Amount</th></tr></thead>
-                <tbody>
-                  {initOvertime.map(o => (
-                    <tr key={o.id}>
-                      <td><code>{o.id}</code></td>
-                      <td><strong>{o.emp}</strong></td>
-                      <td>{o.date}</td><td><strong>{o.extraHours}</strong></td>
-                      <td>{o.reason}</td><td>{o.rate}</td>
-                      <td><strong>{o.amount}</strong></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Attendance Record' : 'Add Attendance Record'} size="md">
+      <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Record' : 'Add Record'} size="md">
         <div className="d_form_row cols-2">
           <div className="d_form_group">
-            <label className="d_form_label">Employee Name <span className="d_req">*</span></label>
-            <input className="d_form_control" placeholder="Full name" {...f('emp')} />
-            {errors.emp && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.emp}</span>}
-          </div>
-          <div className="d_form_group">
-            <label className="d_form_label">Employee ID</label>
-            <input className="d_form_control" placeholder="e.g. EMP001" {...f('empId')} />
-          </div>
-        </div>
-        <div className="d_form_row cols-2">
-          <div className="d_form_group">
-            <label className="d_form_label">Date <span className="d_req">*</span></label>
-            <input type="date" className="d_form_control" {...f('date')} />
-            {errors.date && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.date}</span>}
-          </div>
-          <div className="d_form_group">
-            <label className="d_form_label">Status</label>
-            <select className="d_form_control" {...f('status')}>
-              <option>Present</option>
-              <option>Absent</option>
-              <option>Late</option>
-              <option>Leave</option>
+            <label className="d_form_label">Select Employee</label>
+            <select className="d_form_control" onChange={e => onEmpSelect(e.target.value)}>
+              <option value="">Select employee</option>
+              {employees.map(e => <option key={e._id} value={e._id}>{e.name} ({e.id})</option>)}
             </select>
           </div>
-        </div>
-        <div className="d_form_row cols-2">
           <div className="d_form_group">
-            <label className="d_form_label">Check In Time</label>
-            <input type="time" className="d_form_control" {...f('checkIn')} />
-          </div>
-          <div className="d_form_group">
-            <label className="d_form_label">Check Out Time</label>
-            <input type="time" className="d_form_control" {...f('checkOut')} />
+            <label className="d_form_label">Employee Name <span className="d_req">*</span></label>
+            <input className="d_form_control" {...f('emp')} />
+            {errors.emp && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.emp}</span>}
           </div>
         </div>
+
+        {tab === 'records' && (
+          <>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Date <span className="d_req">*</span></label>
+                <input type="date" className="d_form_control" {...f('date')} />
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Status</label>
+                <select className="d_form_control" {...f('status')}>
+                  <option>Present</option><option>Absent</option><option>Late</option><option>Leave</option>
+                </select>
+              </div>
+            </div>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Check In</label>
+                <input type="time" className="d_form_control" {...f('checkIn')} />
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Check Out</label>
+                <input type="time" className="d_form_control" {...f('checkOut')} />
+              </div>
+            </div>
+          </>
+        )}
+
+        {tab === 'leave' && (
+          <>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">From <span className="d_req">*</span></label>
+                <input type="date" className="d_form_control" {...f('from')} />
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">To</label>
+                <input type="date" className="d_form_control" {...f('to')} />
+              </div>
+            </div>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Leave Type</label>
+                <select className="d_form_control" {...f('type')}>
+                  <option>Sick Leave</option><option>Casual Leave</option><option>Earned Leave</option>
+                </select>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Status</label>
+                <select className="d_form_control" {...f('status')}>
+                  <option>Pending</option><option>Approved</option>
+                </select>
+              </div>
+            </div>
+            <div className="d_form_group">
+              <label className="d_form_label">Reason</label>
+              <input className="d_form_control" {...f('reason')} />
+            </div>
+          </>
+        )}
+
+        {tab === 'overtime' && (
+          <>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Date <span className="d_req">*</span></label>
+                <input type="date" className="d_form_control" {...f('date')} />
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Extra Hours</label>
+                <input className="d_form_control" placeholder="e.g. 2h 30m" {...f('extraHours')} />
+              </div>
+            </div>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Rate</label>
+                <input className="d_form_control" placeholder="₹350/hr" {...f('rate')} />
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Amount</label>
+                <input className="d_form_control" placeholder="₹875" {...f('amount')} />
+              </div>
+            </div>
+            <div className="d_form_group">
+              <label className="d_form_label">Reason</label>
+              <input className="d_form_control" {...f('reason')} />
+            </div>
+          </>
+        )}
+
         <div className="d_form_actions">
           <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
-          <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update' : 'Save Record'}</button>
+          <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update' : 'Save'}</button>
         </div>
       </Modal>
     </div>

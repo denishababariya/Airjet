@@ -10,6 +10,7 @@ import {
   MdBuild,
   MdLock,
 } from "react-icons/md";
+import { auth } from "../utils/api";
 
 const ALLOWED_ROLES = ["Admin", "Manager"];
 
@@ -61,17 +62,7 @@ const ForgotPassword = ({ setActiveMenu }) => {
     setApiError("");
     try {
       // Check if user exists and has Admin/Manager role
-      const response = await fetch("http://localhost:5000/api/users/check-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "User not found");
-      }
+      const { data } = await auth.checkRole(formData.email);
 
       // Only Admin or Manager can reset password via this flow
       if (!ALLOWED_ROLES.includes(data.role)) {
@@ -84,7 +75,7 @@ const ForgotPassword = ({ setActiveMenu }) => {
       setStep(2);
       startResendTimer();
     } catch (error) {
-      setApiError(error.message);
+      setApiError(error.displayMessage || error.message);
     } finally {
       setLoading(false);
     }
@@ -101,21 +92,11 @@ const ForgotPassword = ({ setActiveMenu }) => {
     setLoading(true);
     setApiError("");
     try {
-      const response = await fetch("http://localhost:5000/api/users/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email, otp: formData.otp }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Invalid OTP. Please try again.");
-      }
-
+      const { data } = await auth.verifyOtp(formData.email, formData.otp);
+      auth.setResetSession(data.email || formData.email, data.resetToken);
       setActiveMenu && setActiveMenu("ChangePassword");
     } catch (error) {
-      setApiError(error.message);
+      setApiError(error.displayMessage || error.message);
     } finally {
       setLoading(false);
     }
@@ -127,18 +108,10 @@ const ForgotPassword = ({ setActiveMenu }) => {
     setLoading(true);
     setApiError("");
     try {
-      const response = await fetch("http://localhost:5000/api/users/check-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to resend OTP");
-
+      await auth.checkRole(formData.email);
       startResendTimer();
     } catch (error) {
-      setApiError(error.message);
+      setApiError(error.displayMessage || error.message);
     } finally {
       setLoading(false);
     }

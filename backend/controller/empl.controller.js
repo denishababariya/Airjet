@@ -1,38 +1,78 @@
 const emp = require("../model/Empl.model");
 
+const generateEmpId = () => 'EMP' + Date.now().toString().slice(-6);
+
 const createEmployee = async (req, res) => {
-  const newEmployee = new emp(req.body);
   try {
-    const savedEmployee = await newEmployee.save();
-    res.status(201).json(savedEmployee);
+    const payload = {
+      ...req.body,
+      id: req.body.id || generateEmpId(),
+      phoneNo: req.body.phoneNo ? Number(req.body.phoneNo) : req.body.phoneNo,
+    };
+    const savedEmployee = await emp.create(payload);
+    const populated = await emp.findById(savedEmployee._id)
+      .populate('department')
+      .populate('designation');
+    res.status(201).json(populated);
   } catch (error) {
-    res.status(500).json({ message: "Error creating employee" });
+    res.status(500).json({ error: error.message || "Error creating employee" });
   }
 };
 
 const getAllEmployees = async (req, res) => {
   try {
-    
-    const employees = await emp.find();
-    if (!employees || employees.length === 0) {
-      return res.status(400).json({ message: "No employees found" });
-    }
+    const employees = await emp.find()
+      .populate('department')
+      .populate('designation')
+      .sort({ createdAt: -1 });
     res.status(200).json(employees);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching employees" });
+    res.status(500).json({ error: "Error fetching employees" });
   }
 };
 
 const getEmployeeById = async (req, res) => {
   const { id } = req.params;
   try {
-    const employee = await emp.findById(id);
+    const employee = await emp.findById(id)
+      .populate('department')
+      .populate('designation');
     if (!employee) {
-      return res.status(404).json({ message: "Employee not found" });
+      return res.status(404).json({ error: "Employee not found" });
     }
     res.status(200).json(employee);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching employee" });
+    res.status(500).json({ error: "Error fetching employee" });
+  }
+};
+
+const updateEmployee = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const payload = { ...req.body };
+    if (payload.phoneNo) payload.phoneNo = Number(payload.phoneNo);
+    const employee = await emp.findByIdAndUpdate(id, payload, { new: true })
+      .populate('department')
+      .populate('designation');
+    if (!employee) {
+      return res.status(404).json({ error: "Employee not found" });
+    }
+    res.status(200).json(employee);
+  } catch (error) {
+    res.status(500).json({ error: error.message || "Error updating employee" });
+  }
+};
+
+const deleteEmployee = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const employee = await emp.findByIdAndDelete(id);
+    if (!employee) {
+      return res.status(404).json({ error: "Employee not found" });
+    }
+    res.status(200).json({ message: "Employee deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Error deleting employee" });
   }
 };
 
@@ -40,4 +80,6 @@ module.exports = {
   createEmployee,
   getAllEmployees,
   getEmployeeById,
+  updateEmployee,
+  deleteEmployee,
 };

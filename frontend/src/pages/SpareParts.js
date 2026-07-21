@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   MdInventory2,
   MdAdd,
@@ -7,75 +7,7 @@ import {
   MdSearch,
 } from "react-icons/md";
 import Modal from "../components/Modal";
-
-const initData = [
-  {
-    id: "AJ-RV-001",
-    name: "Reed Valve Assembly",
-    cat: "Valve",
-    brand: "AirTex",
-    model: "AT-200, AT-300",
-    stock: 142,
-    minStock: 20,
-    price: 500,
-    status: "In Stock",
-  },
-  {
-    id: "AJ-NZ-012",
-    name: "Air Jet Nozzle Set",
-    cat: "Nozzle",
-    brand: "JetPro",
-    model: "JP-100, JP-150",
-    stock: 8,
-    minStock: 15,
-    price: 850,
-    status: "Low Stock",
-  },
-  {
-    id: "AJ-WD-034",
-    name: "Weft Detector Sensor",
-    cat: "Sensor",
-    brand: "SenseTech",
-    model: "ST-400, ST-500",
-    stock: 97,
-    minStock: 10,
-    price: 1200,
-    status: "In Stock",
-  },
-  {
-    id: "AJ-SB-007",
-    name: "Main Shaft Bearing",
-    cat: "Bearing",
-    brand: "SKF",
-    model: "All Models",
-    stock: 84,
-    minStock: 25,
-    price: 2500,
-    status: "In Stock",
-  },
-  {
-    id: "AJ-SC-021",
-    name: "Selvage Cutter Blade",
-    cat: "Blade",
-    brand: "CutMaster",
-    model: "CM-200, CM-250",
-    stock: 0,
-    minStock: 30,
-    price: 350,
-    status: "Out of Stock",
-  },
-  {
-    id: "AJ-LM-018",
-    name: "Loom Motor 2.2kW",
-    cat: "Motor",
-    brand: "Siemens",
-    model: "Universal",
-    stock: 12,
-    minStock: 5,
-    price: 8500,
-    status: "In Stock",
-  },
-];
+import { sparePartsApi } from "../utils/api";
 
 const statusClass = {
   "In Stock": "d_success",
@@ -215,18 +147,69 @@ const initModels = [
 
 const SpareParts = ({ defaultTab = "parts" }) => {
   const [tab, setTab] = useState(defaultTab);
-  const [data, setData] = useState(initData);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(blank);
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
 
+  const fetchParts = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { data: list } = await sparePartsApi.getAll();
+      setData(list);
+    } catch (err) {
+      setError(err.displayMessage || "Failed to load spare parts");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchParts(); }, []);
+
+  const derivedCategories = useMemo(() => {
+    const map = {};
+    data.forEach(p => {
+      if (!p.category) return;
+      if (!map[p.category]) map[p.category] = { id: `CAT-${p.category}`, name: p.category, parts: 0, description: `Parts in ${p.category}`, status: 'Active' };
+      map[p.category].parts++;
+    });
+    return Object.values(map);
+  }, [data]);
+
+  const derivedBrands = useMemo(() => {
+    const map = {};
+    data.forEach(p => {
+      if (!p.brand) return;
+      if (!map[p.brand]) map[p.brand] = { id: `BRD-${p.brand}`, name: p.brand, country: '-', parts: 0, contact: '-', status: 'Active' };
+      map[p.brand].parts++;
+    });
+    return Object.values(map);
+  }, [data]);
+
+  const derivedModels = useMemo(() => {
+    const map = {};
+    data.forEach(p => {
+      (p.compatibility || []).forEach(m => {
+        if (!map[m]) map[m] = { id: `MDL-${m}`, model: m, brand: p.brand || '-', type: p.category || '-', parts: 0, year: '-', status: 'Active' };
+        map[m].parts++;
+      });
+      if (p.model && !map[p.model]) {
+        map[p.model] = { id: `MDL-${p.model}`, model: p.model, brand: p.brand || '-', type: p.category || '-', parts: 1, year: '-', status: 'Active' };
+      }
+    });
+    return Object.values(map);
+  }, [data]);
+
   const filtered = data.filter(
     (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.id.toLowerCase().includes(search.toLowerCase()) ||
-      p.cat.toLowerCase().includes(search.toLowerCase()),
+      (p.partName || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.partNumber || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.category || "").toLowerCase().includes(search.toLowerCase()),
   );
 
   const openAdd = () => {
@@ -237,16 +220,16 @@ const SpareParts = ({ defaultTab = "parts" }) => {
   };
   const openEdit = (part) => {
     setForm({
-      name: part.name,
-      cat: part.cat,
-      brand: part.brand,
-      model: part.model,
-      stock: part.stock,
-      minStock: part.minStock,
-      price: part.price,
+      name: part.partName,
+      cat: part.category,
+      brand: part.brand || "",
+      model: (part.compatibility || []).join(", "),
+      stock: part.quantity,
+      minStock: part.minimumStock,
+      price: part.unitPrice,
       status: part.status,
     });
-    setEditId(part.id);
+    setEditId(part._id);
     setErrors({});
     setModal(true);
   };
@@ -260,7 +243,7 @@ const SpareParts = ({ defaultTab = "parts" }) => {
     return e;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const e = validate();
     if (Object.keys(e).length) {
       setErrors(e);
@@ -269,33 +252,38 @@ const SpareParts = ({ defaultTab = "parts" }) => {
     const stock = parseInt(form.stock) || 0;
     const minStock = parseInt(form.minStock) || 0;
     const price = parseFloat(form.price) || 0;
-    const status =
-      stock === 0
-        ? "Out of Stock"
-        : stock < minStock
-          ? "Low Stock"
-          : "In Stock";
-    if (editId) {
-      setData((d) =>
-        d.map((p) =>
-          p.id === editId
-            ? { ...p, ...form, stock, minStock, price, status }
-            : p,
-        ),
-      );
-    } else {
-      const newId = `AJ-${form.cat.toUpperCase().slice(0, 2)}-${String(data.length + 1).padStart(3, "0")}`;
-      setData((d) => [
-        ...d,
-        { id: newId, ...form, stock, minStock, price, status },
-      ]);
+    const payload = {
+      partName: form.name,
+      category: form.cat,
+      brand: form.brand,
+      compatibility: form.model ? form.model.split(",").map((s) => s.trim()) : [],
+      quantity: stock,
+      minimumStock: minStock,
+      unitPrice: price,
+      sellingPrice: price,
+    };
+    try {
+      if (editId) {
+        await sparePartsApi.update(editId, payload);
+      } else {
+        payload.partNumber = `AJ-${form.cat.toUpperCase().slice(0, 2)}-${String(data.length + 1).padStart(3, "0")}`;
+        await sparePartsApi.create(payload);
+      }
+      setModal(false);
+      fetchParts();
+    } catch (err) {
+      setError(err.displayMessage || "Failed to save spare part");
     }
-    setModal(false);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Delete this part?"))
-      setData((d) => d.filter((p) => p.id !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this part?")) return;
+    try {
+      await sparePartsApi.remove(id);
+      fetchParts();
+    } catch (err) {
+      setError(err.displayMessage || "Failed to delete spare part");
+    }
   };
 
   const f = (field) => ({
@@ -355,6 +343,10 @@ const SpareParts = ({ defaultTab = "parts" }) => {
             </div>
           </div>
           <div className="d_card_body p-0">
+            {error && <div className="alert alert-danger m-3">{error}</div>}
+            {loading ? (
+              <div className="text-center py-4">Loading spare parts…</div>
+            ) : (
             <div className="d_table_wrap">
               <table className="d_table">
                 <thead>
@@ -428,14 +420,14 @@ const SpareParts = ({ defaultTab = "parts" }) => {
                     </tr>
                   )}
                   {filtered.map((p) => (
-                    <tr key={p.id}>
+                    <tr key={p._id}>
                       <td>
-                        <code>{p.id}</code>
+                        <code>{p.partNumber}</code>
                       </td>
                       <td>
-                        <strong>{p.name}</strong>
+                        <strong>{p.partName}</strong>
                       </td>
-                      <td>{p.cat}</td>
+                      <td>{p.category}</td>
                       <td>{p.brand}</td>
                       <td
                         style={{
@@ -445,15 +437,15 @@ const SpareParts = ({ defaultTab = "parts" }) => {
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {p.model}
+                        {(p.compatibility || []).join(", ")}
                       </td>
                       <td>
-                        <strong>{p.stock}</strong>
+                        <strong>{p.quantity}</strong>
                       </td>
-                      <td>{p.minStock}</td>
-                      <td>{p.price.toLocaleString()}</td>
+                      <td>{p.minimumStock}</td>
+                      <td>{(p.unitPrice || 0).toLocaleString()}</td>
                       <td>
-                        <span className={`d_badge ${statusClass[p.status]}`}>
+                        <span className={`d_badge ${statusClass[p.status] || 'd_info'}`}>
                           {p.status}
                         </span>
                       </td>
@@ -467,7 +459,7 @@ const SpareParts = ({ defaultTab = "parts" }) => {
                           </button>
                           <button
                             className="d_icon_btn d_del"
-                            onClick={() => handleDelete(p.id)}
+                            onClick={() => handleDelete(p._id)}
                           >
                             <MdDelete />
                           </button>
@@ -478,6 +470,7 @@ const SpareParts = ({ defaultTab = "parts" }) => {
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         </div>
       )}
@@ -487,11 +480,8 @@ const SpareParts = ({ defaultTab = "parts" }) => {
           <div className="d_card_header">
             <h2 className="d_card_title">
               <MdInventory2 className="d_card_icon" /> Categories (
-              {initCategories.length})
+              {derivedCategories.length})
             </h2>
-            <button className="d_btn d_btn_primary d_btn_sm" onClick={openAdd}>
-              <MdAdd /> Add Category
-            </button>
           </div>
           <div className="d_card_body p-0">
             <div className="d_table_wrap">
@@ -506,7 +496,8 @@ const SpareParts = ({ defaultTab = "parts" }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {initCategories.map((c) => (
+                  {derivedCategories.length === 0 && <tr className="d_empty"><td colSpan={5}>No categories yet. Add spare parts to see categories.</td></tr>}
+                  {derivedCategories.map((c) => (
                     <tr key={c.id}>
                       <td>
                         <code>{c.id}</code>
@@ -535,11 +526,8 @@ const SpareParts = ({ defaultTab = "parts" }) => {
           <div className="d_card_header">
             <h2 className="d_card_title">
               <MdInventory2 className="d_card_icon" /> Brands (
-              {initBrands.length})
+              {derivedBrands.length})
             </h2>
-            <button className="d_btn d_btn_primary d_btn_sm" onClick={openAdd}>
-              <MdAdd /> Add Brand
-            </button>
           </div>
           <div className="d_card_body p-0">
             <div className="d_table_wrap">
@@ -555,7 +543,8 @@ const SpareParts = ({ defaultTab = "parts" }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {initBrands.map((b) => (
+                  {derivedBrands.length === 0 && <tr className="d_empty"><td colSpan={6}>No brands yet.</td></tr>}
+                  {derivedBrands.map((b) => (
                     <tr key={b.id}>
                       <td>
                         <code>{b.id}</code>
@@ -585,11 +574,8 @@ const SpareParts = ({ defaultTab = "parts" }) => {
           <div className="d_card_header">
             <h2 className="d_card_title">
               <MdInventory2 className="d_card_icon" /> Compatible Machine Models
-              ({initModels.length})
+              ({derivedModels.length})
             </h2>
-            <button className="d_btn d_btn_primary d_btn_sm" onClick={openAdd}>
-              <MdAdd /> Add Model
-            </button>
           </div>
           <div className="d_card_body p-0">
             <div className="d_table_wrap">
@@ -606,7 +592,8 @@ const SpareParts = ({ defaultTab = "parts" }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {initModels.map((m) => (
+                  {derivedModels.length === 0 && <tr className="d_empty"><td colSpan={7}>No models yet.</td></tr>}
+                  {derivedModels.map((m) => (
                     <tr key={m.id}>
                       <td>
                         <code>{m.id}</code>

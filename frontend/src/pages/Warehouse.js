@@ -1,47 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MdWarehouse, MdAdd, MdEdit, MdDelete, MdSwapHoriz, MdFactCheck } from 'react-icons/md';
 import Modal from '../components/Modal';
-
-const initWarehouses = [
-  { id:'WH-001', name:'Main Warehouse',      location:'Surat - Unit 1', capacity:5000, used:3420, manager:'Karan Mehta', status:'Active' },
-  { id:'WH-002', name:'Secondary Warehouse', location:'Surat - Unit 2', capacity:3000, used:1840, manager:'Nikhil Rao',  status:'Active' },
-  { id:'WH-003', name:'Transit Store',       location:'Navsari',        capacity:1000, used:210,  manager:'Divya Verma', status:'Active' },
-];
-
-const initTransfers = [
-  { id:'TRF-001', from:'WH-001', to:'WH-002', part:'Reed Valve Assembly', qty:50, date:'20-Jun-2026', status:'Completed' },
-  { id:'TRF-002', from:'WH-001', to:'WH-003', part:'Air Jet Nozzle Set',  qty:20, date:'21-Jun-2026', status:'In Transit' },
-  { id:'TRF-003', from:'WH-002', to:'WH-001', part:'Main Shaft Bearing',  qty:10, date:'22-Jun-2026', status:'Pending' },
-];
+import { stockApi, erpApi } from '../utils/api';
 
 const statusClass = { Active:'d_success', Completed:'d_success', 'In Transit':'d_info', Pending:'d_warning', Inactive:'d_danger' };
 const blankWH  = { name: '', location: '', capacity: '', manager: '', status: 'Active' };
 const blankTRF = { from: '', to: '', part: '', qty: '', date: '', status: 'Pending' };
+const blankAUD = { location: '', date: '', items: '', status: 'Pending', notes: '' };
 
 const Warehouse = ({ defaultTab = 'warehouses' }) => {
   const [tab, setTab]                   = useState(defaultTab);
-  const [warehouses, setWarehouses]     = useState(initWarehouses);
-  const [transfers, setTransfers]       = useState(initTransfers);
+  const [warehouses, setWarehouses]     = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState('');
+  const [transfers, setTransfers]       = useState([]);
+  const [audits, setAudits]             = useState([]);
   const [modal, setModal]               = useState(false);
   const [form, setForm]                 = useState(blankWH);
   const [editId, setEditId]             = useState(null);
   const [errors, setErrors]             = useState({});
 
   const isWH = tab === 'warehouses';
+  const isTRF = tab === 'transfers';
+  const isAUD = tab === 'audits';
 
-  const openAdd = () => { setForm(isWH ? blankWH : blankTRF); setEditId(null); setErrors({}); setModal(true); };
+  const fetchStock = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data: list } = await stockApi.getAll();
+      setWarehouses(list);
+    } catch (err) {
+      setError(err.displayMessage || 'Failed to load stock');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTransfers = async () => {
+    try {
+      const { data } = await erpApi.getAll('warehouse', 'transfer');
+      setTransfers(data);
+    } catch (err) {
+      setError(err.displayMessage || 'Failed to load transfers');
+    }
+  };
+
+  const fetchAudits = async () => {
+    try {
+      const { data } = await erpApi.getAll('warehouse', 'audit');
+      setAudits(data);
+    } catch (err) {
+      setError(err.displayMessage || 'Failed to load audits');
+    }
+  };
+
+  useEffect(() => {
+    fetchStock();
+    fetchTransfers();
+    fetchAudits();
+  }, []);
+
+  const openAdd = () => {
+    const blank = isWH ? blankWH : isAUD ? blankAUD : blankTRF;
+    setForm(blank); setEditId(null); setErrors({}); setModal(true);
+  };
   const openEdit = (row) => {
-    if (isWH) setForm({ name: row.name, location: row.location, capacity: row.capacity, manager: row.manager, status: row.status });
-    else      setForm({ from: row.from, to: row.to, part: row.part, qty: row.qty, date: row.date, status: row.status });
-    setEditId(row.id); setErrors({}); setModal(true);
+    if (isWH) setForm({ name: row.itemName, location: row.location || '', capacity: row.quantity || 0, manager: row.supplier || '', status: 'Active' });
+    else if (isAUD) setForm({ location: row.location, date: row.date, items: row.items, status: row.status, notes: row.notes || '' });
+    else setForm({ from: row.from, to: row.to, part: row.part, qty: row.qty, date: row.date, status: row.status });
+    setEditId(row._id || row.id); setErrors({}); setModal(true);
   };
 
   const validate = () => {
     const e = {};
     if (isWH) {
-      if (!form.name?.trim())     e.name     = 'Warehouse name is required';
+      if (!form.name?.trim())     e.name     = 'Item name is required';
       if (!form.location?.trim()) e.location = 'Location is required';
-      if (!form.manager?.trim())  e.manager  = 'Manager is required';
+      if (!form.manager?.trim())  e.manager  = 'Supplier is required';
     } else {
       if (!form.from?.trim()) e.from = 'From warehouse is required';
       if (!form.to?.trim())   e.to   = 'To warehouse is required';
@@ -51,25 +87,67 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
     return e;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
     if (isWH) {
       const capacity = parseInt(form.capacity) || 0;
-      if (editId) setWarehouses(d => d.map(w => w.id === editId ? { ...w, ...form, capacity } : w));
-      else { const id = `WH-${String(warehouses.length+1).padStart(3,'0')}`; setWarehouses(d => [...d, { id, used:0, ...form, capacity }]); }
-    } else {
-      const qty = parseInt(form.qty) || 0;
-      if (editId) setTransfers(d => d.map(t => t.id === editId ? { ...t, ...form, qty } : t));
-      else { const id = `TRF-${String(transfers.length+1).padStart(3,'0')}`; setTransfers(d => [...d, { id, ...form, qty }]); }
+      const payload = {
+        id: `STK${String(Date.now()).slice(-6)}`,
+        itemName: form.name,
+        itemCode: `IC-${String(Date.now()).slice(-4)}`,
+        category: 'General',
+        quantity: capacity,
+        unit: 'pieces',
+        unitPrice: 0,
+        location: form.location,
+        supplier: form.manager,
+        minimumStock: 0,
+        description: '',
+      };
+      try {
+        if (editId) await stockApi.update(editId, payload);
+        else await stockApi.create(payload);
+        setModal(false);
+        fetchStock();
+      } catch (err) {
+        setError(err.displayMessage || 'Failed to save stock item');
+      }
+    } else if (isTRF) {
+      try {
+        const payload = { module: 'warehouse', recordType: 'transfer', ...form, qty: Number(form.qty) || 0 };
+        if (editId) await erpApi.update(editId, payload);
+        else await erpApi.create(payload);
+        setModal(false);
+        fetchTransfers();
+      } catch (err) {
+        setError(err.displayMessage || 'Failed to save transfer');
+      }
+    } else if (isAUD) {
+      try {
+        const payload = { module: 'warehouse', recordType: 'audit', ...form, items: Number(form.items) || 0 };
+        if (editId) await erpApi.update(editId, payload);
+        else await erpApi.create(payload);
+        setModal(false);
+        fetchAudits();
+      } catch (err) {
+        setError(err.displayMessage || 'Failed to save audit');
+      }
     }
-    setModal(false);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!window.confirm('Delete this record?')) return;
-    if (isWH) setWarehouses(d => d.filter(w => w.id !== id));
-    else      setTransfers(d => d.filter(t => t.id !== id));
+    if (isWH) {
+      try { await stockApi.remove(id); fetchStock(); }
+      catch (err) { setError(err.displayMessage || 'Failed to delete stock item'); }
+    } else if (isTRF) {
+      try { await erpApi.remove(id); fetchTransfers(); }
+      catch (err) { setError(err.displayMessage || 'Failed to delete transfer'); }
+    } else if (isAUD) {
+      try { await erpApi.remove(id); fetchAudits(); }
+      catch (err) { setError(err.displayMessage || 'Failed to delete audit'); }
+    }
   };
 
   const f = (field) => ({
@@ -101,25 +179,30 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
             <h2 className="d_card_title"><MdWarehouse className="d_card_icon" /> Warehouses ({warehouses.length})</h2>
           </div>
           <div className="d_card_body p-0">
+            {error && <div className="alert alert-danger m-3">{error}</div>}
+            {loading ? (
+              <div className="text-center py-4">Loading stock…</div>
+            ) : (
             <div className="d_table_wrap">
               <table className="d_table">
-                <thead><tr><th>WH ID</th><th>Warehouse Name</th><th>Location</th><th>Capacity</th><th>Used</th><th>Available</th><th>Manager</th><th>Status</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Stock ID</th><th>Item Name</th><th>Location</th><th>Quantity</th><th>Unit Price</th><th>Supplier</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody>
+                  {warehouses.length === 0 && <tr className="d_empty"><td colSpan={8}>No stock items found.</td></tr>}
                   {warehouses.map(w => (
-                    <tr key={w.id}>
-                      <td><code>{w.id}</code></td><td><strong>{w.name}</strong></td><td>{w.location}</td>
-                      <td>{w.capacity}</td><td>{w.used}</td><td><strong>{w.capacity - w.used}</strong></td>
-                      <td>{w.manager}</td>
-                      <td><span className={`d_badge ${statusClass[w.status]}`}>{w.status}</span></td>
+                    <tr key={w._id}>
+                      <td><code>{w.id}</code></td><td><strong>{w.itemName}</strong></td><td>{w.location || '-'}</td>
+                      <td>{w.quantity}</td><td>₹{(w.unitPrice || 0).toLocaleString()}</td><td>{w.supplier || '-'}</td>
+                      <td><span className={`d_badge ${statusClass[w.status] || 'd_info'}`}>{w.status}</span></td>
                       <td><div className="d_action_btns">
                         <button className="d_icon_btn d_edit" onClick={() => openEdit(w)}><MdEdit /></button>
-                        <button className="d_icon_btn d_del"  onClick={() => handleDelete(w.id)}><MdDelete /></button>
+                        <button className="d_icon_btn d_del"  onClick={() => handleDelete(w._id)}><MdDelete /></button>
                       </div></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         </div>
       )}
@@ -135,13 +218,13 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
                 <thead><tr><th>Transfer ID</th><th>From</th><th>To</th><th>Part</th><th>Qty</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody>
                   {transfers.map(t => (
-                    <tr key={t.id}>
+                    <tr key={t._id}>
                       <td><code>{t.id}</code></td><td>{t.from}</td><td>{t.to}</td><td><strong>{t.part}</strong></td>
                       <td>{t.qty}</td><td>{t.date}</td>
                       <td><span className={`d_badge ${statusClass[t.status]}`}>{t.status}</span></td>
                       <td><div className="d_action_btns">
                         <button className="d_icon_btn d_edit" onClick={() => openEdit(t)}><MdEdit /></button>
-                        <button className="d_icon_btn d_del"  onClick={() => handleDelete(t.id)}><MdDelete /></button>
+                        <button className="d_icon_btn d_del"  onClick={() => handleDelete(t._id)}><MdDelete /></button>
                       </div></td>
                     </tr>
                   ))}
@@ -153,11 +236,37 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
       )}
 
       {tab === 'audits' && (
-        <div className="d_card"><div className="d_card_body text-center py-5">
-          <div style={{ fontSize: 48, color: 'var(--d-light-border)' }}><MdFactCheck /></div>
-          <p className="mt-3" style={{ color: 'var(--d-text-muted)' }}>No stock audits scheduled.</p>
-          <button className="d_btn d_btn_primary mt-2" onClick={openAdd}><MdAdd /> Schedule Audit</button>
-        </div></div>
+        <div className="d_card">
+          <div className="d_card_header">
+            <h2 className="d_card_title"><MdFactCheck className="d_card_icon" /> Stock Audits ({audits.length})</h2>
+          </div>
+          <div className="d_card_body p-0">
+            {audits.length === 0 ? (
+              <div className="text-center py-5">
+                <p style={{ color: 'var(--d-text-muted)' }}>No stock audits scheduled.</p>
+                <button className="d_btn d_btn_primary mt-2" onClick={openAdd}><MdAdd /> Schedule Audit</button>
+              </div>
+            ) : (
+              <div className="d_table_wrap">
+                <table className="d_table">
+                  <thead><tr><th>Audit ID</th><th>Location</th><th>Date</th><th>Items</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead>
+                  <tbody>
+                    {audits.map(a => (
+                      <tr key={a._id}>
+                        <td><code>{a.id}</code></td><td>{a.location}</td><td>{a.date}</td><td>{a.items}</td>
+                        <td><span className={`d_badge ${statusClass[a.status]}`}>{a.status}</span></td><td>{a.notes}</td>
+                        <td><div className="d_action_btns">
+                          <button className="d_icon_btn d_edit" onClick={() => openEdit(a)}><MdEdit /></button>
+                          <button className="d_icon_btn d_del" onClick={() => handleDelete(a._id)}><MdDelete /></button>
+                        </div></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Warehouse Modal */}

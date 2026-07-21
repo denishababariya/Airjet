@@ -55,10 +55,13 @@ const empoleeSchema = new mongoose.Schema({
     cast: {
         type: String,
     },
+    joiningDate: {
+        type: Date,
+    },
     status: {
         type: String,
         default: "Active",
-        enum: ["Active", "Inactive"]
+        enum: ["Active", "Inactive", "On Leave"]
     }
 
 }, {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './d_style.css';
 import Layout from './components/Layout';
+import { auth } from './utils/api';
 
 // Pages
 import Dashboard      from './pages/Dashboard';
@@ -131,15 +132,21 @@ function App() {
   // Handle logout
   const handleLogout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('activeMenu');
+    auth.clearSession();
     setActiveMenu('Login');
   };
 
+  const AUTH_PAGES = ['Login', 'Register', 'ForgotPassword', 'ChangePassword'];
+
   // Check if user is authenticated on mount
   useEffect(() => {
-    if (!currentUser && !['Login', 'Register', 'ForgotPassword'].includes(activeMenu)) {
+    const token = auth.getToken();
+    if (!token && !AUTH_PAGES.includes(activeMenu)) {
       setActiveMenu('Login');
+    }
+    if (token && !currentUser) {
+      const saved = auth.getCurrentUser();
+      if (saved) setCurrentUser(saved);
     }
   }, [currentUser, activeMenu]);
 
@@ -148,7 +155,7 @@ function App() {
   const defaultTab    = entry.defaultTab;
 
   // Only show Layout for authenticated routes
-  const isAuthPage = ['Login', 'Register', 'ForgotPassword'].includes(activeMenu);
+  const isAuthPage = AUTH_PAGES.includes(activeMenu);
 
   if (isAuthPage) {
     return (

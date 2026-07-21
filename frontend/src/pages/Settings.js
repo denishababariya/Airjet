@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MdNotifications,
   MdPalette,
@@ -11,8 +11,10 @@ import {
   MdVisibilityOff,
   MdCheckCircle,
 } from "react-icons/md";
+import { auth, usersApi } from "../utils/api";
 
-const Settings = () => {
+const Settings = ({ currentUser }) => {
+  const [profile, setProfile] = useState(null);
   const [formData, setFormData] = useState({
     emailNotifications: true,
     pushNotifications: false,
@@ -23,6 +25,21 @@ const Settings = () => {
     sessionTimeout: "30",
     autoLogout: true,
   });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { data } = await usersApi.getMe();
+        setProfile(data);
+      } catch {
+        if (currentUser) setProfile(currentUser);
+      }
+    };
+    load();
+  }, [currentUser]);
+
+  const emp = profile?.employee || currentUser?.employee || {};
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -73,22 +90,23 @@ const Settings = () => {
     return e;
   };
 
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validatePassword();
     if (Object.keys(validationErrors).length) {
       setPasswordErrors(validationErrors);
       return;
     }
-    setPasswordSuccess(true);
-    setTimeout(() => {
-      setPasswordSuccess(false);
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-    }, 3000);
+    try {
+      await auth.changePassword(passwordData.currentPassword, passwordData.newPassword);
+      setPasswordSuccess(true);
+      setTimeout(() => {
+        setPasswordSuccess(false);
+        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      }, 3000);
+    } catch (err) {
+      setPasswordErrors({ currentPassword: err.displayMessage || 'Failed to change password' });
+    }
   };
 
   const passwordStrength = (password) => {
@@ -140,22 +158,22 @@ const Settings = () => {
             <div className="d_card_body">
               <div className="d_pref_item mb-3">
                 <div className="d_pref_label">Primary Email</div>
-                <div className="d_pref_value">superadmin@airjet.com</div>
+                <div className="d_pref_value">{emp.email || '-'}</div>
               </div>
 
               <div className="d_pref_item mb-3">
-                <div className="d_pref_label">Backup Email</div>
-                <div className="d_pref_value">Not set</div>
+                <div className="d_pref_label">Role</div>
+                <div className="d_pref_value">{profile?.role || currentUser?.role || 'User'}</div>
               </div>
 
               <div className="d_pref_item mb-3">
                 <div className="d_pref_label">Phone Number</div>
-                <div className="d_pref_value">+91 98765 43210</div>
+                <div className="d_pref_value">{emp.phoneNo || '-'}</div>
               </div>
 
               <div className="d_pref_item">
                 <div className="d_pref_label">Account Created</div>
-                <div className="d_pref_value">01-Jan-2020</div>
+                <div className="d_pref_value">{formatDate(profile?.createdAt)}</div>
               </div>
             </div>
           </div>

@@ -9,7 +9,7 @@ const incomeSchema = new mongoose.Schema({
     incomeType: {
         type: String,
         required: true,
-        enum: ['Sales', 'Services', 'Repairs', 'Consultation', 'Other']
+        enum: ['Sales', 'Services', 'Repairs', 'Consultation', 'Purchase', 'Other']
     },
     amount: {
         type: Number,

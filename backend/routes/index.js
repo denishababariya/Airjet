@@ -8,56 +8,138 @@ router.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
+// ──────────────────────────────────────────────────────────────
 // Department Routes
-router.post('/departments', controller.createDepart);
-router.get('/departments', async (req, res) => {
-  const Department = require('../model/Depart.model');
-  try {
-    const departments = await Department.find().populate('head');
-    res.status(200).json(departments);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// ──────────────────────────────────────────────────────────────
+router.post('/departments', authenticate, authorize('Admin'), controller.createDepart);
+router.get('/departments', authenticate, controller.getAllDepartments);
+router.put('/departments/:id', authenticate, authorize('Admin'), controller.updateDepartment);
+router.delete('/departments/:id', authenticate, authorize('Admin'), controller.deleteDepartment);
 
+// ──────────────────────────────────────────────────────────────
 // Designation Routes
-router.post('/designations', async (req, res) => {
-  const Designation = require('../model/Designation.model');
-  try {
-    const designation = await Designation.create(req.body);
-    res.status(201).json(designation);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-router.get('/designations', async (req, res) => {
-  const Designation = require('../model/Designation.model');
-  try {
-    const designations = await Designation.find().populate('department');
-    res.status(200).json(designations);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// ──────────────────────────────────────────────────────────────
+router.post('/designations', authenticate, authorize('Admin'), controller.createDesignation);
+router.get('/designations', authenticate, controller.getAllDesignations);
+router.put('/designations/:id', authenticate, authorize('Admin'), controller.updateDesignation);
+router.delete('/designations/:id', authenticate, authorize('Admin'), controller.deleteDesignation);
 
+// ──────────────────────────────────────────────────────────────
 // Employee Routes
-router.post('/employees', controller.createEmployee);
-router.get('/employees', controller.getAllEmployees);
-router.get('/employees/:id', controller.getEmployeeById);
+// ──────────────────────────────────────────────────────────────
+router.post('/employees', authenticate, authorize('Admin', 'HR'), controller.createEmployee);
+router.get('/employees', authenticate, controller.getAllEmployees);
+router.get('/employees/:id', authenticate, controller.getEmployeeById);
+router.put('/employees/:id', authenticate, authorize('Admin', 'HR'), controller.updateEmployee);
+router.delete('/employees/:id', authenticate, authorize('Admin'), controller.deleteEmployee);
 
+// ──────────────────────────────────────────────────────────────
 // User Routes
-router.post('/users', controller.createUser);
+// ──────────────────────────────────────────────────────────────
+router.post('/users', authenticate, authorize('Admin'), controller.createUser);
 router.post('/users/login', controller.loginUser);
 router.post('/users/check-role', controller.checkRoleForReset);
 router.post('/users/verify-otp', controller.verifyOtp);
-router.get('/users', async (req, res) => {
+router.post('/users/reset-password', controller.resetPasswordWithToken);
+router.get('/users/me', authenticate, controller.getMe);
+router.post('/users/change-password', authenticate, controller.changePassword);
+router.get('/users', authenticate, authorize('Admin', 'HR'), async (req, res) => {
   const User = require('../model/User.model');
   try {
-    const users = await User.find().populate('employeeId');
+    const users = await User.find().populate({
+      path: 'employeeId',
+      populate: [{ path: 'department' }, { path: 'designation' }],
+    });
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+router.put('/users/:id', authenticate, authorize('Admin'), controller.updateUser);
+
+// ──────────────────────────────────────────────────────────────
+// Attendance Routes
+// ──────────────────────────────────────────────────────────────
+router.post('/attendance', authenticate, authorize('Admin', 'HR', 'Manager'), controller.createRecord);
+router.get('/attendance', authenticate, controller.getAllRecords);
+router.put('/attendance/:id', authenticate, authorize('Admin', 'HR', 'Manager'), controller.updateRecord);
+router.delete('/attendance/:id', authenticate, authorize('Admin', 'HR'), controller.deleteRecord);
+
+// ──────────────────────────────────────────────────────────────
+// ERP Records (Payroll, Sales docs, GRN, Service, Accounts, etc.)
+// ──────────────────────────────────────────────────────────────
+router.post('/erp', authenticate, authorizeByLevel(1), controller.createRecord);
+router.get('/erp', authenticate, controller.getAllRecords);
+router.get('/erp/:id', authenticate, controller.getRecordById);
+router.put('/erp/:id', authenticate, authorizeByLevel(1), controller.updateRecord);
+router.delete('/erp/:id', authenticate, authorize('Admin', 'Manager', 'HR'), controller.deleteRecord);
+
+// ──────────────────────────────────────────────────────────────
+// Suppliers
+// ──────────────────────────────────────────────────────────────
+router.post('/suppliers', authenticate, authorizeByLevel(2), controller.createSupplier);
+router.get('/suppliers', authenticate, controller.getAllSuppliers);
+router.put('/suppliers/:id', authenticate, authorizeByLevel(2), controller.updateSupplier);
+router.delete('/suppliers/:id', authenticate, authorize('Admin'), controller.deleteSupplier);
+
+// ──────────────────────────────────────────────────────────────
+// Reports
+// ──────────────────────────────────────────────────────────────
+router.get('/reports/sales', authenticate, controller.getSalesReport);
+router.get('/reports/purchase', authenticate, controller.getPurchaseReport);
+router.get('/reports/inventory', authenticate, controller.getInventoryReport);
+router.get('/reports/payroll', authenticate, controller.getPayrollReport);
+
+// ──────────────────────────────────────────────────────────────
+// Stock Routes
+// ──────────────────────────────────────────────────────────────
+router.post('/stock', authenticate, authorizeByLevel(2), controller.createStock);
+router.get('/stock', authenticate, controller.getAllStock);
+router.get('/stock/low-stock', authenticate, controller.getLowStockItems);
+router.get('/stock/:id', authenticate, controller.getStockById);
+router.put('/stock/:id', authenticate, authorizeByLevel(2), controller.updateStock);
+router.delete('/stock/:id', authenticate, authorize('Admin'), controller.deleteStock);
+router.patch('/stock/:id/quantity', authenticate, authorizeByLevel(2), controller.updateStockQuantity);
+
+// ──────────────────────────────────────────────────────────────
+// Income Routes
+// ──────────────────────────────────────────────────────────────
+router.post('/income', authenticate, authorizeByLevel(2), controller.createIncome);
+router.get('/income', authenticate, controller.getAllIncome);
+router.get('/income/total', authenticate, controller.getTotalIncome);
+router.get('/income/by-type', authenticate, controller.getIncomeByType);
+router.get('/income/:id', authenticate, controller.getIncomeById);
+router.put('/income/:id', authenticate, authorize('Admin', 'Manager'), controller.updateIncome);
+router.delete('/income/:id', authenticate, authorize('Admin'), controller.deleteIncome);
+
+// ──────────────────────────────────────────────────────────────
+// Spare Parts Routes
+// ──────────────────────────────────────────────────────────────
+router.post('/spare-parts', authenticate, authorizeByLevel(2), controller.createSparePart);
+router.get('/spare-parts', authenticate, controller.getAllSpareParts);
+router.get('/spare-parts/search', authenticate, controller.searchSpareParts);
+router.get('/spare-parts/low-stock', authenticate, controller.getLowStockSpareParts);
+router.get('/spare-parts/:id', authenticate, controller.getSparePartById);
+router.put('/spare-parts/:id', authenticate, authorizeByLevel(2), controller.updateSparePart);
+router.delete('/spare-parts/:id', authenticate, authorize('Admin'), controller.deleteSparePart);
+router.patch('/spare-parts/:id/quantity', authenticate, authorizeByLevel(2), controller.updateSparePartQuantity);
+
+// ──────────────────────────────────────────────────────────────
+// Customer Routes
+// ──────────────────────────────────────────────────────────────
+router.post('/customers', authenticate, authorizeByLevel(2), controller.createCustomer);
+router.get('/customers', authenticate, controller.getAllCustomers);
+router.get('/customers/search', authenticate, controller.searchCustomers);
+router.get('/customers/:id', authenticate, controller.getCustomerById);
+router.put('/customers/:id', authenticate, authorizeByLevel(2), controller.updateCustomer);
+router.delete('/customers/:id', authenticate, authorize('Admin'), controller.deleteCustomer);
+router.patch('/customers/:id/purchase', authenticate, controller.updateCustomerPurchase);
+
+// ──────────────────────────────────────────────────────────────
+// HR & Password Management Routes
+// ──────────────────────────────────────────────────────────────
+router.post('/hr/users/create', authenticate, authorize('Admin'), controller.createUserWithRole);
+router.post('/hr/employees/:employeeId/generate-password', authenticate, authorizeHR, controller.generateEmployeePassword);
+router.post('/hr/users/:userId/reset-password', authenticate, authorizeHR, controller.resetUserPassword);
 
 module.exports = router;

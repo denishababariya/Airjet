@@ -8,4 +8,8 @@ module.exports = {
   ...require("./spareParts.controller.js"),
   ...require("./customer.controller.js"),
   ...require("./hr.controller.js"),
+  ...require("./attendance.controller.js"),
+  ...require("./erp.controller.js"),
+  ...require("./supplier.controller.js"),
+  ...require("./reports.controller.js"),
 };

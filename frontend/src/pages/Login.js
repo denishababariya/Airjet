@@ -10,6 +10,7 @@ import {
   MdPeople,
   MdBuild,
 } from 'react-icons/md';
+import { auth } from '../utils/api';
 
 const Login = ({ onLogin, setActiveMenu }) => {
   const [formData, setFormData] = useState({
@@ -52,27 +53,15 @@ const Login = ({ onLogin, setActiveMenu }) => {
     setLoading(true);
     setApiError('');
     try {
-      const response = await fetch('http://localhost:5000/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+      const { data } = await auth.login(formData.email, formData.password);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
+      // Persist token + user for authenticated API calls.
+      auth.setSession(data.token, data.user);
 
       if (onLogin) onLogin(data.user);
       if (setActiveMenu) setActiveMenu('dashboard');
     } catch (error) {
-      setApiError(error.message);
+      setApiError(error.displayMessage || error.message || 'Login failed');
     } finally {
       setLoading(false);
     }

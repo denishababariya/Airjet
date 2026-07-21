@@ -1,68 +1,164 @@
-import React, { useState } from 'react';
-import { MdPeople, MdAdd, MdEdit, MdDelete, MdSearch } from 'react-icons/md';
+import React, { useState, useEffect } from 'react';
+import { MdPeople, MdAdd, MdEdit, MdDelete, MdSearch, MdVpnKey } from 'react-icons/md';
 import Modal from '../components/Modal';
+import { employeesApi, departmentsApi, designationsApi, hrApi } from '../utils/api';
 
-const initData = [
-  { id: 'EMP001', name: 'Rajesh Kumar',  dept: 'Sales',     desig: 'Sales Manager',    phone: '9876543210', email: 'rajesh@airjet.in',  status: 'Active' },
-  { id: 'EMP002', name: 'Priya Sharma',  dept: 'HR',        desig: 'HR Manager',        phone: '9876543211', email: 'priya@airjet.in',   status: 'Active' },
-  { id: 'EMP003', name: 'Amit Patel',    dept: 'Purchase',  desig: 'Purchase Manager',  phone: '9876543212', email: 'amit@airjet.in',    status: 'Active' },
-  { id: 'EMP004', name: 'Sneha Joshi',   dept: 'Accounts',  desig: 'Accountant',        phone: '9876543213', email: 'sneha@airjet.in',   status: 'Inactive' },
-  { id: 'EMP005', name: 'Karan Mehta',   dept: 'Inventory', desig: 'Inventory Manager', phone: '9876543214', email: 'karan@airjet.in',   status: 'Active' },
-  { id: 'EMP006', name: 'Divya Verma',   dept: 'Service',   desig: 'Service Engineer',  phone: '9876543215', email: 'divya@airjet.in',   status: 'Active' },
-  { id: 'EMP007', name: 'Gaurav Sharma',   dept: 'Manager',   desig: 'Service Engineer',  phone: '9876543205', email: 'gaurav@airjet.in',   status: 'Active' },
-];
+const blank = {
+  name: '', email: '', phone: '', address: '', gender: '', salary: '',
+  workShift: 'Day', cast: '', bod: '', age: '', joiningDate: '',
+  department: '', designation: '', status: 'Active',
+};
 
-const blank = { name: '', dept: '', desig: '', phone: '', email: '', joiningDate: '', status: 'Active' };
 const statusClass = { Active: 'd_success', Inactive: 'd_danger', 'On Leave': 'd_warning' };
 
-const EmployeeMaster = () => {
-  const [data, setData]     = useState(initData);
+const EmployeeMaster = ({ currentUser }) => {
+  const [data, setData] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
-  const [modal, setModal]   = useState(false);
-  const [form, setForm]     = useState(blank);
+  const [modal, setModal] = useState(false);
+  const [pwdModal, setPwdModal] = useState(false);
+  const [generatedPwd, setGeneratedPwd] = useState('');
+  const [pwdEmployee, setPwdEmployee] = useState(null);
+  const [form, setForm] = useState(blank);
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
 
+  const canManage = ['Admin', 'HR', 'Manager'].includes(currentUser?.role);
+
+  const fetchAll = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [empRes, deptRes, desRes] = await Promise.all([
+        employeesApi.getAll(),
+        departmentsApi.getAll(),
+        designationsApi.getAll(),
+      ]);
+      setData(empRes.data);
+      setDepartments(deptRes.data);
+      setDesignations(desRes.data);
+    } catch (err) {
+      setError(err.displayMessage || 'Failed to load employees');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchAll(); }, []);
+
+  const filteredDesigs = form.department
+    ? designations.filter(d => (d.department?._id || d.department) === form.department)
+    : designations;
+
   const filtered = data.filter(e =>
-    e.name.toLowerCase().includes(search.toLowerCase()) ||
-    e.id.toLowerCase().includes(search.toLowerCase()) ||
-    e.dept.toLowerCase().includes(search.toLowerCase())
+    (e.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (e.id || '').toLowerCase().includes(search.toLowerCase()) ||
+    (e.department?.title || '').toLowerCase().includes(search.toLowerCase())
   );
-  
 
   const openAdd = () => { setForm(blank); setEditId(null); setErrors({}); setModal(true); };
+
   const openEdit = (emp) => {
-    setForm({ name: emp.name, dept: emp.dept, desig: emp.desig, phone: emp.phone, email: emp.email, joiningDate: emp.joiningDate || '', status: emp.status });
-    setEditId(emp.id); setErrors({}); setModal(true);
+    setForm({
+      name: emp.name || '',
+      email: emp.email || '',
+      phone: String(emp.phoneNo || ''),
+      address: emp.address || '',
+      gender: emp.gender || '',
+      salary: emp.salary || '',
+      workShift: emp.workShift || 'Day',
+      cast: emp.cast || '',
+      bod: emp.bod ? emp.bod.split('T')[0] : '',
+      age: emp.age || '',
+      joiningDate: emp.joiningDate ? emp.joiningDate.split('T')[0] : '',
+      department: emp.department?._id || emp.department || '',
+      designation: emp.designation?._id || emp.designation || '',
+      status: emp.status || 'Active',
+    });
+    setEditId(emp._id);
+    setErrors({});
+    setModal(true);
   };
 
   const validate = () => {
     const e = {};
-    if (!form.name.trim())  e.name  = 'Employee name is required';
-    if (!form.dept.trim())  e.dept  = 'Department is required';
-    if (!form.desig.trim()) e.desig = 'Designation is required';
+    if (!form.name.trim()) e.name = 'Employee name is required';
+    if (!form.department) e.department = 'Department is required';
+    if (!form.designation) e.designation = 'Designation is required';
     if (!form.phone.trim()) e.phone = 'Phone number is required';
     if (!form.email.trim()) e.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
     return e;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    if (editId) {
-      setData(d => d.map(emp => emp.id === editId ? { ...emp, ...form } : emp));
-    } else {
-      const newId = `EMP${String(data.length + 1).padStart(3, '0')}`;
-      setData(d => [...d, { id: newId, ...form }]);
+    try {
+      const payload = {
+        name: form.name,
+        email: form.email,
+        phoneNo: form.phone,
+        address: form.address,
+        gender: form.gender,
+        salary: form.salary ? Number(form.salary) : undefined,
+        workShift: form.workShift,
+        cast: form.cast,
+        bod: form.bod || undefined,
+        age: form.age ? Number(form.age) : undefined,
+        joiningDate: form.joiningDate || undefined,
+        department: form.department,
+        designation: form.designation,
+        status: form.status,
+      };
+      if (editId) {
+        await employeesApi.update(editId, payload);
+      } else {
+        await employeesApi.create(payload);
+      }
+      setModal(false);
+      fetchAll();
+    } catch (err) {
+      setError(err.displayMessage || 'Failed to save employee');
     }
-    setModal(false);
   };
 
-  const handleDelete = (id) => { if (window.confirm('Delete this employee?')) setData(d => d.filter(e => e.id !== id)); };
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this employee?')) return;
+    try {
+      await employeesApi.remove(id);
+      fetchAll();
+    } catch (err) {
+      setError(err.displayMessage || 'Failed to delete employee');
+    }
+  };
+
+  const handleCreateLogin = async (emp) => {
+    if (!window.confirm(`Create login account for ${emp.name}?`)) return;
+    try {
+      const { data: result } = await hrApi.generatePassword(emp._id);
+      setGeneratedPwd(result.password);
+      setPwdEmployee(result.employee);
+      setPwdModal(true);
+    } catch (err) {
+      setError(err.displayMessage || 'Failed to create login');
+    }
+  };
 
   const f = (field) => ({
     value: form[field],
-    onChange: (e) => { setForm(p => ({ ...p, [field]: e.target.value })); setErrors(p => ({ ...p, [field]: '' })); },
+    onChange: (e) => {
+      const val = e.target.value;
+      setForm(p => {
+        const next = { ...p, [field]: val };
+        if (field === 'department') next.designation = '';
+        return next;
+      });
+      setErrors(p => ({ ...p, [field]: '' }));
+    },
   });
 
   return (
@@ -70,9 +166,11 @@ const EmployeeMaster = () => {
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <h1 className="d_page_title">Employee Master</h1>
-          <p className="d_page_subtitle">Manage all employee records</p>
+          <p className="d_page_subtitle">Manage all employee records and worker logins</p>
         </div>
-        <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> Add Employee</button>
+        {canManage && (
+          <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> Add Employee</button>
+        )}
       </div>
 
       <div className="d_card">
@@ -84,26 +182,40 @@ const EmployeeMaster = () => {
           </div>
         </div>
         <div className="d_card_body p-0">
+          {error && <div className="alert alert-danger m-3">{error}</div>}
+          {loading ? (
+            <div className="text-center py-4">Loading employees…</div>
+          ) : (
           <div className="d_table_wrap">
             <table className="d_table">
               <thead>
-                <tr><th>Emp ID</th><th>Name</th><th>Department</th><th>Designation</th><th>Phone</th><th>Email</th><th>Status</th><th>Actions</th></tr>
+                <tr>
+                  <th>Emp ID</th><th>Name</th><th>Department</th><th>Designation</th>
+                  <th>Phone</th><th>Email</th><th>Salary</th><th>Shift</th><th>Status</th><th>Actions</th>
+                </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 && <tr className="d_empty"><td colSpan={8}>No employees found.</td></tr>}
+                {filtered.length === 0 && <tr className="d_empty"><td colSpan={10}>No employees found.</td></tr>}
                 {filtered.map(e => (
-                  <tr key={e.id}>
+                  <tr key={e._id}>
                     <td><code>{e.id}</code></td>
                     <td><strong>{e.name}</strong></td>
-                    <td>{e.dept}</td>
-                    <td>{e.desig}</td>
-                    <td>{e.phone}</td>
+                    <td>{e.department?.title || '-'}</td>
+                    <td>{e.designation?.title || '-'}</td>
+                    <td>{e.phoneNo || '-'}</td>
                     <td>{e.email}</td>
+                    <td>{e.salary ? `₹${e.salary.toLocaleString()}` : '-'}</td>
+                    <td>{e.workShift || '-'}</td>
                     <td><span className={`d_badge ${statusClass[e.status] || 'd_info'}`}>{e.status}</span></td>
                     <td>
                       <div className="d_action_btns">
-                        <button className="d_icon_btn d_edit" onClick={() => openEdit(e)} title="Edit"><MdEdit /></button>
-                        <button className="d_icon_btn d_del"  onClick={() => handleDelete(e.id)} title="Delete"><MdDelete /></button>
+                        {canManage && (
+                          <>
+                            <button className="d_icon_btn d_edit" onClick={() => openEdit(e)} title="Edit"><MdEdit /></button>
+                            <button className="d_icon_btn" style={{ color: 'var(--d-warning)' }} onClick={() => handleCreateLogin(e)} title="Create Login"><MdVpnKey /></button>
+                            <button className="d_icon_btn d_del" onClick={() => handleDelete(e._id)} title="Delete"><MdDelete /></button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -111,6 +223,7 @@ const EmployeeMaster = () => {
               </tbody>
             </table>
           </div>
+          )}
         </div>
       </div>
 
@@ -122,50 +235,106 @@ const EmployeeMaster = () => {
             {errors.name && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.name}</span>}
           </div>
           <div className="d_form_group">
-            <label className="d_form_label">Department <span className="d_req">*</span></label>
-            <select className="d_form_control" {...f('dept')}>
-              <option value="">Select Department</option>
-              {['Sales', 'Purchase', 'HR', 'Accounts', 'Inventory', 'Service', 'Administration'].map(d => <option key={d}>{d}</option>)}
-            </select>
-            {errors.dept && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.dept}</span>}
-          </div>
-        </div>
-        <div className="d_form_row cols-2">
-          <div className="d_form_group">
-            <label className="d_form_label">Designation <span className="d_req">*</span></label>
-            <input className="d_form_control" placeholder="e.g. Sales Manager" {...f('desig')} />
-            {errors.desig && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.desig}</span>}
-          </div>
-          <div className="d_form_group">
-            <label className="d_form_label">Joining Date</label>
-            <input type="date" className="d_form_control" {...f('joiningDate')} />
-          </div>
-        </div>
-        <div className="d_form_row cols-2">
-          <div className="d_form_group">
-            <label className="d_form_label">Phone <span className="d_req">*</span></label>
-            <input className="d_form_control" placeholder="10-digit mobile number" maxLength={10} {...f('phone')} />
-            {errors.phone && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.phone}</span>}
-          </div>
-          <div className="d_form_group">
             <label className="d_form_label">Email <span className="d_req">*</span></label>
             <input type="email" className="d_form_control" placeholder="email@airjet.in" {...f('email')} />
             {errors.email && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.email}</span>}
           </div>
         </div>
-        <div className="d_form_row cols-1">
+        <div className="d_form_row cols-2">
+          <div className="d_form_group">
+            <label className="d_form_label">Department <span className="d_req">*</span></label>
+            <select className="d_form_control" {...f('department')}>
+              <option value="">Select Department</option>
+              {departments.map(d => <option key={d._id} value={d._id}>{d.title}</option>)}
+            </select>
+            {errors.department && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.department}</span>}
+          </div>
+          <div className="d_form_group">
+            <label className="d_form_label">Designation <span className="d_req">*</span></label>
+            <select className="d_form_control" {...f('designation')}>
+              <option value="">Select Designation</option>
+              {filteredDesigs.map(d => <option key={d._id} value={d._id}>{d.title}</option>)}
+            </select>
+            {errors.designation && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.designation}</span>}
+          </div>
+        </div>
+        <div className="d_form_row cols-2">
+          <div className="d_form_group">
+            <label className="d_form_label">Phone <span className="d_req">*</span></label>
+            <input className="d_form_control" placeholder="10-digit mobile" maxLength={10} {...f('phone')} />
+            {errors.phone && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.phone}</span>}
+          </div>
+          <div className="d_form_group">
+            <label className="d_form_label">Gender</label>
+            <select className="d_form_control" {...f('gender')}>
+              <option value="">Select</option>
+              <option>Male</option><option>Female</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div className="d_form_row cols-2">
+          <div className="d_form_group">
+            <label className="d_form_label">Salary (₹)</label>
+            <input type="number" className="d_form_control" placeholder="e.g. 25000" {...f('salary')} />
+          </div>
+          <div className="d_form_group">
+            <label className="d_form_label">Work Shift</label>
+            <select className="d_form_control" {...f('workShift')}>
+              <option>Day</option><option>Night</option><option>Rotational</option>
+            </select>
+          </div>
+        </div>
+        <div className="d_form_row cols-2">
+          <div className="d_form_group">
+            <label className="d_form_label">Date of Birth</label>
+            <input type="date" className="d_form_control" {...f('bod')} />
+          </div>
+          <div className="d_form_group">
+            <label className="d_form_label">Age</label>
+            <input type="number" className="d_form_control" placeholder="Age" {...f('age')} />
+          </div>
+        </div>
+        <div className="d_form_row cols-2">
+          <div className="d_form_group">
+            <label className="d_form_label">Joining Date</label>
+            <input type="date" className="d_form_control" {...f('joiningDate')} />
+          </div>
           <div className="d_form_group">
             <label className="d_form_label">Status</label>
             <select className="d_form_control" {...f('status')}>
-              <option>Active</option>
-              <option>Inactive</option>
-              <option>On Leave</option>
+              <option>Active</option><option>Inactive</option><option>On Leave</option>
             </select>
+          </div>
+        </div>
+        <div className="d_form_row cols-2">
+          <div className="d_form_group">
+            <label className="d_form_label">Address</label>
+            <input className="d_form_control" placeholder="Full address" {...f('address')} />
+          </div>
+          <div className="d_form_group">
+            <label className="d_form_label">Category</label>
+            <input className="d_form_control" placeholder="e.g. General" {...f('cast')} />
           </div>
         </div>
         <div className="d_form_actions">
           <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
           <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Employee' : 'Save Employee'}</button>
+        </div>
+      </Modal>
+
+      <Modal open={pwdModal} onClose={() => setPwdModal(false)} title="Worker Login Created" size="md">
+        <div className="alert alert-success">
+          Login account created for <strong>{pwdEmployee?.name}</strong>
+        </div>
+        <p>Share this temporary password with the employee:</p>
+        <div style={{ background: '#f5f5f5', padding: '12px 16px', borderRadius: 8, fontFamily: 'monospace', fontSize: 18, fontWeight: 700, textAlign: 'center' }}>
+          {generatedPwd}
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--d-text-muted)', marginTop: 12 }}>
+          Employee can login using their email: <strong>{pwdEmployee?.email}</strong>
+        </p>
+        <div className="d_form_actions">
+          <button className="d_btn d_btn_primary" onClick={() => setPwdModal(false)}>Done</button>
         </div>
       </Modal>
     </div>

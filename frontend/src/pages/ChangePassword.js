@@ -12,6 +12,7 @@ import {
   MdLock,
   MdArrowBack,
 } from "react-icons/md";
+import { auth } from "../utils/api";
 
 const ChangePassword = ({ setActiveMenu }) => {
   const [formData, setFormData] = useState({
@@ -47,7 +48,7 @@ const ChangePassword = ({ setActiveMenu }) => {
     return e;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length) {
@@ -56,14 +57,24 @@ const ChangePassword = ({ setActiveMenu }) => {
     }
 
     setLoading(true);
-    // Simulate password change API call
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const { email, resetToken } = auth.getResetSession();
+      if (!email || !resetToken) {
+        setErrors({ newPassword: 'Reset session expired. Please request OTP again.' });
+        setLoading(false);
+        return;
+      }
+      await auth.resetPassword(email, resetToken, formData.newPassword);
+      auth.clearResetSession();
       setSuccess(true);
       setTimeout(() => {
         setActiveMenu && setActiveMenu("Login");
       }, 2000);
-    }, 1500);
+    } catch (error) {
+      setErrors({ newPassword: error.displayMessage || "Failed to update password" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const passwordStrength = (password) => {

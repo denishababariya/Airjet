@@ -29,6 +29,7 @@ const Register = ({ onRegister, setActiveMenu }) => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
 
   const handleChange = (e) => {
     const { name, value, checked } = e.target;
@@ -67,12 +68,8 @@ const Register = ({ onRegister, setActiveMenu }) => {
     }
 
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      if (onRegister) onRegister(formData);
-      if (setActiveMenu) setActiveMenu("dashboard");
-    }, 1000);
+    setApiError('Registration is managed by your system administrator. Please contact HR or Admin to create your account.');
+    setLoading(false);
   };
 
   return (
@@ -91,6 +88,9 @@ const Register = ({ onRegister, setActiveMenu }) => {
 
             {/* Register Form */}
             <form onSubmit={handleSubmit} className="d_login_form">
+              {apiError && (
+                <div className="alert alert-warning" role="alert">{apiError}</div>
+              )}
               <div className="d_form_row cols-2 mb-3">
                 <div className="d_form_group">
                   <label className="d_form_label">

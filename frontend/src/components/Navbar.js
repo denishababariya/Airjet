@@ -99,7 +99,7 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
           </button>
 
           {profileOpen && (
-            <div className="d_profile_dropdown">
+            <div className="d_profile_dropdown w-">
               <div
                 className="d_dropdown_item"
                 onClick={() => {
