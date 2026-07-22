@@ -3,12 +3,25 @@ const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModule
 
 const generateEmpId = () => 'EMP' + Date.now().toString().slice(-6);
 
+const calculateAge = (bod) => {
+  if (!bod) return undefined;
+  const birthDate = new Date(bod);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
 const createEmployee = async (req, res) => {
   try {
     const payload = {
       ...req.body,
       id: req.body.id || generateEmpId(),
       phoneNo: req.body.phoneNo ? Number(req.body.phoneNo) : req.body.phoneNo,
+      age: calculateAge(req.body.bod),
     };
     const savedEmployee = await emp.create(payload);
     
@@ -56,6 +69,7 @@ const updateEmployee = async (req, res) => {
   try {
     const payload = { ...req.body };
     if (payload.phoneNo) payload.phoneNo = Number(payload.phoneNo);
+    if (payload.bod) payload.age = calculateAge(payload.bod);
     const employee = await emp.findByIdAndUpdate(id, payload, { new: true })
       .populate('department')
       .populate('designation');
@@ -100,7 +114,7 @@ const getEmployeeModuleData = async (req, res) => {
       return res.status(404).json({ error: "Employee not found" });
     }
     
-    const moduleData = await getEmployeeFromAllModules(id);
+    const moduleData = await getEntityFromAllModules(id, 'employee');
     
     res.status(200).json({
       employee,

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { MdCorporateFare, MdAdd, MdEdit, MdDelete } from 'react-icons/md';
 import Modal from '../components/Modal';
-import { departmentsApi } from '../utils/api';
+import { departmentsApi, employeesApi } from '../utils/api';
 
 const blank = { name: '', head: '', description: '', status: 'Active' };
 
 const Department = () => {
   const [data, setData]   = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modal, setModal] = useState(false);
@@ -18,8 +19,12 @@ const Department = () => {
     setLoading(true);
     setError('');
     try {
-      const { data: list } = await departmentsApi.getAll();
-      setData(list);
+      const [deptRes, empRes] = await Promise.all([
+        departmentsApi.getAll(),
+        employeesApi.getAll(),
+      ]);
+      setData(deptRes.data);
+      setEmployees(empRes.data);
     } catch (err) {
       setError(err.displayMessage || 'Failed to load departments');
     } finally {
@@ -33,7 +38,7 @@ const Department = () => {
   const openEdit = (dep) => {
     setForm({
       name: dep.title || dep.name || '',
-      head: dep.head?.name || dep.head || '',
+      head: dep.head?._id || dep.head || '',
       description: dep.description || '',
       status: dep.isActive ? 'Active' : 'Inactive',
     });
@@ -41,6 +46,11 @@ const Department = () => {
     setErrors({});
     setModal(true);
   };
+
+  // Filter employees: when editing, show only employees from the same department
+  const filteredEmployees = editId 
+    ? employees.filter(e => (e.department?._id || e.department) === editId)
+    : employees;
 
   const validate = () => {
     const e = {};
@@ -52,7 +62,11 @@ const Department = () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
     try {
-      const payload = { title: form.name, isActive: form.status === 'Active' };
+      const payload = { 
+        title: form.name, 
+        isActive: form.status === 'Active',
+        head: form.head || undefined
+      };
       if (editId) {
         await departmentsApi.update(editId, payload);
       } else {
@@ -110,7 +124,7 @@ const Department = () => {
                   <tr key={d._id}>
                     <td><code>{d.id}</code></td>
                     <td><strong>{d.title || d.name}</strong></td>
-                    <td>{d.head?.name || d.head?.id || '-'}</td>
+                    <td>{d.head?.name || '-'}</td>
                     <td><span className={`d_badge ${d.isActive ? 'd_success' : 'd_danger'}`}>{d.isActive ? 'Active' : 'Inactive'}</span></td>
                     <td>
                       <div className="d_action_btns">
@@ -134,6 +148,15 @@ const Department = () => {
             <input className="d_form_control" placeholder="e.g. Sales" {...f('name')} />
             {errors.name && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.name}</span>}
           </div>
+          <div className="d_form_group">
+            <label className="d_form_label">Department Head</label>
+            <select className="d_form_control" {...f('head')}>
+              <option value="">Select Employee</option>
+              {filteredEmployees.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="d_form_row cols-2">
           <div className="d_form_group">
             <label className="d_form_label">Status</label>
             <select className="d_form_control" {...f('status')}>
