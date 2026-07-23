@@ -63,7 +63,6 @@ const empoleeSchema = new mongoose.Schema({
         default: "Active",
         enum: ["Active", "Inactive", "On Leave"]
     }
-
 }, {
     timestamps: true
 })
