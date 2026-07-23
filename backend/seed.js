@@ -133,6 +133,14 @@ async function seedDatabase() {
 
   const hashed = await bcrypt.hash('admin123', 10);
 
+  // Departments with employee heads
+  const deptsWithHeads = await Promise.all(depts.map(async (dept, index) => {
+    const headEmployeeIndex = [0, 2, 4, 5, 6, 7][index];
+    dept.head = employees[headEmployeeIndex]._id;
+    await dept.save();
+    return dept;
+  }));
+
   await Customer.insertMany([
     { id: 'CUS001', name: 'Shree Textile Mills', email: 'shree@textile.com', phone: '9876510001', city: 'Surat', gstNumber: '24AABCS1234A1Z5', customerType: 'Business', status: 'Active' },
     { id: 'CUS002', name: 'National Weaving Works', email: 'national@weaving.com', phone: '9876510002', city: 'Ahmedabad', gstNumber: '24AABCN5678B1Z2', customerType: 'Business', status: 'Active' },

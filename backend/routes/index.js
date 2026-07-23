@@ -65,6 +65,9 @@ router.post('/attendance', authenticate, authorize('Admin', 'HR', 'Manager'), co
 router.get('/attendance', authenticate, controller.getAllAttendanceRecords);
 router.put('/attendance/:id', authenticate, authorize('Admin', 'HR', 'Manager'), controller.updateAttendanceRecord);
 router.delete('/attendance/:id', authenticate, authorize('Admin', 'HR'), controller.deleteAttendanceRecord);
+router.post('/attendance/check-in', authenticate, controller.checkIn);
+router.post('/attendance/check-out', authenticate, controller.checkOut);
+router.get('/attendance/my', authenticate, controller.getMyAttendance);
 
 // ──────────────────────────────────────────────────────────────
 // ERP Records (Payroll, Sales docs, GRN, Service, Accounts, etc.)

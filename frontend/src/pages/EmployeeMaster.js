@@ -148,6 +148,18 @@ const EmployeeMaster = ({ currentUser }) => {
     }
   };
 
+  const calculateAge = (bod) => {
+    if (!bod) return '';
+    const birthDate = new Date(bod);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   const f = (field) => ({
     value: form[field],
     onChange: (e) => {
@@ -155,6 +167,7 @@ const EmployeeMaster = ({ currentUser }) => {
       setForm(p => {
         const next = { ...p, [field]: val };
         if (field === 'department') next.designation = '';
+        if (field === 'bod') next.age = calculateAge(val);
         return next;
       });
       setErrors(p => ({ ...p, [field]: '' }));

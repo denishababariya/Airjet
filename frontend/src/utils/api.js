@@ -123,9 +123,12 @@ export const usersApi = {
 
 export const attendanceApi = {
   getAll: (params = {}) => api.get('/attendance', { params }),
+  getMy: (params = {}) => api.get('/attendance/my', { params }),
   create: (data) => api.post('/attendance', data),
   update: (id, data) => api.put(`/attendance/${id}`, data),
   remove: (id) => api.delete(`/attendance/${id}`),
+  checkIn: () => api.post('/attendance/check-in'),
+  checkOut: () => api.post('/attendance/check-out'),
 };
 
 export const stockApi = {
