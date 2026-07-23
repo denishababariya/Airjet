@@ -1,0 +1,372 @@
+/* Role Management - Matching EmployeeMaster Design Theme */
+
+.d_page_header {
+  margin-bottom: 20px;
+}
+
+.d_page_title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.d_page_subtitle {
+  color: #6c757d;
+  margin: 4px 0 0 0;
+  font-size: 14px;
+}
+
+.d_card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+}
+
+.d_card_header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.d_card_title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.d_card_icon {
+  color: #4f46e5;
+  font-size: 20px;
+}
+
+.d_card_body {
+  padding: 20px;
+}
+
+.d_table_wrap {
+  overflow-x: auto;
+}
+
+.d_table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.d_table th {
+  background: #f8f9fa;
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #e9ecef;
+  white-space: nowrap;
+}
+
+.d_table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+  vertical-align: middle;
+}
+
+.d_table_sm th,
+.d_table_sm td {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.d_active_row {
+  background: #f0f4ff !important;
+}
+
+.d_active_row td {
+  border-color: #d0d7ff;
+}
+
+.d_empty td {
+  text-align: center;
+  color: #999;
+  padding: 30px;
+}
+
+.d_badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.d_success {
+  background: #d1f4e0;
+  color: #0d6e3f;
+}
+
+.d_info {
+  background: #dbe4ff;
+  color: #3b5de7;
+}
+
+.d_danger {
+  background: #ffe0e0;
+  color: #c41e3a;
+}
+
+.d_warning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.d_action_btns {
+  display: flex;
+  gap: 6px;
+}
+
+.d_icon_btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.d_icon_btn:hover {
+  background: #e0e0e0;
+}
+
+.d_edit {
+  color: #4f46e5;
+}
+
+.d_edit:hover {
+  background: #e0e0ff;
+}
+
+.d_del {
+  color: #dc3545;
+}
+
+.d_del:hover {
+  background: #ffe0e0;
+}
+
+.d_search_box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.d_search_icon {
+  position: absolute;
+  left: 12px;
+  color: #999;
+  font-size: 18px;
+  pointer-events: none;
+}
+
+.d_search_input {
+  padding: 8px 12px 8px 36px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  width: 240px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.d_search_input:focus {
+  border-color: #4f46e5;
+}
+
+.d_btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.d_btn_primary {
+  background: #4f46e5;
+  color: #fff;
+}
+
+.d_btn_primary:hover {
+  background: #3b3db8;
+}
+
+.d_btn_outline {
+  background: #fff;
+  color: #4f46e5;
+  border: 1px solid #4f46e5;
+}
+
+.d_btn_outline:hover {
+  background: #f0f0ff;
+}
+
+.d_form_row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.d_form_row.cols-1 {
+  flex-direction: column;
+}
+
+.d_form_row.cols-2 {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.d_form_row.cols-2 > .d_form_group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.d_form_group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.d_form_label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.d_req {
+  color: #dc3545;
+}
+
+.d_form_control {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.d_form_control:focus {
+  border-color: #4f46e5;
+}
+
+.d_form_actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
+}
+
+/* Permission Module Styles */
+.d_perm_module {
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.d_perm_module_header {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: #1a1a2e;
+  transition: background 0.2s;
+}
+
+.d_perm_module_header:hover {
+  background: #e9ecef;
+}
+
+.d_perm_count {
+  margin-left: auto;
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 400;
+}
+
+.d_perm_module_body {
+  padding: 12px 16px;
+}
+
+.d_perm_checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.d_perm_checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #4f46e5;
+}
+
+.d_saving_indicator {
+  margin-left: 10px;
+  font-size: 13px;
+  color: #4f46e5;
+  font-weight: 400;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+  .d_form_row.cols-2 {
+    flex-direction: column;
+  }
+
+  .d_form_row.cols-2 > .d_form_group {
+    min-width: 100%;
+  }
+
+  .d_search_input {
+    width: 100%;
+  }
+
+  .d_table_wrap {
+    font-size: 13px;
+  }
+}

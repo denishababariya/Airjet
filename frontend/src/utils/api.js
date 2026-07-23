@@ -213,6 +213,38 @@ export const dashboardApi = {
   getAllModuleData: () => api.get('/dashboard/all-modules'),
 };
 
+export const searchApi = {
+  global: (query) => api.get('/search', { params: { query } }),
+};
+
+// ──────────────────────────────────────────────────────────────
+// RBAC API
+// ──────────────────────────────────────────────────────────────
+export const rolesApi = {
+  getAll: () => api.get('/roles'),
+  getById: (id) => api.get(`/roles/${id}`),
+  create: (data) => api.post('/roles', data),
+  update: (id, data) => api.put(`/roles/${id}`, data),
+  remove: (id) => api.delete(`/roles/${id}`),
+};
+
+export const permissionsApi = {
+  getAll: () => api.get('/permissions'),
+  getByModule: (module) => api.get(`/permissions/module/${module}`),
+  create: (data) => api.post('/permissions', data),
+  update: (id, data) => api.put(`/permissions/${id}`, data),
+  remove: (id) => api.delete(`/permissions/${id}`),
+};
+
+export const rolePermissionsApi = {
+  getByRole: (roleId) => api.get(`/role-permissions/${roleId}`),
+  getRoleWithPermissions: (roleId) => api.get(`/role-permissions/role/${roleId}`),
+  assign: (data) => api.post('/role-permissions', data),
+  remove: (roleId, permissionId) => api.delete(`/role-permissions/${roleId}/${permissionId}`),
+  bulkAssign: (data) => api.post('/role-permissions/bulk', data),
+  getMyPermissions: () => api.get('/my-permissions'),
+};
+
 export const accountsApi = {
   getAll: (module, recordType) => api.get('/erp', { params: { module, recordType } }),
   create: (data) => api.post('/erp', data),

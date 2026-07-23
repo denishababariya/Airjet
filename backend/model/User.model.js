@@ -11,8 +11,12 @@ const userSchema = new mongoose.Schema({
     },
     role : {
         type: String,
-        enum: ["Admin", "Manager", "Head", "HR", "User"],
+        enum: ["Super Admin", "Admin", "Sales Manager", "Sales Executive", "Purchase Manager", "Purchase Executive", "Inventory Manager", "Warehouse Staff", "HR Manager", "Accountant", "Service Manager", "Quality Inspector", "CEO/Director", "User"],
         default: "User"
+    },
+    roleId : {
+        type: mongoose.Types.ObjectId,
+        ref: "role"
     },
     password : {
         type: String,

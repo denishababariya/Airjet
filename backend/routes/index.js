@@ -146,6 +146,7 @@ router.patch('/customers/:id/purchase', authenticate, controller.updateCustomerP
 router.get('/dashboard/stats', authenticate, controller.getDashboardStats);
 router.get('/dashboard/activity', authenticate, controller.getRecentActivity);
 router.get('/dashboard/all-modules', authenticate, controller.getAllModuleData);
+router.get('/search', authenticate, controller.globalSearch);
 
 // ──────────────────────────────────────────────────────────────
 // HR & Password Management Routes
@@ -153,5 +154,32 @@ router.get('/dashboard/all-modules', authenticate, controller.getAllModuleData);
 router.post('/hr/users/create', authenticate, authorize('Admin'), controller.createUserWithRole);
 router.post('/hr/employees/:employeeId/generate-password', authenticate, authorizeHR, controller.generateEmployeePassword);
 router.post('/hr/users/:userId/reset-password', authenticate, authorizeHR, controller.resetUserPassword);
+
+// ──────────────────────────────────────────────────────────────
+// RBAC - Role Management Routes
+// ──────────────────────────────────────────────────────────────
+// Roles
+router.post('/roles', authenticate, authorize('Admin'), controller.createRole);
+router.get('/roles', authenticate, controller.getAllRoles);
+router.get('/roles/:id', authenticate, controller.getRoleById);
+router.put('/roles/:id', authenticate, authorize('Admin'), controller.updateRole);
+router.delete('/roles/:id', authenticate, authorize('Admin'), controller.deleteRole);
+
+// Permissions
+router.post('/permissions', authenticate, authorize('Admin'), controller.createPermission);
+router.get('/permissions', authenticate, controller.getAllPermissions);
+router.get('/permissions/module/:module', authenticate, controller.getPermissionsByModule);
+router.put('/permissions/:id', authenticate, authorize('Admin'), controller.updatePermission);
+router.delete('/permissions/:id', authenticate, authorize('Admin'), controller.deletePermission);
+
+// Role-Permissions
+router.post('/role-permissions', authenticate, authorize('Admin'), controller.assignPermissionToRole);
+router.get('/role-permissions/:roleId', authenticate, controller.getRolePermissions);
+router.get('/role-permissions/role/:roleId', authenticate, controller.getRoleWithPermissions);
+router.delete('/role-permissions/:roleId/:permissionId', authenticate, authorize('Admin'), controller.removePermissionFromRole);
+router.post('/role-permissions/bulk', authenticate, authorize('Admin'), controller.bulkAssignPermissions);
+
+// My Permissions
+router.get('/my-permissions', authenticate, controller.getMyPermissions);
 
 module.exports = router;

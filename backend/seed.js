@@ -10,6 +10,9 @@ const Income = require('./model/Income.model');
 const Supplier = require('./model/Supplier.model');
 const ErpRecord = require('./model/ErpRecord.model');
 const Attendance = require('./model/Attendance.model');
+const Role = require('./model/Role.model');
+const Permission = require('./model/Permission.model');
+const RolePermission = require('./model/RolePermission.model');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 
@@ -129,11 +132,6 @@ async function seedDatabase() {
   ]);
 
   const hashed = await bcrypt.hash('admin123', 10);
-  await User.insertMany([
-    { id: 'USR001', employeeId: employees[0]._id, role: 'Admin', password: hashed, confirmPassword: hashed, isVerified: true, status: 'Active' },
-    { id: 'USR002', employeeId: employees[2]._id, role: 'Manager', password: hashed, confirmPassword: hashed, isVerified: true, status: 'Active' },
-    { id: 'USR003', employeeId: employees[4]._id, role: 'HR', password: hashed, confirmPassword: hashed, isVerified: true, status: 'Active' },
-  ]);
 
   await Customer.insertMany([
     { id: 'CUS001', name: 'Shree Textile Mills', email: 'shree@textile.com', phone: '9876510001', city: 'Surat', gstNumber: '24AABCS1234A1Z5', customerType: 'Business', status: 'Active' },
@@ -252,6 +250,342 @@ async function seedDatabase() {
     { id: 'ATT-007', recordType: 'attendance', emp: 'Meera Joshi', empId: 'EMP008', date: formatDateISO(today), checkIn: '09:15', checkOut: '18:10', hours: '8h 55m', status: 'Late' },
     { id: 'LVE-001', recordType: 'leave', emp: 'Divya Verma', empId: 'EMP006', from: formatDateISO(today), to: formatDateISO(new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000)), days: 3, type: 'Sick Leave', reason: 'Fever and rest', status: 'Approved' },
     { id: 'OVE-001', recordType: 'overtime', emp: 'Karan Mehta', empId: 'EMP005', date: formatDateISO(yesterday), hours: '2h 00m', reason: 'Stock counting', status: 'Approved' },
+  ]);
+
+  // ──────────────────────────────────────────────────────────────
+  // RBAC - Seed Roles, Permissions, and RolePermissions
+  // ──────────────────────────────────────────────────────────────
+  console.log('[Seed] Seeding RBAC data...');
+
+  // Clear existing RBAC data
+  await Promise.all([
+    RolePermission.deleteMany({}),
+    Permission.deleteMany({}),
+    Role.deleteMany({}),
+  ]);
+
+  // Create Roles
+  const roles = await Role.insertMany([
+    { id: 'SUPER_ADMIN', name: 'Super Admin', description: 'Full system access', level: 1, isSystem: true },
+    { id: 'ADMIN', name: 'Admin', description: 'Daily operations management', level: 2, isSystem: true },
+    { id: 'SALES_MANAGER', name: 'Sales Manager', description: 'Manage sales team and approvals', level: 3, isSystem: true },
+    { id: 'SALES_EXECUTIVE', name: 'Sales Executive', description: 'Create quotations, orders, invoices', level: 4, isSystem: true },
+    { id: 'PURCHASE_MANAGER', name: 'Purchase Manager', description: 'Purchase approvals and supplier management', level: 3, isSystem: true },
+    { id: 'PURCHASE_EXECUTIVE', name: 'Purchase Executive', description: 'Create purchase requests and POs', level: 4, isSystem: true },
+    { id: 'INVENTORY_MANAGER', name: 'Inventory Manager', description: 'Complete inventory and warehouse control', level: 3, isSystem: true },
+    { id: 'WAREHOUSE_STAFF', name: 'Warehouse Staff', description: 'Stock in/out, picking, packing', level: 4, isSystem: true },
+    { id: 'HR_MANAGER', name: 'HR Manager', description: 'Employees, attendance, payroll', level: 3, isSystem: true },
+    { id: 'ACCOUNTANT', name: 'Accountant', description: 'Payments, expenses, accounting', level: 3, isSystem: true },
+    { id: 'SERVICE_MANAGER', name: 'Service Manager', description: 'Repair & warranty management', level: 3, isSystem: true },
+    { id: 'QUALITY_INSPECTOR', name: 'Quality Inspector', description: 'Quality checks, certificates', level: 4, isSystem: true },
+    { id: 'CEO_DIRECTOR', name: 'CEO/Director', description: 'View reports and dashboards only', level: 2, isSystem: true },
+  ]);
+
+  // Create Permissions
+  const permissions = await Permission.insertMany([
+    // Dashboard
+    { id: 'DASHBOARD_VIEW', name: 'Dashboard View', module: 'Dashboard', description: 'View dashboard', actions: ['read'] },
+    // Employees
+    { id: 'EMPLOYEES_CREATE', name: 'Employees Create', module: 'Employees', description: 'Create employees', actions: ['create'] },
+    { id: 'EMPLOYEES_READ', name: 'Employees Read', module: 'Employees', description: 'View employees', actions: ['read'] },
+    { id: 'EMPLOYEES_UPDATE', name: 'Employees Update', module: 'Employees', description: 'Update employees', actions: ['update'] },
+    { id: 'EMPLOYEES_DELETE', name: 'Employees Delete', module: 'Employees', description: 'Delete employees', actions: ['delete'] },
+    { id: 'EMPLOYEES_EXPORT', name: 'Employees Export', module: 'Employees', description: 'Export employees', actions: ['export'] },
+    // Customers
+    { id: 'CUSTOMERS_CREATE', name: 'Customers Create', module: 'Customers', description: 'Create customers', actions: ['create'] },
+    { id: 'CUSTOMERS_READ', name: 'Customers Read', module: 'Customers', description: 'View customers', actions: ['read'] },
+    { id: 'CUSTOMERS_UPDATE', name: 'Customers Update', module: 'Customers', description: 'Update customers', actions: ['update'] },
+    { id: 'CUSTOMERS_DELETE', name: 'Customers Delete', module: 'Customers', description: 'Delete customers', actions: ['delete'] },
+    { id: 'CUSTOMERS_EXPORT', name: 'Customers Export', module: 'Customers', description: 'Export customers', actions: ['export'] },
+    // Suppliers
+    { id: 'SUPPLIERS_CREATE', name: 'Suppliers Create', module: 'Suppliers', description: 'Create suppliers', actions: ['create'] },
+    { id: 'SUPPLIERS_READ', name: 'Suppliers Read', module: 'Suppliers', description: 'View suppliers', actions: ['read'] },
+    { id: 'SUPPLIERS_UPDATE', name: 'Suppliers Update', module: 'Suppliers', description: 'Update suppliers', actions: ['update'] },
+    { id: 'SUPPLIERS_DELETE', name: 'Suppliers Delete', module: 'Suppliers', description: 'Delete suppliers', actions: ['delete'] },
+    { id: 'SUPPLIERS_EXPORT', name: 'Suppliers Export', module: 'Suppliers', description: 'Export suppliers', actions: ['export'] },
+    // Spare Parts
+    { id: 'SPARE_PARTS_CREATE', name: 'Spare Parts Create', module: 'Spare Parts', description: 'Create spare parts', actions: ['create'] },
+    { id: 'SPARE_PARTS_READ', name: 'Spare Parts Read', module: 'Spare Parts', description: 'View spare parts', actions: ['read'] },
+    { id: 'SPARE_PARTS_UPDATE', name: 'Spare Parts Update', module: 'Spare Parts', description: 'Update spare parts', actions: ['update'] },
+    { id: 'SPARE_PARTS_DELETE', name: 'Spare Parts Delete', module: 'Spare Parts', description: 'Delete spare parts', actions: ['delete'] },
+    { id: 'SPARE_PARTS_EXPORT', name: 'Spare Parts Export', module: 'Spare Parts', description: 'Export spare parts', actions: ['export'] },
+    // Inventory
+    { id: 'INVENTORY_CREATE', name: 'Inventory Create', module: 'Inventory', description: 'Create inventory items', actions: ['create'] },
+    { id: 'INVENTORY_READ', name: 'Inventory Read', module: 'Inventory', description: 'View inventory', actions: ['read'] },
+    { id: 'INVENTORY_UPDATE', name: 'Inventory Update', module: 'Inventory', description: 'Update inventory', actions: ['update'] },
+    { id: 'INVENTORY_DELETE', name: 'Inventory Delete', module: 'Inventory', description: 'Delete inventory', actions: ['delete'] },
+    { id: 'INVENTORY_APPROVE', name: 'Inventory Approve', module: 'Inventory', description: 'Approve inventory adjustments', actions: ['approve'] },
+    { id: 'INVENTORY_EXPORT', name: 'Inventory Export', module: 'Inventory', description: 'Export inventory', actions: ['export'] },
+    // Sales
+    { id: 'SALES_CREATE', name: 'Sales Create', module: 'Sales', description: 'Create sales records', actions: ['create'] },
+    { id: 'SALES_READ', name: 'Sales Read', module: 'Sales', description: 'View sales', actions: ['read'] },
+    { id: 'SALES_UPDATE', name: 'Sales Update', module: 'Sales', description: 'Update sales', actions: ['update'] },
+    { id: 'SALES_DELETE', name: 'Sales Delete', module: 'Sales', description: 'Delete sales', actions: ['delete'] },
+    { id: 'SALES_APPROVE', name: 'Sales Approve', module: 'Sales', description: 'Approve sales', actions: ['approve'] },
+    { id: 'SALES_EXPORT', name: 'Sales Export', module: 'Sales', description: 'Export sales', actions: ['export'] },
+    // Purchase
+    { id: 'PURCHASE_CREATE', name: 'Purchase Create', module: 'Purchase', description: 'Create purchase records', actions: ['create'] },
+    { id: 'PURCHASE_READ', name: 'Purchase Read', module: 'Purchase', description: 'View purchase', actions: ['read'] },
+    { id: 'PURCHASE_UPDATE', name: 'Purchase Update', module: 'Purchase', description: 'Update purchase', actions: ['update'] },
+    { id: 'PURCHASE_DELETE', name: 'Purchase Delete', module: 'Purchase', description: 'Delete purchase', actions: ['delete'] },
+    { id: 'PURCHASE_APPROVE', name: 'Purchase Approve', module: 'Purchase', description: 'Approve purchase', actions: ['approve'] },
+    { id: 'PURCHASE_EXPORT', name: 'Purchase Export', module: 'Purchase', description: 'Export purchase', actions: ['export'] },
+    // Attendance
+    { id: 'ATTENDANCE_CREATE', name: 'Attendance Create', module: 'Attendance', description: 'Create attendance records', actions: ['create'] },
+    { id: 'ATTENDANCE_READ', name: 'Attendance Read', module: 'Attendance', description: 'View attendance', actions: ['read'] },
+    { id: 'ATTENDANCE_UPDATE', name: 'Attendance Update', module: 'Attendance', description: 'Update attendance', actions: ['update'] },
+    { id: 'ATTENDANCE_DELETE', name: 'Attendance Delete', module: 'Attendance', description: 'Delete attendance', actions: ['delete'] },
+    { id: 'ATTENDANCE_EXPORT', name: 'Attendance Export', module: 'Attendance', description: 'Export attendance', actions: ['export'] },
+    // Payroll
+    { id: 'PAYROLL_CREATE', name: 'Payroll Create', module: 'Payroll', description: 'Create payroll records', actions: ['create'] },
+    { id: 'PAYROLL_READ', name: 'Payroll Read', module: 'Payroll', description: 'View payroll', actions: ['read'] },
+    { id: 'PAYROLL_UPDATE', name: 'Payroll Update', module: 'Payroll', description: 'Update payroll', actions: ['update'] },
+    { id: 'PAYROLL_DELETE', name: 'Payroll Delete', module: 'Payroll', description: 'Delete payroll', actions: ['delete'] },
+    { id: 'PAYROLL_EXPORT', name: 'Payroll Export', module: 'Payroll', description: 'Export payroll', actions: ['export'] },
+    // Reports
+    { id: 'REPORTS_READ', name: 'Reports Read', module: 'Reports', description: 'View reports', actions: ['read'] },
+    { id: 'REPORTS_EXPORT', name: 'Reports Export', module: 'Reports', description: 'Export reports', actions: ['export'] },
+    // Settings
+    { id: 'SETTINGS_READ', name: 'Settings Read', module: 'Settings', description: 'View settings', actions: ['read'] },
+    { id: 'SETTINGS_UPDATE', name: 'Settings Update', module: 'Settings', description: 'Update settings', actions: ['update'] },
+    // Role Management
+    { id: 'ROLES_MANAGE', name: 'Roles Manage', module: 'Roles', description: 'Manage roles and permissions', actions: ['create', 'read', 'update', 'delete'] },
+  ]);
+
+  // Helper to get permission ID by name
+  const getPermId = (name) => permissions.find(p => p.name === name)?._id;
+
+  // Create Role-Permissions mapping
+  const rolePerms = [];
+
+  // Super Admin - Full access to everything
+  for (const perm of permissions) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'Super Admin')._id,
+      permission: perm._id,
+      canCreate: perm.actions.includes('create'),
+      canRead: perm.actions.includes('read'),
+      canUpdate: perm.actions.includes('update'),
+      canDelete: perm.actions.includes('delete'),
+      canApprove: perm.actions.includes('approve'),
+      canExport: perm.actions.includes('export'),
+    });
+  }
+
+  // Admin - Full access except role management
+  const adminPerms = permissions.filter(p => p.module !== 'Roles');
+  for (const perm of adminPerms) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'Admin')._id,
+      permission: perm._id,
+      canCreate: perm.actions.includes('create'),
+      canRead: perm.actions.includes('read'),
+      canUpdate: perm.actions.includes('update'),
+      canDelete: perm.actions.includes('delete'),
+      canApprove: perm.actions.includes('approve'),
+      canExport: perm.actions.includes('export'),
+    });
+  }
+
+  // Sales Manager
+  const salesManagerPerms = permissions.filter(p => 
+    ['Dashboard', 'Customers', 'Sales', 'Reports'].includes(p.module)
+  );
+  for (const perm of salesManagerPerms) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'Sales Manager')._id,
+      permission: perm._id,
+      canCreate: ['Dashboard', 'Customers', 'Sales'].includes(perm.module) && perm.actions.includes('create'),
+      canRead: perm.actions.includes('read'),
+      canUpdate: ['Dashboard', 'Customers', 'Sales'].includes(perm.module) && perm.actions.includes('update'),
+      canDelete: false,
+      canApprove: perm.module === 'Sales' && perm.actions.includes('approve'),
+      canExport: perm.actions.includes('export'),
+    });
+  }
+
+  // Sales Executive
+  const salesExecPerms = permissions.filter(p => 
+    ['Dashboard', 'Customers', 'Sales'].includes(p.module)
+  );
+  for (const perm of salesExecPerms) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'Sales Executive')._id,
+      permission: perm._id,
+      canCreate: perm.actions.includes('create'),
+      canRead: perm.actions.includes('read'),
+      canUpdate: false,
+      canDelete: false,
+      canApprove: false,
+      canExport: false,
+    });
+  }
+
+  // Purchase Manager
+  const purchaseManagerPerms = permissions.filter(p => 
+    ['Dashboard', 'Suppliers', 'Purchase', 'Reports'].includes(p.module)
+  );
+  for (const perm of purchaseManagerPerms) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'Purchase Manager')._id,
+      permission: perm._id,
+      canCreate: ['Dashboard', 'Suppliers', 'Purchase'].includes(perm.module) && perm.actions.includes('create'),
+      canRead: perm.actions.includes('read'),
+      canUpdate: ['Dashboard', 'Suppliers', 'Purchase'].includes(perm.module) && perm.actions.includes('update'),
+      canDelete: false,
+      canApprove: perm.module === 'Purchase' && perm.actions.includes('approve'),
+      canExport: perm.actions.includes('export'),
+    });
+  }
+
+  // Purchase Executive
+  const purchaseExecPerms = permissions.filter(p => 
+    ['Dashboard', 'Suppliers', 'Purchase'].includes(p.module)
+  );
+  for (const perm of purchaseExecPerms) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'Purchase Executive')._id,
+      permission: perm._id,
+      canCreate: perm.actions.includes('create'),
+      canRead: perm.actions.includes('read'),
+      canUpdate: false,
+      canDelete: false,
+      canApprove: false,
+      canExport: false,
+    });
+  }
+
+  // Inventory Manager
+  const inventoryManagerPerms = permissions.filter(p => 
+    ['Dashboard', 'Spare Parts', 'Inventory', 'Reports'].includes(p.module)
+  );
+  for (const perm of inventoryManagerPerms) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'Inventory Manager')._id,
+      permission: perm._id,
+      canCreate: ['Dashboard', 'Spare Parts', 'Inventory'].includes(perm.module) && perm.actions.includes('create'),
+      canRead: perm.actions.includes('read'),
+      canUpdate: ['Dashboard', 'Spare Parts', 'Inventory'].includes(perm.module) && perm.actions.includes('update'),
+      canDelete: false,
+      canApprove: perm.module === 'Inventory' && perm.actions.includes('approve'),
+      canExport: perm.actions.includes('export'),
+    });
+  }
+
+  // Warehouse Staff
+  const warehouseStaffPerms = permissions.filter(p => 
+    ['Dashboard', 'Inventory'].includes(p.module)
+  );
+  for (const perm of warehouseStaffPerms) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'Warehouse Staff')._id,
+      permission: perm._id,
+      canCreate: false,
+      canRead: perm.actions.includes('read'),
+      canUpdate: false,
+      canDelete: false,
+      canApprove: false,
+      canExport: false,
+    });
+  }
+
+  // HR Manager
+  const hrManagerPerms = permissions.filter(p => 
+    ['Dashboard', 'Employees', 'Attendance', 'Payroll', 'Reports'].includes(p.module)
+  );
+  for (const perm of hrManagerPerms) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'HR Manager')._id,
+      permission: perm._id,
+      canCreate: ['Dashboard', 'Employees', 'Attendance', 'Payroll'].includes(perm.module) && perm.actions.includes('create'),
+      canRead: perm.actions.includes('read'),
+      canUpdate: ['Dashboard', 'Employees', 'Attendance', 'Payroll'].includes(perm.module) && perm.actions.includes('update'),
+      canDelete: false,
+      canApprove: false,
+      canExport: perm.actions.includes('export'),
+    });
+  }
+
+  // Accountant
+  const accountantPerms = permissions.filter(p => 
+    ['Dashboard', 'Reports'].includes(p.module)
+  );
+  for (const perm of accountantPerms) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'Accountant')._id,
+      permission: perm._id,
+      canCreate: false,
+      canRead: perm.actions.includes('read'),
+      canUpdate: false,
+      canDelete: false,
+      canApprove: false,
+      canExport: perm.actions.includes('export'),
+    });
+  }
+
+  // Service Manager
+  const serviceManagerPerms = permissions.filter(p => 
+    ['Dashboard', 'Reports'].includes(p.module)
+  );
+  for (const perm of serviceManagerPerms) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'Service Manager')._id,
+      permission: perm._id,
+      canCreate: false,
+      canRead: perm.actions.includes('read'),
+      canUpdate: false,
+      canDelete: false,
+      canApprove: false,
+      canExport: perm.actions.includes('export'),
+    });
+  }
+
+  // Quality Inspector
+  const qualityInspectorPerms = permissions.filter(p => 
+    ['Dashboard', 'Reports'].includes(p.module)
+  );
+  for (const perm of qualityInspectorPerms) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'Quality Inspector')._id,
+      permission: perm._id,
+      canCreate: false,
+      canRead: perm.actions.includes('read'),
+      canUpdate: false,
+      canDelete: false,
+      canApprove: false,
+      canExport: false,
+    });
+  }
+
+  // CEO/Director - Read only
+  const ceoPerms = permissions.filter(p => 
+    ['Dashboard', 'Reports'].includes(p.module)
+  );
+  for (const perm of ceoPerms) {
+    rolePerms.push({
+      role: roles.find(r => r.name === 'CEO/Director')._id,
+      permission: perm._id,
+      canCreate: false,
+      canRead: perm.actions.includes('read'),
+      canUpdate: false,
+      canDelete: false,
+      canApprove: false,
+      canExport: perm.actions.includes('export'),
+    });
+  }
+
+  await RolePermission.insertMany(rolePerms);
+
+  console.log('[Seed] RBAC data seeded successfully.');
+
+  // Create users with role references
+  const adminRole = roles.find(r => r.name === 'Admin');
+  const managerRole = roles.find(r => r.name === 'Sales Manager');
+  const hrRole = roles.find(r => r.name === 'HR Manager');
+  await User.insertMany([
+    { id: 'USR001', employeeId: employees[0]._id, role: 'Admin', roleId: adminRole._id, password: hashed, confirmPassword: hashed, isVerified: true, status: 'Active' },
+    { id: 'USR002', employeeId: employees[2]._id, role: 'Sales Manager', roleId: managerRole._id, password: hashed, confirmPassword: hashed, isVerified: true, status: 'Active' },
+    { id: 'USR003', employeeId: employees[4]._id, role: 'HR Manager', roleId: hrRole._id, password: hashed, confirmPassword: hashed, isVerified: true, status: 'Active' },
   ]);
 
   console.log('[Seed] Initial data populated successfully.');

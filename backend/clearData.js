@@ -10,6 +10,9 @@ const Income = require('./model/Income.model');
 const Supplier = require('./model/Supplier.model');
 const ErpRecord = require('./model/ErpRecord.model');
 const Attendance = require('./model/Attendance.model');
+const Role = require('./model/Role.model');
+const Permission = require('./model/Permission.model');
+const RolePermission = require('./model/RolePermission.model');
 require('dotenv').config();
 
 async function clearAllData() {
@@ -33,6 +36,9 @@ async function clearAllData() {
       Supplier.deleteMany({}),
       ErpRecord.deleteMany({}),
       Attendance.deleteMany({}),
+      RolePermission.deleteMany({}),
+      Permission.deleteMany({}),
+      Role.deleteMany({}),
     ]);
     console.log('All data cleared!');
 

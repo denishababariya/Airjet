@@ -3,6 +3,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './d_style.css';
 import Layout from './components/Layout';
 import { auth } from './utils/api';
+import { SearchProvider } from './context/SearchContext';
+import { PermissionProvider } from './context/PermissionContext';
 
 // Pages
 import Dashboard      from './pages/Dashboard';
@@ -24,6 +26,8 @@ import Login          from './pages/Login';
 import Register       from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ChangePassword from './pages/ChangePassword';
+import SearchResults  from './pages/SearchResults';
+import RoleManagement from './pages/RoleManagement';
 
 /**
  * Map every sidebar child label → { component, defaultTab }
@@ -38,6 +42,7 @@ const PAGE_MAP = {
   'Register':          { component: Register },
   'ForgotPassword':    { component: ForgotPassword },
   'ChangePassword':    { component: ChangePassword },
+  'Search':            { component: SearchResults },
 
   // ── Employees ──────────────────────────────────────────────
   employee:            { component: EmployeeMaster },
@@ -105,6 +110,9 @@ const PAGE_MAP = {
   'Purchase Report':   { component: Reports, defaultTab: 'purchase' },
   'Inventory Report':  { component: Reports, defaultTab: 'inventory' },
   'Payroll Report':    { component: Reports, defaultTab: 'payroll' },
+
+  // ── Role Management ────────────────────────────────────────
+  'Role Management':   { component: RoleManagement },
 };
 
 // Check if user has access to admin panel
@@ -178,16 +186,20 @@ function App() {
   }
 
   return (
-    <Layout 
-      activeMenu={activeMenu} 
-      setActiveMenu={setActiveMenu}
-      currentUser={currentUser}
-      onLogout={handleLogout}
-      hasAdminAccess={hasAdminAccess}
-    >
-      {/* key forces remount when tab changes so defaultTab prop is fresh */}
-      <PageComponent key={activeMenu} defaultTab={defaultTab} setActiveMenu={setActiveMenu} currentUser={currentUser} />
-    </Layout>
+    <SearchProvider>
+      <PermissionProvider currentUser={currentUser}>
+        <Layout
+          activeMenu={activeMenu}
+          setActiveMenu={setActiveMenu}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          hasAdminAccess={hasAdminAccess}
+        >
+          {/* key forces remount when tab changes so defaultTab prop is fresh */}
+          <PageComponent key={activeMenu} defaultTab={defaultTab} setActiveMenu={setActiveMenu} currentUser={currentUser} />
+        </Layout>
+      </PermissionProvider>
+    </SearchProvider>
   );
 }
 

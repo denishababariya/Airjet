@@ -4,6 +4,7 @@ const SpareParts = require('../model/SpareParts.model');
 const Income = require('../model/Income.model');
 const ErpRecord = require('../model/ErpRecord.model');
 const Customer = require('../model/Customer.model');
+const Supplier = require('../model/Supplier.model');
 const { getAllModuleData } = require('../services/universalDataSync.service');
 
 const formatCurrency = (n) => `₹${(n || 0).toLocaleString('en-IN')}`;
@@ -143,8 +144,137 @@ const getAllModuleDataController = async (req, res) => {
   }
 };
 
+const globalSearch = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query || query.trim() === '') {
+      return res.status(200).json({ results: [], total: 0 });
+    }
+
+    const searchTerm = query.trim().toLowerCase();
+    const results = [];
+
+    // Search Employees
+    const employees = await Employee.find({
+      $or: [
+        { name: { $regex: searchTerm, $options: 'i' } },
+        { email: { $regex: searchTerm, $options: 'i' } },
+      ]
+    }).limit(10);
+    employees.forEach(emp => {
+      results.push({
+        type: 'Employee',
+        id: emp.id,
+        name: emp.name,
+        description: `${emp.department?.name || 'N/A'} - ${emp.designation?.name || 'N/A'}`,
+        link: 'employee',
+      });
+    });
+
+    // Search Customers
+    const customers = await Customer.find({
+      $or: [
+        { name: { $regex: searchTerm, $options: 'i' } },
+        { email: { $regex: searchTerm, $options: 'i' } },
+        { phone: { $regex: searchTerm, $options: 'i' } },
+        { companyName: { $regex: searchTerm, $options: 'i' } },
+      ]
+    }).limit(10);
+    customers.forEach(cust => {
+      results.push({
+        type: 'Customer',
+        id: cust.id,
+        name: cust.name,
+        description: cust.companyName || cust.city || 'Customer',
+        link: 'sales',
+      });
+    });
+
+    // Search Suppliers
+    const suppliers = await Supplier.find({
+      $or: [
+        { name: { $regex: searchTerm, $options: 'i' } },
+        { contact: { $regex: searchTerm, $options: 'i' } },
+        { phone: { $regex: searchTerm, $options: 'i' } },
+        { city: { $regex: searchTerm, $options: 'i' } },
+      ]
+    }).limit(10);
+    suppliers.forEach(sup => {
+      results.push({
+        type: 'Supplier',
+        id: sup.id,
+        name: sup.name,
+        description: sup.city || 'Supplier',
+        link: 'purchase',
+      });
+    });
+
+    // Search Stock
+    const stockItems = await Stock.find({
+      $or: [
+        { itemName: { $regex: searchTerm, $options: 'i' } },
+        { itemCode: { $regex: searchTerm, $options: 'i' } },
+        { category: { $regex: searchTerm, $options: 'i' } },
+      ]
+    }).limit(10);
+    stockItems.forEach(item => {
+      results.push({
+        type: 'Stock',
+        id: item.id,
+        name: item.itemName,
+        description: `${item.category} - Qty: ${item.quantity}`,
+        link: 'warehouse',
+      });
+    });
+
+    // Search Spare Parts
+    const spareParts = await SpareParts.find({
+      $or: [
+        { partName: { $regex: searchTerm, $options: 'i' } },
+        { partNumber: { $regex: searchTerm, $options: 'i' } },
+        { category: { $regex: searchTerm, $options: 'i' } },
+        { brand: { $regex: searchTerm, $options: 'i' } },
+      ]
+    }).limit(10);
+    spareParts.forEach(part => {
+      results.push({
+        type: 'Spare Part',
+        id: part.id,
+        name: part.partName,
+        description: `${part.partNumber} - ${part.brand}`,
+        link: 'spareparts',
+      });
+    });
+
+    // Search ERP Records
+    const erpRecords = await ErpRecord.find({
+      $or: [
+        { customer: { $regex: searchTerm, $options: 'i' } },
+        { supplier: { $regex: searchTerm, $options: 'i' } },
+        { emp: { $regex: searchTerm, $options: 'i' } },
+        { part: { $regex: searchTerm, $options: 'i' } },
+        { id: { $regex: searchTerm, $options: 'i' } },
+      ]
+    }).limit(15);
+    erpRecords.forEach(record => {
+      results.push({
+        type: record.module.toUpperCase(),
+        id: record.id,
+        name: record.customer || record.supplier || record.emp || record.part || record.id,
+        description: `${record.recordType} - ${record.status || 'Active'}`,
+        link: record.module,
+      });
+    });
+
+    res.status(200).json({ results, total: results.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getRecentActivity,
   getAllModuleData: getAllModuleDataController,
+  globalSearch,
 };

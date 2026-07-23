@@ -21,7 +21,7 @@ const Department = () => {
       const { data: list } = await departmentsApi.getAll();
       setData(list);
     } catch (err) {
-      setError(err.displayMessage || 'Failed to load departments');
+      setError(err.displayMessage || 'Failed to load departme');
     } finally {
       setLoading(false);
     }

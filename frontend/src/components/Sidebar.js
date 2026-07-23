@@ -3,13 +3,15 @@ import {
   MdDashboard, MdPeople, MdAccessTime, MdPayments,
   MdShoppingCart, MdPointOfSale, MdInventory2, MdWarehouse,
   MdBuildCircle, MdAccountBalance, MdBarChart, MdChevronRight,
+  MdSecurity,
 } from 'react-icons/md';
+import { usePermissions } from '../context/PermissionContext';
 
 const menuConfig = [
   {
     section: 'Main',
     items: [
-      { label: 'Dashboard', icon: <MdDashboard />, id: 'dashboard', allowedRoles: ['Admin', 'Manager', 'Head', 'HR', 'User'] },
+      { label: 'Dashboard', icon: <MdDashboard />, id: 'dashboard', module: 'Dashboard' },
     ],
   },
   {
@@ -18,17 +20,17 @@ const menuConfig = [
       {
         label: 'Employees', icon: <MdPeople />, id: 'employee',
         children: ['Employee Master', 'Department', 'Designation'],
-        allowedRoles: ['Admin', 'Manager', 'Head', 'HR'],
+        module: 'Employees',
       },
       {
         label: 'Attendance', icon: <MdAccessTime />, id: 'attendance',
         children: ['Check In/Out', 'Leave Tracking', 'Overtime Calculation'],
-        allowedRoles: ['Admin', 'Manager', 'Head', 'HR', 'User'],
+        module: 'Attendance',
       },
       {
         label: 'Payroll', icon: <MdPayments />, id: 'payroll',
         children: ['Salary Generation', 'Allowances', 'Deductions', 'Payslip Download'],
-        allowedRoles: ['Admin', 'Manager', 'HR'],
+        module: 'Payroll',
       },
     ],
   },
@@ -38,12 +40,12 @@ const menuConfig = [
       {
         label: 'Purchase', icon: <MdShoppingCart />, id: 'purchase',
         children: ['Suppliers', 'Purchase Orders', 'GRN', 'Returns'],
-        allowedRoles: ['Admin', 'Manager', 'Head'],
+        module: 'Purchase',
       },
       {
         label: 'Sales', icon: <MdPointOfSale />, id: 'sales',
         children: ['Customers', 'Quotations', 'Sales Orders', 'Invoices'],
-        allowedRoles: ['Admin', 'Manager', 'Head'],
+        module: 'Sales',
       },
     ],
   },
@@ -53,12 +55,12 @@ const menuConfig = [
       {
         label: 'Spare Parts', icon: <MdInventory2 />, id: 'spareparts',
         children: ['Part Number', 'Category', 'Brand', 'Compatible Models'],
-        allowedRoles: ['Admin', 'Manager', 'Head'],
+        module: 'Spare Parts',
       },
       {
         label: 'Warehouse', icon: <MdWarehouse />, id: 'warehouse',
         children: ['Warehouses', 'Stock Transfers', 'Stock Audits'],
-        allowedRoles: ['Admin', 'Manager', 'Head'],
+        module: 'Inventory',
       },
     ],
   },
@@ -68,17 +70,26 @@ const menuConfig = [
       {
         label: 'Service', icon: <MdBuildCircle />, id: 'service',
         children: ['Service Tickets', 'Engineer Assignment', 'Service Reports'],
-        allowedRoles: ['Admin', 'Manager', 'Head', 'User'],
+        module: 'Service',
       },
       {
         label: 'Accounts & GST', icon: <MdAccountBalance />, id: 'accounts',
         children: ['Receivables', 'Payables', 'Ledger', 'GST Reports', 'Profit & Loss'],
-        allowedRoles: ['Admin', 'Manager'],
+        module: 'Accounts',
       },
       {
         label: 'Reports', icon: <MdBarChart />, id: 'reports',
         children: ['Sales Report', 'Purchase Report', 'Inventory Report', 'Payroll Report'],
-        allowedRoles: ['Admin', 'Manager', 'Head', 'HR'],
+        module: 'Reports',
+      },
+    ],
+  },
+  {
+    section: 'Administration',
+    items: [
+      {
+        label: 'Role Management', icon: <MdSecurity />, id: 'Role Management',
+        module: 'Roles',
       },
     ],
   },
@@ -87,6 +98,7 @@ const menuConfig = [
 const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser, hasAdminAccess }) => {
   // Only ONE menu open at a time — store the single open id (or null)
   const [openMenu, setOpenMenu] = useState(null);
+  const { hasModuleAccess } = usePermissions();
 
   const toggleMenu = (id) => {
     // If already open → close it; else open this one and close previous
@@ -124,8 +136,8 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
       {/* Navigation */}
       <nav className="d_sidebar_nav">
         {menuConfig.map((section) => {
-          // Check if section has any visible items
-          const hasVisibleItems = section.items.some(item => item.allowedRoles.includes(userRole));
+          // Check if section has any visible items based on permissions
+          const hasVisibleItems = section.items.some(item => hasModuleAccess(item.module));
           if (!hasVisibleItems) return null;
 
           return (
@@ -133,7 +145,7 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
               <div className="d_section_title">{section.section}</div>
 
               {section.items.map((item) => {
-                if (!item.allowedRoles.includes(userRole)) return null;
+                if (!hasModuleAccess(item.module)) return null;
 
                 const hasChildren = item.children && item.children.length > 0;
                 const isOpen      = openMenu === item.id;   // ← single open check

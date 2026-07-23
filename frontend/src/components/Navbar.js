@@ -3,10 +3,15 @@ import {
   MdNotifications, MdSearch, MdFullscreen, MdSettings,
   MdPerson, MdLogout, MdKeyboardArrowDown,
 } from 'react-icons/md';
+import { useSearch } from '../context/SearchContext';
 
 const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu, setActiveMenu, currentUser, onLogout }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef(null);
+  const { setSearchQuery: setGlobalSearchQuery } = useSearch();
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -16,8 +21,30 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
   }, []);
+
+  // Focus search input when opened
+  useEffect(() => {
+    if (searchOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [searchOpen]);
+
+  // Close search on Escape key
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && searchOpen) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [searchOpen]);
 
   const isDesktop = window.innerWidth >= 992;
 
@@ -61,9 +88,36 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
       {/* Right actions */}
       <div className="d_navbar_actions">
         {/* Search */}
-        <button className="d_nav_action_btn" aria-label="Search">
-          <MdSearch />
-        </button>
+        {searchOpen ? (
+          <div className="d_search_box">
+            <MdSearch className="d_search_icon" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              className="d_search_input"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchQuery.trim()) {
+                  setGlobalSearchQuery(searchQuery.trim());
+                  setActiveMenu('Search');
+                  setSearchOpen(false);
+                }
+              }}
+              onBlur={() => {
+                // Delay to allow click events to fire
+                setTimeout(() => {
+                  setSearchOpen(false);
+                }, 150);
+              }}
+            />
+          </div>
+        ) : (
+          <button className="d_nav_action_btn" aria-label="Search" onClick={() => setSearchOpen(true)}>
+            <MdSearch />
+          </button>
+        )}
 
         {/* Fullscreen */}
         <button

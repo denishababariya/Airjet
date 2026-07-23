@@ -12,7 +12,7 @@ const departmentSchema = new mongoose.Schema({
     },
     head: {
         type: mongoose.Types.ObjectId,
-        ref: "User"
+        ref: "user"
     },
     isActive: {
         type: Boolean,
