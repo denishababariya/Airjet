@@ -217,8 +217,10 @@ const getMyPermissions = async (req, res) => {
         const user = await require('../model/User.model').findById(req.user._id).populate('roleId');
         if (!user) return res.status(404).json({ error: 'User not found' });
         
-        let roleId = user.roleId;
-        if (!roleId && user.role) {
+        let roleId = null;
+        if (user.roleId) {
+            roleId = typeof user.roleId === 'object' && user.roleId._id ? user.roleId._id : user.roleId;
+        } else if (user.role) {
             const role = await Role.findOne({ name: user.role });
             roleId = role ? role._id : null;
         }

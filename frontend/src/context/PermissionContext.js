@@ -11,6 +11,23 @@ export const usePermissions = () => {
   return context;
 };
 
+const ROLE_MODULES = {
+  'Super Admin': ['Dashboard','Employees','Attendance','Payroll','Purchase','Sales','Spare Parts','Inventory','Warehouse','Service','Accounts','Reports','Roles','Settings'],
+  'Admin': ['Dashboard','Employees','Attendance','Payroll','Purchase','Sales','Spare Parts','Inventory','Warehouse','Service','Accounts','Reports','Roles','Settings'],
+  'Sales Manager': ['Dashboard','Sales','Customers','Reports','Spare Parts','Inventory'],
+  'Sales Executive': ['Dashboard','Sales','Customers'],
+  'Purchase Manager': ['Dashboard','Purchase','Suppliers','Reports','Spare Parts','Inventory'],
+  'Purchase Executive': ['Dashboard','Purchase','Suppliers'],
+  'Inventory Manager': ['Dashboard','Spare Parts','Inventory','Warehouse','Reports'],
+  'Warehouse Staff': ['Dashboard','Spare Parts','Inventory'],
+  'HR Manager': ['Dashboard','Employees','Attendance','Payroll','Reports'],
+  'Accountant': ['Dashboard','Accounts','Reports','Purchase','Sales'],
+  'Service Manager': ['Dashboard','Service','Reports'],
+  'Quality Inspector': ['Dashboard','Reports'],
+  'CEO/Director': ['Dashboard','Reports'],
+  'User': ['Dashboard'],
+};
+
 export const PermissionProvider = ({ children, currentUser }) => {
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,15 +56,17 @@ export const PermissionProvider = ({ children, currentUser }) => {
   const hasPermission = (module, action = 'read') => {
     if (!currentUser) return false;
     
-    // Super Admin has all permissions
     if (currentUser.role === 'Admin' || currentUser.role === 'Super Admin') {
       return true;
     }
 
     const modulePerms = permissions.filter(p => p.permission?.module === module);
-    if (modulePerms.length === 0) return false;
+    if (modulePerms.length > 0) {
+      return modulePerms.some(p => p[`can${action.charAt(0).toUpperCase() + action.slice(1)}`]);
+    }
 
-    return modulePerms.some(p => p[`can${action.charAt(0).toUpperCase() + action.slice(1)}`]);
+    const allowedModules = ROLE_MODULES[currentUser.role] || [];
+    return allowedModules.includes(module);
   };
 
   const hasModuleAccess = (module) => {

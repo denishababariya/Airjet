@@ -85,53 +85,56 @@ async function seedDatabase() {
       id: 'EMP001', name: 'Rajesh Kumar', email: 'rajesh@airjet.in', phoneNo: 9876501001, 
       address: '123, Main Road, Surat', gender: 'Male', salary: 35000, workShift: 'Day', 
       cast: 'General', bod: new Date('1990-05-15'), age: 36, joiningDate: new Date('2020-01-10'),
-      department: depts[0]._id, designation: desigs[0]._id, status: 'Active' 
+      department: depts[0]._id, designation: desigs[0]._id, status: 'Active', qrToken: generateQrToken()
     },
     { 
       id: 'EMP002', name: 'Priya Sharma', email: 'priya@airjet.in', phoneNo: 9876501002, 
       address: '456, Park Street, Ahmedabad', gender: 'Female', salary: 30000, workShift: 'Day', 
       cast: 'OBC', bod: new Date('1995-08-22'), age: 31, joiningDate: new Date('2021-03-15'),
-      department: depts[0]._id, designation: desigs[1]._id, status: 'Active' 
+      department: depts[0]._id, designation: desigs[1]._id, status: 'Active', qrToken: generateQrToken()
     },
     { 
       id: 'EMP003', name: 'Amit Patel', email: 'amit@airjet.in', phoneNo: 9876501003, 
       address: '789, Market Yard, Mumbai', gender: 'Male', salary: 32000, workShift: 'Day', 
       cast: 'SC', bod: new Date('1988-11-30'), age: 38, joiningDate: new Date('2019-07-01'),
-      department: depts[1]._id, designation: desigs[2]._id, status: 'Active' 
+      department: depts[1]._id, designation: desigs[2]._id, status: 'Active', qrToken: generateQrToken()
     },
     { 
       id: 'EMP004', name: 'Sunita Singh', email: 'sunita@airjet.in', phoneNo: 9876501004, 
       address: '101, Green Colony, Vadodara', gender: 'Female', salary: 25000, workShift: 'Day', 
       cast: 'ST', bod: new Date('1997-02-18'), age: 29, joiningDate: new Date('2022-09-05'),
-      department: depts[1]._id, designation: desigs[3]._id, status: 'Active' 
+      department: depts[1]._id, designation: desigs[3]._id, status: 'Active', qrToken: generateQrToken()
     },
     { 
       id: 'EMP005', name: 'Karan Mehta', email: 'karan@airjet.in', phoneNo: 9876501005, 
       address: '202, River View, Rajkot', gender: 'Male', salary: 28000, workShift: 'Rotational', 
       cast: 'General', bod: new Date('1993-04-25'), age: 33, joiningDate: new Date('2020-11-20'),
-      department: depts[3]._id, designation: desigs[7]._id, status: 'Active' 
+      department: depts[3]._id, designation: desigs[7]._id, status: 'Active', qrToken: generateQrToken()
     },
     { 
       id: 'EMP006', name: 'Divya Verma', email: 'divya@airjet.in', phoneNo: 9876501006, 
       address: '303, Skyline, Surat', gender: 'Female', salary: 29000, workShift: 'Day', 
       cast: 'OBC', bod: new Date('1996-09-10'), age: 30, joiningDate: new Date('2021-06-12'),
-      department: depts[4]._id, designation: desigs[9]._id, status: 'Active' 
+      department: depts[4]._id, designation: desigs[9]._id, status: 'Active', qrToken: generateQrToken()
     },
     { 
       id: 'EMP007', name: 'Nikhil Rao', email: 'nikhil@airjet.in', phoneNo: 9876501007, 
       address: '404, Lake Road, Ahmedabad', gender: 'Male', salary: 31000, workShift: 'Day', 
       cast: 'General', bod: new Date('1991-12-05'), age: 35, joiningDate: new Date('2019-02-28'),
-      department: depts[4]._id, designation: desigs[9]._id, status: 'Active' 
+      department: depts[4]._id, designation: desigs[9]._id, status: 'Active', qrToken: generateQrToken()
     },
     { 
       id: 'EMP008', name: 'Meera Joshi', email: 'meera@airjet.in', phoneNo: 9876501008, 
       address: '505, Hill View, Surat', gender: 'Female', salary: 27000, workShift: 'Day', 
       cast: 'SC', bod: new Date('1994-07-07'), age: 32, joiningDate: new Date('2022-01-10'),
-      department: depts[5]._id, designation: desigs[10]._id, status: 'Active' 
+      department: depts[5]._id, designation: desigs[10]._id, status: 'Active', qrToken: generateQrToken()
     },
   ]);
 
   const hashed = await bcrypt.hash('admin123', 10);
+const crypto = require('crypto');
+
+const generateQrToken = () => `AJ_${crypto.randomBytes(20).toString('hex').toUpperCase()}`;
 
   // Departments with employee heads
   const deptsWithHeads = await Promise.all(depts.map(async (dept, index) => {

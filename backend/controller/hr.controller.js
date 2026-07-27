@@ -1,5 +1,6 @@
 const User = require('../model/User.model');
 const Employee = require('../model/Empl.model');
+const Role = require('../model/Role.model');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 
@@ -126,10 +127,12 @@ const createUserWithRole = async (req, res) => {
 
         // Create user
         const userId = 'USR' + Date.now().toString().slice(-6);
+        const roleDoc = await Role.findOne({ name: role || 'User' });
         const user = await User.create({
             id: userId,
             employeeId: employee._id,
             role: role || 'User',
+            roleId: roleDoc ? roleDoc._id : null,
             password: hashedPassword,
             confirmPassword: hashedPassword,
             isVerified: true,
