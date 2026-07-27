@@ -3,9 +3,10 @@ import {
   MdDashboard, MdPeople, MdAccessTime, MdPayments,
   MdShoppingCart, MdPointOfSale, MdInventory2, MdWarehouse,
   MdBuildCircle, MdAccountBalance, MdBarChart, MdChevronRight,
-  MdSecurity,
+  MdSecurity, MdQrCodeScanner,
 } from 'react-icons/md';
 import { usePermissions } from '../context/PermissionContext';
+import { canTakeAttendance } from '../utils/roles';
 
 const menuConfig = [
   {
@@ -91,6 +92,10 @@ const menuConfig = [
         label: 'Role Management', icon: <MdSecurity />, id: 'Role Management',
         module: 'Roles',
       },
+      {
+        label: 'QR Scanner', icon: <MdQrCodeScanner />, id: 'QR Scanner',
+        module: 'Attendance',
+      },
     ],
   },
 ];
@@ -146,6 +151,7 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
 
               {section.items.map((item) => {
                 if (!hasModuleAccess(item.module)) return null;
+                if (item.id === 'QR Scanner' && !canTakeAttendance(userRole)) return null;
 
                 const hasChildren = item.children && item.children.length > 0;
                 const isOpen      = openMenu === item.id;   // ← single open check

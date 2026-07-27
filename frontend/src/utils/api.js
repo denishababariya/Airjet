@@ -129,6 +129,11 @@ export const attendanceApi = {
   remove: (id) => api.delete(`/attendance/${id}`),
   checkIn: () => api.post('/attendance/check-in'),
   checkOut: () => api.post('/attendance/check-out'),
+  scan: (data) => api.post('/attendance/scan', data),
+  getToday: () => api.get('/attendance/today'),
+  getReport: (params = {}) => api.get('/attendance/report', { params }),
+  getEmployee: (id) => api.get(`/attendance/employee/${id}`),
+  manual: (data) => api.put('/attendance/manual', data),
 };
 
 export const stockApi = {

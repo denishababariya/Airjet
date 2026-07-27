@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import { auth } from './utils/api';
 import { SearchProvider } from './context/SearchContext';
 import { PermissionProvider } from './context/PermissionContext';
+import { isAdminRole, isManagerRole, isHeadRole } from './utils/roles';
 
 // Pages
 import Dashboard      from './pages/Dashboard';
@@ -28,6 +29,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ChangePassword from './pages/ChangePassword';
 import SearchResults  from './pages/SearchResults';
 import RoleManagement from './pages/RoleManagement';
+import QrScanner from './pages/QrScanner';
 
 /**
  * Map every sidebar child label → { component, defaultTab }
@@ -113,11 +115,14 @@ const PAGE_MAP = {
 
   // ── Role Management ────────────────────────────────────────
   'Role Management':   { component: RoleManagement },
+
+  // ── QR Scanner ──────────────────────────────────────────────
+  'QR Scanner':        { component: QrScanner },
 };
 
 // Check if user has access to admin panel
 const hasAdminAccess = (role) => {
-  return ['Admin', 'Manager', 'Head', 'HR'].includes(role);
+  return isAdminRole(role) || isManagerRole(role) || isHeadRole(role);
 };
 
 function App() {

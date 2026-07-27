@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  MdNotifications, MdSearch, MdFullscreen, MdSettings,
+  MdSearch, MdFullscreen, MdSettings,
   MdPerson, MdLogout, MdKeyboardArrowDown,
 } from 'react-icons/md';
 import { useSearch } from '../context/SearchContext';
@@ -129,12 +129,6 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
           }}
         >
           <MdFullscreen />
-        </button>
-
-        {/* Notifications */}
-        <button className="d_nav_action_btn" aria-label="Notifications">
-          <MdNotifications />
-          <span className="d_notif_badge">3</span>
         </button>
 
         {/* Profile */}

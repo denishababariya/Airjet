@@ -4258,3 +4258,134 @@ textarea.d_form_control { resize: vertical; min-height: 80px; }
 
 }
 
+
+
+
+/* QR Scanner Styles */
+
+.d_scanner_container {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 16px;
+
+}
+
+.d_qr_scanner_wrapper {
+
+  border-radius: 12px;
+
+  overflow: hidden;
+
+  border: 2px solid var(--d-light-border);
+
+  background: var(--d-bg);
+
+}
+
+.d_qr_scanner_wrapper video {
+
+  width: 100%;
+
+  display: block;
+
+}
+
+.d_manual_entry {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+
+}
+
+.d_scan_result {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 16px;
+
+}
+
+.d_result_header {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 16px;
+
+}
+
+.d_result_avatar {
+
+  width: 56px;
+
+  height: 56px;
+
+  border-radius: 50%;
+
+  background: var(--d-primary);
+
+  color: var(--d-white);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 22px;
+
+  font-weight: 700;
+
+  flex-shrink: 0;
+
+}
+
+.d_result_details {
+
+  display: grid;
+
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+
+  gap: 12px;
+
+}
+
+.d_result_field {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 4px;
+
+}
+
+.d_result_label {
+
+  font-size: 12px;
+
+  color: var(--d-text-muted);
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.5px;
+
+}
+
+.d_result_message {
+
+  padding: 12px 16px;
+
+  border-radius: 8px;
+
+}
+

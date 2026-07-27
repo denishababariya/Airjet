@@ -62,6 +62,11 @@ const empoleeSchema = new mongoose.Schema({
         type: String,
         default: "Active",
         enum: ["Active", "Inactive", "On Leave"]
+    },
+    qrToken: {
+        type: String,
+        unique: true,
+        sparse: true
     }
 }, {
     timestamps: true

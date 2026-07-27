@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MdAccessTime, MdAdd, MdEdit, MdDelete, MdLogin, MdLogout } from 'react-icons/md';
+import { MdAccessTime, MdAdd } from 'react-icons/md';
 import Modal from '../components/Modal';
 import { attendanceApi, employeesApi, auth } from '../utils/api';
+import { canTakeAttendance } from '../utils/roles';
 
 const statusClass = { Present: 'd_success', Late: 'd_warning', Absent: 'd_danger', Leave: 'd_info', Approved: 'd_success', Pending: 'd_warning' };
 
@@ -24,7 +25,6 @@ const Attendance = ({ defaultTab = 'records' }) => {
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
   const [currentUser, setCurrentUser] = useState(null);
-  const [todayRecord, setTodayRecord] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -35,11 +35,11 @@ const Attendance = ({ defaultTab = 'records' }) => {
       const user = auth.getCurrentUser();
       setCurrentUser(user);
       
-      const isAdmin = user?.role === 'Admin' || user?.role === 'HR' || user?.role === 'Manager';
+      const canManageAttendance = canTakeAttendance(user?.role);
       
       let attRes, leaveRes, otRes, empRes;
       
-      if (isAdmin) {
+      if (canManageAttendance) {
         [attRes, leaveRes, otRes, empRes] = await Promise.all([
           attendanceApi.getAll({ recordType: 'attendance' }),
           attendanceApi.getAll({ recordType: 'leave' }),
@@ -60,11 +60,6 @@ const Attendance = ({ defaultTab = 'records' }) => {
       setLeaveData(leaveRes.data);
       setOvertimeData(otRes.data);
       setEmployees(empRes.data);
-      
-      // Find today's record for check-in/check-out buttons
-      const today = new Date().toISOString().split('T')[0];
-      const todayRec = attRes.data.find(r => r.date === today);
-      setTodayRecord(todayRec);
     } catch (err) {
       setError(err.displayMessage || 'Failed to load attendance');
     } finally {
@@ -75,45 +70,14 @@ const Attendance = ({ defaultTab = 'records' }) => {
   useEffect(() => { fetchAll(); }, []);
 
   useEffect(() => { 
-    if (currentUser?.role !== 'Admin' && currentUser?.role !== 'HR' && currentUser?.role !== 'Manager') {
+    if (!canTakeAttendance(currentUser?.role)) {
       fetchAll(); 
     }
   }, [selectedMonth, selectedYear]);
 
-  const handleCheckIn = async () => {
-    try {
-      await attendanceApi.checkIn();
-      fetchAll();
-    } catch (err) {
-      setError(err.displayMessage || 'Failed to check in');
-    }
-  };
-
-  const handleCheckOut = async () => {
-    try {
-      await attendanceApi.checkOut();
-      fetchAll();
-    } catch (err) {
-      setError(err.displayMessage || 'Failed to check out');
-    }
-  };
-
   const getBlank = () => tab === 'leave' ? blankLeave : tab === 'overtime' ? blankOvertime : blankAttendance;
 
   const openAdd = () => { setForm(getBlank()); setEditId(null); setErrors({}); setModal(true); };
-
-  const openEdit = (rec) => {
-    if (tab === 'leave') {
-      setForm({ emp: rec.emp, empId: rec.empId, from: rec.from, to: rec.to, days: rec.days, type: rec.type, reason: rec.reason, status: rec.status });
-    } else if (tab === 'overtime') {
-      setForm({ emp: rec.emp, empId: rec.empId, date: rec.date, extraHours: rec.extraHours, reason: rec.reason, rate: rec.rate, amount: rec.amount });
-    } else {
-      setForm({ emp: rec.emp, empId: rec.empId, date: rec.date, checkIn: rec.checkIn === '--' ? '' : rec.checkIn, checkOut: rec.checkOut === '--' ? '' : rec.checkOut, status: rec.status });
-    }
-    setEditId(rec._id);
-    setErrors({});
-    setModal(true);
-  };
 
   const validate = () => {
     const e = {};
@@ -149,16 +113,6 @@ const Attendance = ({ defaultTab = 'records' }) => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete record?')) return;
-    try {
-      await attendanceApi.remove(id);
-      fetchAll();
-    } catch (err) {
-      setError(err.displayMessage || 'Failed to delete');
-    }
-  };
-
   const onEmpSelect = (empMongoId) => {
     const emp = employees.find(e => e._id === empMongoId);
     if (emp) setForm(p => ({ ...p, emp: emp.name, empId: emp.id, employeeId: emp._id }));
@@ -174,7 +128,7 @@ const Attendance = ({ defaultTab = 'records' }) => {
   const late    = records.filter(r => r.status === 'Late').length;
   const leave   = records.filter(r => r.status === 'Leave').length;
 
-  const canManage = ['Admin', 'HR', 'Manager'].includes(currentUser?.role);
+  const canManage = canTakeAttendance(currentUser?.role);
 
   return (
     <div>
@@ -184,17 +138,6 @@ const Attendance = ({ defaultTab = 'records' }) => {
           <p className="d_page_subtitle">Track employee check-in, leave and overtime</p>
         </div>
         <div className="d-flex gap-2">
-          {!canManage && (
-            <>
-              {!todayRecord || todayRecord.checkIn === '--' ? (
-                <button className="d_btn d_btn_success" onClick={handleCheckIn}><MdLogin /> Check In</button>
-              ) : todayRecord.checkOut === '--' ? (
-                <button className="d_btn d_btn_warning" onClick={handleCheckOut}><MdLogout /> Check Out</button>
-              ) : (
-                <span className="d_badge d_success">Completed Today</span>
-              )}
-            </>
-          )}
           {canManage && (
             <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> Add Record</button>
           )}

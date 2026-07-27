@@ -61,13 +61,20 @@ router.put('/users/:id', authenticate, authorize('Admin'), controller.updateUser
 // ──────────────────────────────────────────────────────────────
 // Attendance Routes
 // ──────────────────────────────────────────────────────────────
-router.post('/attendance', authenticate, authorize('Admin', 'HR', 'Manager'), controller.createAttendanceRecord);
+router.post('/attendance', authenticate, authorize('Admin', 'Head', 'Manager'), controller.createAttendanceRecord);
 router.get('/attendance', authenticate, controller.getAllAttendanceRecords);
-router.put('/attendance/:id', authenticate, authorize('Admin', 'HR', 'Manager'), controller.updateAttendanceRecord);
-router.delete('/attendance/:id', authenticate, authorize('Admin', 'HR'), controller.deleteAttendanceRecord);
-router.post('/attendance/check-in', authenticate, controller.checkIn);
-router.post('/attendance/check-out', authenticate, controller.checkOut);
+router.put('/attendance/:id', authenticate, authorize('Admin', 'Head', 'Manager'), controller.updateAttendanceRecord);
+router.delete('/attendance/:id', authenticate, authorize('Admin', 'Head', 'Manager'), controller.deleteAttendanceRecord);
+router.post('/attendance/check-in', authenticate, authorize('Admin', 'Head', 'Manager'), controller.checkIn);
+router.post('/attendance/check-out', authenticate, authorize('Admin', 'Head', 'Manager'), controller.checkOut);
 router.get('/attendance/my', authenticate, controller.getMyAttendance);
+
+// QR-based Attendance Scanning
+router.post('/attendance/scan', authenticate, authorize('Admin', 'Head', 'Manager'), controller.scanAttendance);
+router.get('/attendance/today', authenticate, controller.getTodayAttendance);
+router.get('/attendance/report', authenticate, controller.getAttendanceReport);
+router.get('/attendance/employee/:id', authenticate, controller.getEmployeeAttendance);
+router.put('/attendance/manual', authenticate, authorize('Admin', 'Head', 'Manager'), controller.manualAttendance);
 
 // ──────────────────────────────────────────────────────────────
 // ERP Records (Payroll, Sales docs, GRN, Service, Accounts, etc.)

@@ -1,5 +1,6 @@
 const emp = require("../model/Empl.model");
 const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModules } = require("../services/universalDataSync.service");
+const crypto = require('crypto');
 
 const generateEmpId = () => 'EMP' + Date.now().toString().slice(-6);
 
@@ -15,11 +16,16 @@ const calculateAge = (bod) => {
   return age;
 };
 
+const generateQrToken = () => {
+  return `AJ_${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+};
+
 const createEmployee = async (req, res) => {
   try {
     const payload = {
       ...req.body,
       id: req.body.id || generateEmpId(),
+      qrToken: req.body.qrToken || generateQrToken(),
       phoneNo: req.body.phoneNo ? Number(req.body.phoneNo) : req.body.phoneNo,
       age: calculateAge(req.body.bod),
     };
