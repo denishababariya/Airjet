@@ -14,7 +14,11 @@ const attendanceSchema = new mongoose.Schema({
   checkIn: { type: String, default: '--' },
   checkOut: { type: String, default: '--' },
   hours: { type: String, default: '--' },
+  workingHours: { type: Number, default: 0 },
   status: { type: String, default: 'Present' },
+  lateMinutes: { type: Number, default: 0 },
+  overtimeMinutes: { type: Number, default: 0 },
+  qrToken: { type: String },
   from: { type: String },
   to: { type: String },
   days: { type: Number },
@@ -23,6 +27,11 @@ const attendanceSchema = new mongoose.Schema({
   extraHours: { type: String },
   rate: { type: String },
   amount: { type: String },
+  createdBy: { type: mongoose.Types.ObjectId, ref: 'user' },
+  updatedBy: { type: mongoose.Types.ObjectId, ref: 'user' },
+  isHoliday: { type: Boolean, default: false },
+  isWeekOff: { type: Boolean, default: false },
+  lastScannedAt: { type: Date },
 }, { timestamps: true });
 
 module.exports = mongoose.model('attendance', attendanceSchema);

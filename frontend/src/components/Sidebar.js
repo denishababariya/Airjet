@@ -25,7 +25,7 @@ const menuConfig = [
       },
       {
         label: 'Attendance', icon: <MdAccessTime />, id: 'attendance',
-        children: ['Check In/Out', 'Leave Tracking', 'Overtime Calculation'],
+        children: ['Attendance Dashboard', 'QR Scanner', 'Today Attendance', 'Check In/Out', 'Leave Tracking', 'Overtime Calculation', 'Employee QR Codes', 'Late Entry Report'],
         module: 'Attendance',
       },
       {
@@ -80,7 +80,7 @@ const menuConfig = [
       },
       {
         label: 'Reports', icon: <MdBarChart />, id: 'reports',
-        children: ['Sales Report', 'Purchase Report', 'Inventory Report', 'Payroll Report'],
+        children: ['Sales Report', 'Purchase Report', 'Inventory Report', 'Payroll Report', 'Attendance Report'],
         module: 'Reports',
       },
     ],

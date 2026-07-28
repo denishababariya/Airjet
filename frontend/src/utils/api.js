@@ -134,6 +134,7 @@ export const attendanceApi = {
   getReport: (params = {}) => api.get('/attendance/report', { params }),
   getEmployee: (id) => api.get(`/attendance/employee/${id}`),
   manual: (data) => api.put('/attendance/manual', data),
+  generateQr: (employeeId) => api.post(`/employees/${employeeId}/generate-qr`),
 };
 
 export const stockApi = {

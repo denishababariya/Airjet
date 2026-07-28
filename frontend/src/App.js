@@ -8,28 +8,36 @@ import { PermissionProvider } from './context/PermissionContext';
 import { isAdminRole, isManagerRole, isHeadRole } from './utils/roles';
 
 // Pages
-import Dashboard      from './pages/Dashboard';
-import EmployeeMaster from './pages/EmployeeMaster';
-import Department     from './pages/Department';
-import Designation    from './pages/Designation';
-import Attendance     from './pages/Attendance';
-import Payroll        from './pages/Payroll';
-import Purchase       from './pages/Purchase';
-import Sales          from './pages/Sales';
-import SpareParts     from './pages/SpareParts';
-import Warehouse      from './pages/Warehouse';
-import Service        from './pages/Service';
-import Accounts       from './pages/Accounts';
-import Reports        from './pages/Reports';
-import Profile        from './pages/Profile';
-import Settings       from './pages/Settings';
-import Login          from './pages/Login';
-import Register       from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ChangePassword from './pages/ChangePassword';
-import SearchResults  from './pages/SearchResults';
-import RoleManagement from './pages/RoleManagement';
-import QrScanner from './pages/QrScanner';
+import Dashboard        from './pages/Dashboard';
+import EmployeeMaster   from './pages/EmployeeMaster';
+import Department       from './pages/Department';
+import Designation      from './pages/Designation';
+import Attendance       from './pages/Attendance';
+import AttendanceDashboard from './pages/attendance/AttendanceDashboard';
+import QRScanner        from './pages/attendance/QRScanner';
+import TodayAttendance  from './pages/attendance/TodayAttendance';
+import EmployeeQRCode   from './pages/attendance/EmployeeQRCode';
+import CheckInOut       from './pages/attendance/CheckInOut';
+import LateEntryReport  from './pages/attendance/LateEntryReport';
+import LeaveTracking    from './pages/attendance/LeaveTracking';
+import OvertimeCalculation from './pages/attendance/OvertimeCalculation';
+import Payroll          from './pages/Payroll';
+import Purchase         from './pages/Purchase';
+import Sales            from './pages/Sales';
+import SpareParts       from './pages/SpareParts';
+import Warehouse        from './pages/Warehouse';
+import Service          from './pages/Service';
+import Accounts         from './pages/Accounts';
+import Reports          from './pages/Reports';
+import AttendanceReport from './pages/attendance/AttendanceReport';
+import Profile          from './pages/Profile';
+import Settings         from './pages/Settings';
+import Login            from './pages/Login';
+import Register         from './pages/Register';
+import ForgotPassword   from './pages/ForgotPassword';
+import ChangePassword   from './pages/ChangePassword';
+import SearchResults    from './pages/SearchResults';
+import RoleManagement   from './pages/RoleManagement';
 
 /**
  * Map every sidebar child label → { component, defaultTab }
@@ -53,17 +61,22 @@ const PAGE_MAP = {
   'Designation':       { component: Designation },
 
   // ── Attendance ─────────────────────────────────────────────
-  attendance:          { component: Attendance, defaultTab: 'records' },
-  'Check In/Out':      { component: Attendance, defaultTab: 'records' },
-  'Leave Tracking':    { component: Attendance, defaultTab: 'leave' },
-  'Overtime Calculation': { component: Attendance, defaultTab: 'overtime' },
+  attendance:                   { component: Attendance, defaultTab: 'records' },
+  'Attendance Dashboard':       { component: AttendanceDashboard },
+  'QR Scanner':                 { component: QRScanner },
+  'Today Attendance':           { component: TodayAttendance },
+  'Check In/Out':               { component: CheckInOut },
+  'Leave Tracking':             { component: LeaveTracking },
+  'Overtime Calculation':       { component: OvertimeCalculation },
+  'Employee QR Codes':          { component: EmployeeQRCode },
+  'Late Entry Report':          { component: LateEntryReport },
 
   // ── Payroll ────────────────────────────────────────────────
-  payroll:             { component: Payroll, defaultTab: 'salary' },
-  'Salary Generation': { component: Payroll, defaultTab: 'salary' },
-  'Allowances':        { component: Payroll, defaultTab: 'allowances' },
-  'Deductions':        { component: Payroll, defaultTab: 'deductions' },
-  'Payslip Download':  { component: Payroll, defaultTab: 'payslip' },
+  payroll:                      { component: Payroll, defaultTab: 'salary' },
+  'Salary Generation':          { component: Payroll, defaultTab: 'salary' },
+  'Allowances':                 { component: Payroll, defaultTab: 'allowances' },
+  'Deductions':                 { component: Payroll, defaultTab: 'deductions' },
+  'Payslip Download':           { component: Payroll, defaultTab: 'payslip' },
 
   // ── Purchase ───────────────────────────────────────────────
   purchase:            { component: Purchase, defaultTab: 'suppliers' },
@@ -112,6 +125,7 @@ const PAGE_MAP = {
   'Purchase Report':   { component: Reports, defaultTab: 'purchase' },
   'Inventory Report':  { component: Reports, defaultTab: 'inventory' },
   'Payroll Report':    { component: Reports, defaultTab: 'payroll' },
+  'Attendance Report': { component: AttendanceReport },
 
   // ── Role Management ────────────────────────────────────────
   'Role Management':   { component: RoleManagement },

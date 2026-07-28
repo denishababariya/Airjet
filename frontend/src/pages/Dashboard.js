@@ -4,8 +4,9 @@ import {
   MdWarning, MdPayments, MdPeople, MdInventory2,
   MdArrowUpward, MdArrowDownward, MdBuildCircle,
   MdAccessTime, MdAccountBalance, MdCheckCircle,
+  MdEventBusy, MdCancel,
 } from 'react-icons/md';
-import { dashboardApi, sparePartsApi } from '../utils/api';
+import { dashboardApi, sparePartsApi, attendanceApi } from '../utils/api';
 
 const ICON_MAP = {
   MdPointOfSale,
@@ -38,6 +39,13 @@ const Dashboard = ({ currentUser }) => {
     { label: 'Total Stock Items',  value: '0',        icon: <MdInventory2 />,   iconClass: 'd_info',     cardClass: 'd_info',     change: '+0',      dir: 'up' },
   ]);
 
+  const [attendanceStats, setAttendanceStats] = useState({
+    todayPresent: 0,
+    todayAbsent: 0,
+    todayLeave: 0,
+    todayLate: 0
+  });
+
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentTickets, setRecentTickets] = useState([]);
   const [pendingPO, setPendingPO] = useState([]);
@@ -49,10 +57,11 @@ const Dashboard = ({ currentUser }) => {
     const load = async () => {
       setLoading(true);
       try {
-        const [dashRes, partsRes, activityRes] = await Promise.allSettled([
+        const [dashRes, partsRes, activityRes, attendanceRes] = await Promise.allSettled([
           dashboardApi.getStats(),
           sparePartsApi.getAll(),
           dashboardApi.getActivity(),
+          attendanceApi.getToday(),
         ]);
 
         if (dashRes.status === 'fulfilled') {
@@ -70,6 +79,16 @@ const Dashboard = ({ currentUser }) => {
           setRecentOrders(d.recentOrders || []);
           setRecentTickets(d.recentTickets || []);
           setPendingPO(d.pendingPOs || []);
+        }
+
+        if (attendanceRes.status === 'fulfilled') {
+          const todayData = attendanceRes.value.data;
+          setAttendanceStats({
+            todayPresent: todayData.filter(r => r.status === 'Present').length,
+            todayAbsent: todayData.filter(r => r.status === 'Absent').length,
+            todayLeave: todayData.filter(r => r.status === 'Leave').length,
+            todayLate: todayData.filter(r => r.status === 'Late').length
+          });
         }
 
         if (activityRes.status === 'fulfilled') {
@@ -125,6 +144,39 @@ const Dashboard = ({ currentUser }) => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── Attendance Stats ───────────────────────────────────── */}
+      <h5 className="mb-3">Today's Attendance</h5>
+      <div className="row g-3 mb-4">
+        <div className="col-12 col-md-3">
+          <div className="d_stat_card d_success">
+            <div className="d_stat_icon d_success"><MdCheckCircle /></div>
+            <div className="d_stat_value">{attendanceStats.todayPresent}</div>
+            <div className="d_stat_label">Present</div>
+          </div>
+        </div>
+        <div className="col-12 col-md-3">
+          <div className="d_stat_card d_danger">
+            <div className="d_stat_icon d_danger"><MdCancel /></div>
+            <div className="d_stat_value">{attendanceStats.todayAbsent}</div>
+            <div className="d_stat_label">Absent</div>
+          </div>
+        </div>
+        <div className="col-12 col-md-3">
+          <div className="d_stat_card d_info">
+            <div className="d_stat_icon d_info"><MdEventBusy /></div>
+            <div className="d_stat_value">{attendanceStats.todayLeave}</div>
+            <div className="d_stat_label">Leave</div>
+          </div>
+        </div>
+        <div className="col-12 col-md-3">
+          <div className="d_stat_card d_warning">
+            <div className="d_stat_icon d_warning"><MdAccessTime /></div>
+            <div className="d_stat_value">{attendanceStats.todayLate}</div>
+            <div className="d_stat_label">Late</div>
+          </div>
+        </div>
       </div>
 
       {/* ── Low Stock Alert ────────────────────────────────────── */}

@@ -68,6 +68,10 @@ router.delete('/attendance/:id', authenticate, authorize('Admin', 'Head', 'Manag
 router.post('/attendance/check-in', authenticate, authorize('Admin', 'Head', 'Manager'), controller.checkIn);
 router.post('/attendance/check-out', authenticate, authorize('Admin', 'Head', 'Manager'), controller.checkOut);
 router.get('/attendance/my', authenticate, controller.getMyAttendance);
+router.post('/attendance/scan', authenticate, controller.scanAttendance);
+router.get('/attendance/today', authenticate, authorize('Admin', 'HR', 'Manager'), controller.getTodayAttendance);
+router.get('/attendance/report', authenticate, authorize('Admin', 'HR', 'Manager'), controller.getAttendanceReport);
+router.post('/employees/:employeeId/generate-qr', authenticate, authorize('Admin', 'HR', 'Manager'), controller.generateQrToken);
 
 // QR-based Attendance Scanning
 router.post('/attendance/scan', authenticate, authorize('Admin', 'Head', 'Manager'), controller.scanAttendance);
