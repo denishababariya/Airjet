@@ -27,10 +27,6 @@ const checkIn = async (req, res) => {
       recordType: 'attendance'
     });
 
-    if (existingRecord && existingRecord.checkIn !== '--') {
-      return res.status(400).json({ error: 'Already checked in today' });
-    }
-
     const now = new Date();
     const checkInTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
@@ -39,14 +35,28 @@ const checkIn = async (req, res) => {
     let status = 'Present';
     let lateMinutes = 0;
 
-    if (hour > 9 || (hour === 9 && minute > 30)) {
-      status = 'Absent';
-      lateMinutes = (hour * 60 + minute) - (9 * 60 + 30);
-    } else if (hour === 9 && minute > 0) {
+    if (hour > 9 || (hour === 9 && minute >= 0)) {
       status = 'Late';
-      lateMinutes = minute;
+      lateMinutes = (hour * 60 + minute) - (9 * 60 + 0);
     }
 
+    // If existing record exists and has no checkIn, update it
+    if (existingRecord) {
+      if (existingRecord.checkIn !== '--') {
+        return res.status(400).json({ error: 'Already checked in today' });
+      }
+      
+      // Update the existing record with check-in details
+      existingRecord.checkIn = checkInTime;
+      existingRecord.status = status;
+      existingRecord.lateMinutes = lateMinutes;
+      existingRecord.updatedBy = userId;
+      await existingRecord.save();
+      
+      return res.status(200).json(existingRecord);
+    }
+
+    // Create new record if none exists
     const count = await Attendance.countDocuments({ recordType: 'attendance' });
     const record = await Attendance.create({
       id: generateId('ATT', count),
@@ -252,21 +262,18 @@ const scanAttendance = async (req, res) => {
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    let status = 'Present';
+    let lateMinutes = 0;
+
+    if (hour > 9 || (hour === 9 && minute >= 0)) {
+      status = 'Late';
+      lateMinutes = (hour * 60 + minute) - (9 * 60 + 0);
+    }
+
     // Case 1: No attendance exists - Create check-in
     if (!existingRecord) {
-      const hour = now.getHours();
-      const minute = now.getMinutes();
-      let status = 'Present';
-      let lateMinutes = 0;
-
-      if (hour > 9 || (hour === 9 && minute > 30)) {
-        status = 'Absent';
-        lateMinutes = (hour * 60 + minute) - (9 * 60 + 30);
-      } else if (hour === 9 && minute > 0) {
-        status = 'Late';
-        lateMinutes = minute;
-      }
-
       const count = await Attendance.countDocuments({ recordType: 'attendance' });
       const record = await Attendance.create({
         id: generateId('ATT', count),
@@ -290,6 +297,28 @@ const scanAttendance = async (req, res) => {
       return res.status(201).json({
         message: 'Check-in successful',
         record,
+        employee: {
+          name: employee.name,
+          id: employee.id,
+          image: employee.image,
+          department: employee.department,
+          designation: employee.designation
+        }
+      });
+    }
+
+    // Case 1.5: Attendance exists but no check-in - Update check-in
+    if (existingRecord.checkIn === '--') {
+      existingRecord.checkIn = currentTime;
+      existingRecord.status = status;
+      existingRecord.lateMinutes = lateMinutes;
+      existingRecord.updatedBy = userId;
+      existingRecord.lastScannedAt = now;
+      await existingRecord.save();
+
+      return res.status(200).json({
+        message: 'Check-in successful',
+        record: existingRecord,
         employee: {
           name: employee.name,
           id: employee.id,
@@ -440,11 +469,13 @@ const getLateEntryReport = async (req, res) => {
     const { startDate, endDate, employeeId, department } = req.query;
     const filter = {
       recordType: 'attendance',
-      status: 'Late',
+      lateMinutes: { $gt: 0 },
     };
 
     if (startDate && endDate) {
       filter.date = { $gte: startDate, $lte: endDate };
+    } else if (startDate) {
+      filter.date = startDate;
     }
 
     if (employeeId) {
@@ -465,7 +496,10 @@ const getLateEntryReport = async (req, res) => {
       empId: r.empId,
       date: r.date,
       checkIn: r.checkIn,
+      checkOut: r.checkOut,
+      hours: r.hours,
       lateMinutes: r.lateMinutes,
+      status: r.status,
       department: r.employeeId?.department?.title || 'N/A',
       designation: r.employeeId?.designation?.title || 'N/A',
     }));

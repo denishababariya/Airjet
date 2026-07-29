@@ -304,7 +304,7 @@ async function seedDatabase() {
   const permissions = await Permission.insertMany([
     // Dashboard
     { id: 'DASHBOARD_VIEW', name: 'Dashboard View', module: 'Dashboard', description: 'View dashboard', actions: ['read'] },
-    // Employees
+    // Employees                       
     { id: 'EMPLOYEES_CREATE', name: 'Employees Create', module: 'Employees', description: 'Create employees', actions: ['create'] },
     { id: 'EMPLOYEES_READ', name: 'Employees Read', module: 'Employees', description: 'View employees', actions: ['read'] },
     { id: 'EMPLOYEES_UPDATE', name: 'Employees Update', module: 'Employees', description: 'Update employees', actions: ['update'] },
