@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MdQrCodeScanner, MdPeople, MdAccessTime, MdEventBusy, MdWarning, MdTrendingUp, MdCancel, MdRefresh } from 'react-icons/md';
+import { MdQrCodeScanner, MdPeople, MdAccessTime, MdEventBusy, MdWarning, MdCancel, MdRefresh, MdCheckCircle, MdHighlightOff } from 'react-icons/md';
 import { attendanceApi } from '../../utils/api';
+import { canTakeAttendance } from '../../utils/roles';
 
-const AttendanceDashboard = ({ setActiveMenu }) => {
+const AttendanceDashboard = ({ setActiveMenu, currentUser }) => {
   const [stats, setStats] = useState({
     todayPresent: 0,
     todayAbsent: 0,
     todayLeave: 0,
     todayLate: 0,
+    todayEarlyCheckout: 0,
     weeklyPresent: 0,
     weeklyAbsent: 0,
     monthlyPresent: 0,
@@ -16,6 +17,10 @@ const AttendanceDashboard = ({ setActiveMenu }) => {
   });
   const [recentAttendance, setRecentAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [earlyCheckoutWarning, setEarlyCheckoutWarning] = useState(null);
+
+  const userRole = currentUser?.role || 'User';
+  const isAdmin = canTakeAttendance(userRole);
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -30,18 +35,21 @@ const AttendanceDashboard = ({ setActiveMenu }) => {
       const weeklyResponse = await attendanceApi.getReport({ startDate: weekAgo, endDate: today });
       const monthlyResponse = await attendanceApi.getReport({ startDate: monthAgo, endDate: today });
 
+      const filteredToday = isAdmin ? todayData : todayData.filter(r => r.empId === currentUser?.employeeId);
+
       setStats({
-        todayPresent: todayData.filter(r => r.status === 'Present').length,
-        todayAbsent: todayData.filter(r => r.status === 'Absent').length,
-        todayLeave: todayData.filter(r => r.status === 'Leave').length,
-        todayLate: todayData.filter(r => r.status === 'Late').length,
+        todayPresent: filteredToday.filter(r => r.status === 'Present').length,
+        todayAbsent: filteredToday.filter(r => r.status === 'Absent').length,
+        todayLeave: filteredToday.filter(r => r.status === 'Leave').length,
+        todayLate: filteredToday.filter(r => r.status === 'Late').length,
+        todayEarlyCheckout: filteredToday.filter(r => r.earlyCheckout === true).length,
         weeklyPresent: weeklyResponse.data?.stats?.present || 0,
         weeklyAbsent: weeklyResponse.data?.stats?.absent || 0,
         monthlyPresent: monthlyResponse.data?.stats?.present || 0,
         monthlyAbsent: monthlyResponse.data?.stats?.absent || 0
       });
 
-      setRecentAttendance(todayData.slice(0, 8));
+      setRecentAttendance(filteredToday.slice(0, 8));
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
     } finally {
@@ -53,7 +61,18 @@ const AttendanceDashboard = ({ setActiveMenu }) => {
     fetchDashboardData();
     const interval = setInterval(fetchDashboardData, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [currentUser, isAdmin]);
+
+  const handleEarlyCheckout = (record) => {
+    setEarlyCheckoutWarning({
+      message: `Early check-out detected for ${record.emp}. Regular hours are 9:00 AM to 6:00 PM.`,
+      record,
+    });
+  };
+
+  const dismissWarning = () => {
+    setEarlyCheckoutWarning(null);
+  };
 
   const StatCard = ({ title, value, icon, color, bg }) => (
     <div className="d_card h-100">
@@ -73,6 +92,23 @@ const AttendanceDashboard = ({ setActiveMenu }) => {
 
   return (
     <div>
+      {earlyCheckoutWarning && (
+        <div className="d_alert d_alert_warning d-flex align-items-center justify-content-between" role="alert">
+          <div>
+            <MdWarning style={{ marginRight: 8 }} />
+            {earlyCheckoutWarning.message}
+          </div>
+          <div className="d-flex gap-2">
+            <button className="d_btn d_btn_sm d_btn_outline" onClick={() => setActiveMenu('Check In/Out')}>
+              Go to Check Out
+            </button>
+            <button className="d_btn d_btn_sm d_btn_outline" onClick={dismissWarning}>
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <h1 className="d_page_title">Attendance Dashboard</h1>
@@ -101,6 +137,11 @@ const AttendanceDashboard = ({ setActiveMenu }) => {
         <div className="col-md-3">
           <StatCard title="Late Today" value={stats.todayLate} icon={<MdWarning />} color="#f59e0b" bg="#fffbeb" />
         </div>
+        {isAdmin && (
+          <div className="col-md-3">
+            <StatCard title="Early Checkout" value={stats.todayEarlyCheckout} icon={<MdHighlightOff />} color="#ef4444" bg="#fef2f2" />
+          </div>
+        )}
       </div>
 
       <div className="row g-3 mb-4">
@@ -162,21 +203,22 @@ const AttendanceDashboard = ({ setActiveMenu }) => {
                   <th>Status</th>
                   <th>Late</th>
                   <th>Overtime</th>
+                  <th>Early Checkout</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={7} className="text-center py-4">Loading...</td></tr>
+                  <tr><td colSpan={8} className="text-center py-4">Loading...</td></tr>
                 ) : recentAttendance.length === 0 ? (
-                  <tr><td colSpan={7} className="text-center py-4 text-muted">No attendance records for today</td></tr>
+                  <tr><td colSpan={8} className="text-center py-4 text-muted">No attendance records for today</td></tr>
                 ) : (
                   recentAttendance.map((record) => (
                     <tr key={record._id}>
                       <td>
                         <div className="d-flex align-items-center">
                           {record.employeeId?.image ? (
-                            <img 
-                              src={record.employeeId.image} 
+                            <img
+                              src={record.employeeId.image}
                               alt={record.emp}
                               className="d_table_avatar me-2"
                               style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
@@ -196,12 +238,23 @@ const AttendanceDashboard = ({ setActiveMenu }) => {
                       <td>{record.checkOut}</td>
                       <td>{record.hours}</td>
                       <td>
-                        <span className={`d_badge ${record.status === 'Present' ? 'd_success' : record.status === 'Absent' ? 'd_danger' : 'd_warning'}`}>
+                        <span className={`d_badge ${record.status === 'Present' ? 'd_success' : record.status === 'Absent' ? 'd_danger' : record.status === 'Late' ? 'd_warning' : 'd_info'}`}>
                           {record.status}
                         </span>
                       </td>
                       <td>{record.lateMinutes || 0} min</td>
                       <td>{record.overtimeMinutes || 0} min</td>
+                      <td>
+                        {record.earlyCheckout ? (
+                          <span className="d_badge d_danger" style={{ cursor: 'pointer' }} onClick={() => handleEarlyCheckout(record)} title="Click to view details">
+                            <MdHighlightOff /> Yes
+                          </span>
+                        ) : (
+                          <span className="d_badge d_success">
+                            <MdCheckCircle /> No
+                          </span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}

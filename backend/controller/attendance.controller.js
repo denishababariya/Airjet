@@ -20,8 +20,7 @@ const checkIn = async (req, res) => {
 
     const employee = user.employeeId;
     const today = new Date().toISOString().split('T')[0];
-    
-    // Check if already checked in today
+
     const existingRecord = await Attendance.findOne({
       employeeId: employee._id,
       date: today,
@@ -34,29 +33,18 @@ const checkIn = async (req, res) => {
 
     const now = new Date();
     const checkInTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    
-    // Determine status based on check-in time
+
     const hour = now.getHours();
     const minute = now.getMinutes();
     let status = 'Present';
-    let checkOutTime = '--';
-    let hoursWorked = '--';
-    
-    if (hour > 8 || (hour === 8 && minute > 15)) {
+    let lateMinutes = 0;
+
+    if (hour > 9 || (hour === 9 && minute > 30)) {
       status = 'Absent';
-    } else if (hour === 8 && minute > 0) {
+      lateMinutes = (hour * 60 + minute) - (9 * 60 + 30);
+    } else if (hour === 9 && minute > 0) {
       status = 'Late';
-    } else if (hour === 7 && minute >= 45) {
-      // Early check-in (7:45-8:00) - auto check-out at 8:00
-      status = 'Present';
-      checkOutTime = '08:00';
-      const checkInDate = new Date();
-      checkInDate.setHours(hour, minute, 0);
-      const checkOutDate = new Date();
-      checkOutDate.setHours(8, 0, 0);
-      const diffMs = checkOutDate - checkInDate;
-      const diffMins = Math.floor(diffMs / (1000 * 60));
-      hoursWorked = `${diffMins}m`;
+      lateMinutes = minute;
     }
 
     const count = await Attendance.countDocuments({ recordType: 'attendance' });
@@ -68,9 +56,12 @@ const checkIn = async (req, res) => {
       empId: employee.id,
       date: today,
       checkIn: checkInTime,
-      checkOut: checkOutTime,
-      hours: hoursWorked,
-      status: status
+      checkOut: '--',
+      hours: '--',
+      status: status,
+      lateMinutes: lateMinutes,
+      overtimeMinutes: 0,
+      createdBy: userId,
     });
 
     res.status(201).json(record);
@@ -93,7 +84,7 @@ const checkOut = async (req, res) => {
 
     const employee = user.employeeId;
     const today = new Date().toISOString().split('T')[0];
-    
+
     const record = await Attendance.findOne({
       employeeId: employee._id,
       date: today,
@@ -110,22 +101,33 @@ const checkOut = async (req, res) => {
 
     const now = new Date();
     const checkOutTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    
-    // Calculate hours worked
+
     const checkInParts = record.checkIn.split(':');
     const checkInDate = new Date();
     checkInDate.setHours(parseInt(checkInParts[0]), parseInt(checkInParts[1]), 0);
-    
+
     const diffMs = now - checkInDate;
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     const hoursWorked = `${diffHours}h ${diffMins}m`;
 
+    const checkoutHour = now.getHours();
+    const checkoutMinute = now.getMinutes();
+    let earlyCheckoutWarning = null;
+
+    if (checkoutHour < 17 || (checkoutHour === 17 && checkoutMinute < 45)) {
+      earlyCheckoutWarning = 'Early check-out detected. Regular hours are 9:00 AM to 6:00 PM.';
+    }
+
     record.checkOut = checkOutTime;
     record.hours = hoursWorked;
+    record.earlyCheckout = earlyCheckoutWarning ? true : false;
     await record.save();
 
-    res.status(200).json(record);
+    res.status(200).json({
+      record,
+      warning: earlyCheckoutWarning,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -257,11 +259,10 @@ const scanAttendance = async (req, res) => {
       let status = 'Present';
       let lateMinutes = 0;
 
-      // Calculate late minutes if after 8:15
-      if (hour > 8 || (hour === 8 && minute > 15)) {
+      if (hour > 9 || (hour === 9 && minute > 30)) {
         status = 'Absent';
-        lateMinutes = (hour * 60 + minute) - (8 * 60 + 15);
-      } else if (hour === 8 && minute > 0) {
+        lateMinutes = (hour * 60 + minute) - (9 * 60 + 30);
+      } else if (hour === 9 && minute > 0) {
         status = 'Late';
         lateMinutes = minute;
       }
@@ -304,22 +305,30 @@ const scanAttendance = async (req, res) => {
       const checkInParts = existingRecord.checkIn.split(':');
       const checkInDate = new Date();
       checkInDate.setHours(parseInt(checkInParts[0]), parseInt(checkInParts[1]), 0);
-      
+
       const diffMs = now - checkInDate;
       const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
       const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
       const workingHours = diffHours + (diffMins / 60);
 
-      // Calculate overtime if worked more than 8 hours
       let overtimeMinutes = 0;
       if (workingHours > 8) {
         overtimeMinutes = Math.round((workingHours - 8) * 60);
+      }
+
+      const checkoutHour = now.getHours();
+      const checkoutMinute = now.getMinutes();
+      let earlyCheckoutWarning = null;
+
+      if (checkoutHour < 17 || (checkoutHour === 17 && checkoutMinute < 45)) {
+        earlyCheckoutWarning = 'Early check-out detected. Regular hours are 9:00 AM to 6:00 PM.';
       }
 
       existingRecord.checkOut = currentTime;
       existingRecord.hours = `${diffHours}h ${diffMins}m`;
       existingRecord.workingHours = workingHours;
       existingRecord.overtimeMinutes = overtimeMinutes;
+      existingRecord.earlyCheckout = earlyCheckoutWarning ? true : false;
       existingRecord.updatedBy = userId;
       existingRecord.lastScannedAt = now;
       await existingRecord.save();
@@ -327,6 +336,7 @@ const scanAttendance = async (req, res) => {
       return res.status(200).json({
         message: 'Check-out successful',
         record: existingRecord,
+        warning: earlyCheckoutWarning,
         employee: {
           name: employee.name,
           id: employee.id,
@@ -387,8 +397,10 @@ const getAttendanceReport = async (req, res) => {
       present: records.filter(r => r.status === 'Present').length,
       absent: records.filter(r => r.status === 'Absent').length,
       late: records.filter(r => r.status === 'Late').length,
+      earlyCheckout: records.filter(r => r.earlyCheckout === true).length,
       totalWorkingHours: records.reduce((sum, r) => sum + (r.workingHours || 0), 0),
-      totalOvertime: records.reduce((sum, r) => sum + (r.overtimeMinutes || 0), 0)
+      totalOvertime: records.reduce((sum, r) => sum + (r.overtimeMinutes || 0), 0),
+      totalLateMinutes: records.reduce((sum, r) => sum + (r.lateMinutes || 0), 0),
     };
 
     res.status(200).json({ records, stats });
@@ -423,6 +435,146 @@ const generateQrToken = async (req, res) => {
   }
 };
 
+const getLateEntryReport = async (req, res) => {
+  try {
+    const { startDate, endDate, employeeId, department } = req.query;
+    const filter = {
+      recordType: 'attendance',
+      status: 'Late',
+    };
+
+    if (startDate && endDate) {
+      filter.date = { $gte: startDate, $lte: endDate };
+    }
+
+    if (employeeId) {
+      filter.employeeId = employeeId;
+    }
+
+    if (department) {
+      filter.department = department;
+    }
+
+    const records = await Attendance.find(filter)
+      .populate('employeeId')
+      .sort({ date: -1, checkIn: 1 });
+
+    const lateEntries = records.map(r => ({
+      _id: r._id,
+      emp: r.emp,
+      empId: r.empId,
+      date: r.date,
+      checkIn: r.checkIn,
+      lateMinutes: r.lateMinutes,
+      department: r.employeeId?.department?.title || 'N/A',
+      designation: r.employeeId?.designation?.title || 'N/A',
+    }));
+
+    const stats = {
+      totalLate: lateEntries.length,
+      totalLateMinutes: lateEntries.reduce((sum, e) => sum + (e.lateMinutes || 0), 0),
+      avgLateMinutes: lateEntries.length > 0
+        ? Math.round(lateEntries.reduce((sum, e) => sum + (e.lateMinutes || 0), 0) / lateEntries.length)
+        : 0,
+    };
+
+    res.status(200).json({ lateEntries, stats });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getOvertimeRecords = async (req, res) => {
+  try {
+    const { month, year, employeeId } = req.query;
+    const filter = { recordType: 'overtime' };
+
+    if (month && year) {
+      filter.date = { $regex: `^${year}-${String(month).padStart(2, '0')}` };
+    }
+
+    if (employeeId) {
+      filter.employeeId = employeeId;
+    }
+
+    const records = await Attendance.find(filter)
+      .populate('employeeId')
+      .sort({ date: -1 });
+
+    const totalOvertimeMinutes = records.reduce((sum, r) => sum + (r.overtimeMinutes || 0), 0);
+    const totalOvertimeHours = (totalOvertimeMinutes / 60).toFixed(2);
+
+    res.status(200).json({
+      records,
+      stats: {
+        totalRecords: records.length,
+        totalOvertimeMinutes,
+        totalOvertimeHours,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getLeaveRecords = async (req, res) => {
+  try {
+    const { month, year, employeeId, status } = req.query;
+    const filter = { recordType: 'leave' };
+
+    if (month && year) {
+      filter.date = { $regex: `^${year}-${String(month).padStart(2, '0')}` };
+    }
+
+    if (employeeId) {
+      filter.employeeId = employeeId;
+    }
+
+    if (status) {
+      filter.status = status;
+    }
+
+    const records = await Attendance.find(filter)
+      .populate('employeeId')
+      .sort({ createdAt: -1 });
+
+    const stats = {
+      total: records.length,
+      approved: records.filter(r => r.status === 'Approved').length,
+      pending: records.filter(r => r.status === 'Pending').length,
+      rejected: records.filter(r => r.status === 'Rejected').length,
+      totalDays: records.reduce((sum, r) => sum + (r.days || 0), 0),
+    };
+
+    res.status(200).json({ records, stats });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const updateLeaveRecord = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const record = await Attendance.findById(id);
+
+    if (!record) {
+      return res.status(404).json({ error: 'Leave record not found' });
+    }
+
+    if (record.recordType !== 'leave') {
+      return res.status(400).json({ error: 'Record is not a leave record' });
+    }
+
+    record.status = status || record.status;
+    await record.save();
+
+    res.status(200).json(record);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   checkIn,
   checkOut,
@@ -435,4 +587,8 @@ module.exports = {
   getTodayAttendance,
   getAttendanceReport,
   generateQrToken,
+  getLateEntryReport,
+  getOvertimeRecords,
+  getLeaveRecords,
+  updateLeaveRecord,
 };

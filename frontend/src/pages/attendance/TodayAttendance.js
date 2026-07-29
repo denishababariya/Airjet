@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MdRefresh, MdPerson, MdAccessTime, MdCheckCircle, MdCancel, MdWarning } from 'react-icons/md';
-import { attendanceApi } from '../../utils/api';
+import { MdRefresh, MdAccessTime, MdCheckCircle, MdCancel, MdWarning, MdHighlightOff, MdPeople, MdBeachAccess } from 'react-icons/md';
+import { attendanceApi, auth } from '../../utils/api';
 
 const TodayAttendance = () => {
   const [attendance, setAttendance] = useState([]);
@@ -11,25 +11,29 @@ const TodayAttendance = () => {
     present: 0,
     absent: 0,
     late: 0,
-    pending: 0
+    pending: 0,
+    earlyCheckout: 0
   });
 
   const fetchTodayAttendance = async () => {
     setLoading(true);
     setError('');
     try {
+      const user = auth.getCurrentUser();
       const response = await attendanceApi.getToday();
       setAttendance(response.data);
-      
-      // Calculate stats
-      const stats = {
-        total: response.data.length,
-        present: response.data.filter(r => r.status === 'Present').length,
-        absent: response.data.filter(r => r.status === 'Absent').length,
-        late: response.data.filter(r => r.status === 'Late').length,
-        pending: response.data.filter(r => r.checkOut === '--').length
-      };
-      setStats(stats);
+
+      const canManage = user && (user.role === 'Admin' || user.role === 'Super Admin' || user.role === 'Manager' || user.role === 'Head' || user.role === 'HR Manager');
+      const filtered = canManage ? response.data : response.data.filter(r => r.empId === user?.employeeId);
+
+      setStats({
+        total: filtered.length,
+        present: filtered.filter(r => r.status === 'Present').length,
+        absent: filtered.filter(r => r.status === 'Absent').length,
+        late: filtered.filter(r => r.status === 'Late').length,
+        pending: filtered.filter(r => r.checkOut === '--').length,
+        earlyCheckout: filtered.filter(r => r.earlyCheckout === true).length,
+      });
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to fetch today\'s attendance');
     } finally {
@@ -39,7 +43,6 @@ const TodayAttendance = () => {
 
   useEffect(() => {
     fetchTodayAttendance();
-    // Refresh every 30 seconds
     const interval = setInterval(fetchTodayAttendance, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -58,12 +61,28 @@ const TodayAttendance = () => {
     );
   };
 
+  const StatCard = ({ title, value, icon, color, bg }) => (
+    <div className="d_card h-100">
+      <div className="d_card_body">
+        <div className="d-flex align-items-center justify-content-between">
+          <div>
+            <div className="d_stat_value" style={{ color }}>{value}</div>
+            <div className="d_stat_label">{title}</div>
+          </div>
+          <div className="d_stat_icon" style={{ color, backgroundColor: bg || 'transparent', fontSize: 28, padding: 8, borderRadius: 8 }}>
+            {icon}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <h1 className="d_page_title">Today's Attendance</h1>
-          <p className="d_page_subtitle">Real-time attendance tracking for {new Date().toLocaleDateString()}</p>
+          <p className="d_page_subtitle">Real-time attendance tracking — {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
         <button className="d_btn d_btn_primary" onClick={fetchTodayAttendance}>
           <MdRefresh /> Refresh
@@ -72,62 +91,55 @@ const TodayAttendance = () => {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      {/* Stats Cards */}
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="d_card">
-            <div className="d_card_body">
-              <div className="d_stat_value">{stats.total}</div>
-              <div className="d_stat_label">Total Employees</div>
-            </div>
-          </div>
+      <div className="row g-3 mb-4">
+        <div className="col-md-2">
+          <StatCard title="Total" value={stats.total} icon={<MdPeople />} color="var(--d-primary)" bg="#eff6ff" />
         </div>
-        <div className="col-md-3">
-          <div className="d_card">
-            <div className="d_card_body">
-              <div className="d_stat_value d_success">{stats.present}</div>
-              <div className="d_stat_label">Present</div>
-            </div>
-          </div>
+        <div className="col-md-2">
+          <StatCard title="Present" value={stats.present} icon={<MdCheckCircle />} color="#22c55e" bg="#f0fdf4" />
         </div>
-        <div className="col-md-3">
-          <div className="d_card">
-            <div className="d_card_body">
-              <div className="d_stat_value d_warning">{stats.late}</div>
-              <div className="d_stat_label">Late</div>
-            </div>
-          </div>
+        <div className="col-md-2">
+          <StatCard title="Late" value={stats.late} icon={<MdWarning />} color="#f59e0b" bg="#fffbeb" />
         </div>
-        <div className="col-md-3">
-          <div className="d_card">
-            <div className="d_card_body">
-              <div className="d_stat_value d_danger">{stats.absent}</div>
-              <div className="d_stat_label">Absent</div>
-            </div>
-          </div>
+        <div className="col-md-2">
+          <StatCard title="Absent" value={stats.absent} icon={<MdCancel />} color="#ef4444" bg="#fef2f2" />
+        </div>
+        <div className="col-md-2">
+          <StatCard title="Pending Checkout" value={stats.pending} icon={<MdBeachAccess />} color="#8b5cf6" bg="#f5f3ff" />
+        </div>
+        <div className="col-md-2">
+          <StatCard title="Early Checkout" value={stats.earlyCheckout} icon={<MdHighlightOff />} color="#ef4444" bg="#fef2f2" />
         </div>
       </div>
 
-      {/* Attendance Table */}
       <div className="d_card">
-        <div className="d_card_body">
+        <div className="d_card_header d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <h2 className="d_card_title">
+            <span className="d_card_icon"><MdAccessTime /></span>
+            Attendance Log
+          </h2>
+          <span className="d_badge d_info">{stats.total} records</span>
+        </div>
+        <div className="d_card_body p-0">
           {loading ? (
             <div className="text-center py-4">Loading...</div>
           ) : attendance.length === 0 ? (
-            <div className="text-center py-4">No attendance records for today</div>
+            <div className="text-center py-4 text-muted">No attendance records for today</div>
           ) : (
-            <div className="table-responsive">
+            <div className="d_table_wrap">
               <table className="d_table">
                 <thead>
                   <tr>
                     <th>Employee</th>
-                    <th>Employee ID</th>
+                    <th>Emp ID</th>
+                    <th>Department</th>
                     <th>Check In</th>
                     <th>Check Out</th>
-                    <th>Working Hours</th>
+                    <th>Hours</th>
                     <th>Status</th>
-                    <th>Late Minutes</th>
-                    <th>Overtime</th>
+                    <th>Late</th>
+                    <th>OT</th>
+                    <th>Early Out</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -136,28 +148,37 @@ const TodayAttendance = () => {
                       <td>
                         <div className="d-flex align-items-center">
                           {record.employeeId?.image && (
-                            <img 
-                              src={record.employeeId.image} 
+                            <img
+                              src={record.employeeId.image}
                               alt={record.emp}
                               className="d_table_avatar me-2"
-                              style={{ width: 32, height: 32, borderRadius: '50%' }}
+                              style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
                             />
                           )}
                           <div>
                             <div className="fw-bold">{record.emp}</div>
-                            <small className="text-muted">
-                              {record.employeeId?.department?.title || 'N/A'}
-                            </small>
                           </div>
                         </div>
                       </td>
-                      <td>{record.empId}</td>
+                      <td><code>{record.empId}</code></td>
+                      <td>{record.employeeId?.department?.title || 'N/A'}</td>
                       <td>{record.checkIn}</td>
                       <td>{record.checkOut}</td>
                       <td>{record.hours}</td>
                       <td>{getStatusBadge(record.status)}</td>
-                      <td>{record.lateMinutes || 0} min</td>
-                      <td>{record.overtimeMinutes || 0} min</td>
+                      <td>
+                        {record.lateMinutes > 0
+                          ? <span className="d_badge d_warning">{record.lateMinutes}m</span>
+                          : <span className="d_badge d_info">—</span>}
+                      </td>
+                      <td>{record.overtimeMinutes || 0}m</td>
+                      <td>
+                        {record.earlyCheckout ? (
+                          <span className="d_badge d_danger"><MdHighlightOff /> Yes</span>
+                        ) : (
+                          <span className="d_badge d_success"><MdCheckCircle /> No</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

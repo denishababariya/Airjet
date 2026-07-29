@@ -18,9 +18,10 @@ import QRScanner        from './pages/attendance/QRScanner';
 import TodayAttendance  from './pages/attendance/TodayAttendance';
 import EmployeeQRCode   from './pages/attendance/EmployeeQRCode';
 import CheckInOut       from './pages/attendance/CheckInOut';
-import LateEntryReport  from './pages/attendance/LateEntryReport';
 import LeaveTracking    from './pages/attendance/LeaveTracking';
 import OvertimeCalculation from './pages/attendance/OvertimeCalculation';
+import LateEntryReport  from './pages/attendance/LateEntryReport';
+import AttendanceReport from './pages/attendance/AttendanceReport';
 import Payroll          from './pages/Payroll';
 import Purchase         from './pages/Purchase';
 import Sales            from './pages/Sales';
@@ -29,7 +30,6 @@ import Warehouse        from './pages/Warehouse';
 import Service          from './pages/Service';
 import Accounts         from './pages/Accounts';
 import Reports          from './pages/Reports';
-import AttendanceReport from './pages/attendance/AttendanceReport';
 import Profile          from './pages/Profile';
 import Settings         from './pages/Settings';
 import Login            from './pages/Login';
@@ -68,8 +68,9 @@ const PAGE_MAP = {
   'Check In/Out':               { component: CheckInOut },
   'Leave Tracking':             { component: LeaveTracking },
   'Overtime Calculation':       { component: OvertimeCalculation },
-  'Employee QR Codes':          { component: EmployeeQRCode },
   'Late Entry Report':          { component: LateEntryReport },
+  'Employee QR Codes':          { component: EmployeeQRCode },
+  'Attendance Report':          { component: AttendanceReport },
 
   // ── Payroll ────────────────────────────────────────────────
   payroll:                      { component: Payroll, defaultTab: 'salary' },
@@ -125,13 +126,9 @@ const PAGE_MAP = {
   'Purchase Report':   { component: Reports, defaultTab: 'purchase' },
   'Inventory Report':  { component: Reports, defaultTab: 'inventory' },
   'Payroll Report':    { component: Reports, defaultTab: 'payroll' },
-  'Attendance Report': { component: AttendanceReport },
 
   // ── Role Management ────────────────────────────────────────
   'Role Management':   { component: RoleManagement },
-
-  // ── QR Scanner ──────────────────────────────────────────────
-  'QR Scanner':        { component: QrScanner },
 };
 
 // Check if user has access to admin panel

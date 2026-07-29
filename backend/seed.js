@@ -138,9 +138,6 @@ async function seedDatabase() {
   ]);
 
   const hashed = await bcrypt.hash('admin123', 10);
-const crypto = require('crypto');
-
-const generateQrToken = () => `AJ_${crypto.randomBytes(20).toString('hex').toUpperCase()}`;
 
   // Departments with employee heads
   const deptsWithHeads = await Promise.all(depts.map(async (dept, index) => {
@@ -258,15 +255,20 @@ const generateQrToken = () => `AJ_${crypto.randomBytes(20).toString('hex').toUpp
   ]);
 
   await Attendance.insertMany([
-    { id: 'ATT-001', recordType: 'attendance', emp: 'Rajesh Kumar', empId: 'EMP001', date: formatDateISO(today), checkIn: '09:05', checkOut: '18:10', hours: '9h 05m', status: 'Present' },
-    { id: 'ATT-002', recordType: 'attendance', emp: 'Priya Sharma', empId: 'EMP002', date: formatDateISO(today), checkIn: '09:30', checkOut: '18:00', hours: '8h 30m', status: 'Late' },
-    { id: 'ATT-003', recordType: 'attendance', emp: 'Amit Patel', empId: 'EMP003', date: formatDateISO(today), checkIn: '08:55', checkOut: '18:15', hours: '9h 20m', status: 'Present' },
-    { id: 'ATT-004', recordType: 'attendance', emp: 'Sunita Singh', empId: 'EMP004', date: formatDateISO(today), checkIn: '09:10', checkOut: '17:55', hours: '8h 45m', status: 'Present' },
-    { id: 'ATT-005', recordType: 'attendance', emp: 'Karan Mehta', empId: 'EMP005', date: formatDateISO(today), checkIn: '07:00', checkOut: '16:00', hours: '9h 00m', status: 'Present' },
-    { id: 'ATT-006', recordType: 'attendance', emp: 'Nikhil Rao', empId: 'EMP007', date: formatDateISO(today), checkIn: '09:00', checkOut: '18:05', hours: '9h 05m', status: 'Present' },
-    { id: 'ATT-007', recordType: 'attendance', emp: 'Meera Joshi', empId: 'EMP008', date: formatDateISO(today), checkIn: '09:15', checkOut: '18:10', hours: '8h 55m', status: 'Late' },
+    { id: 'ATT-001', recordType: 'attendance', emp: 'Rajesh Kumar', empId: 'EMP001', date: formatDateISO(today), checkIn: '08:50', checkOut: '18:10', hours: '9h 20m', status: 'Present', lateMinutes: 0, earlyCheckout: false },
+    { id: 'ATT-002', recordType: 'attendance', emp: 'Priya Sharma', empId: 'EMP002', date: formatDateISO(today), checkIn: '09:15', checkOut: '18:00', hours: '8h 45m', status: 'Late', lateMinutes: 15, earlyCheckout: false },
+    { id: 'ATT-003', recordType: 'attendance', emp: 'Amit Patel', empId: 'EMP003', date: formatDateISO(today), checkIn: '08:55', checkOut: '18:15', hours: '9h 20m', status: 'Present', lateMinutes: 0, earlyCheckout: false },
+    { id: 'ATT-004', recordType: 'attendance', emp: 'Sunita Singh', empId: 'EMP004', date: formatDateISO(today), checkIn: '09:10', checkOut: '17:40', hours: '8h 30m', status: 'Late', lateMinutes: 10, earlyCheckout: true },
+    { id: 'ATT-005', recordType: 'attendance', emp: 'Karan Mehta', empId: 'EMP005', date: formatDateISO(today), checkIn: '08:45', checkOut: '18:05', hours: '9h 20m', status: 'Present', lateMinutes: 0, earlyCheckout: false },
+    { id: 'ATT-006', recordType: 'attendance', emp: 'Nikhil Rao', empId: 'EMP007', date: formatDateISO(today), checkIn: '09:00', checkOut: '18:05', hours: '9h 05m', status: 'Present', lateMinutes: 0, earlyCheckout: false },
+    { id: 'ATT-007', recordType: 'attendance', emp: 'Meera Joshi', empId: 'EMP008', date: formatDateISO(today), checkIn: '09:25', checkOut: '17:50', hours: '8h 25m', status: 'Late', lateMinutes: 25, earlyCheckout: true },
+    { id: 'ATT-008', recordType: 'attendance', emp: 'Divya Verma', empId: 'EMP006', date: formatDateISO(today), checkIn: '09:45', checkOut: '--', hours: '--', status: 'Absent', lateMinutes: 15, earlyCheckout: false },
     { id: 'LVE-001', recordType: 'leave', emp: 'Divya Verma', empId: 'EMP006', from: formatDateISO(today), to: formatDateISO(new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000)), days: 3, type: 'Sick Leave', reason: 'Fever and rest', status: 'Approved' },
-    { id: 'OVE-001', recordType: 'overtime', emp: 'Karan Mehta', empId: 'EMP005', date: formatDateISO(yesterday), hours: '2h 00m', reason: 'Stock counting', status: 'Approved' },
+    { id: 'LVE-002', recordType: 'leave', emp: 'Priya Sharma', empId: 'EMP002', from: formatDateISO(yesterday), to: formatDateISO(yesterday), days: 1, type: 'Casual Leave', reason: 'Personal work', status: 'Approved' },
+    { id: 'LVE-003', recordType: 'leave', emp: 'Meera Joshi', empId: 'EMP008', from: formatDateISO(today), to: formatDateISO(today), days: 1, type: 'Sick Leave', reason: 'Headache', status: 'Pending' },
+    { id: 'OVE-001', recordType: 'overtime', emp: 'Karan Mehta', empId: 'EMP005', date: formatDateISO(yesterday), extraHours: '2h 00m', reason: 'Stock counting', status: 'Approved', rate: '150', amount: '300' },
+    { id: 'OVE-002', recordType: 'overtime', emp: 'Rajesh Kumar', empId: 'EMP001', date: formatDateISO(yesterday), extraHours: '1h 30m', reason: 'Monthly report', status: 'Approved', rate: '150', amount: '225' },
+    { id: 'OVE-003', recordType: 'overtime', emp: 'Sunita Singh', empId: 'EMP004', date: formatDateISO(yesterday), extraHours: '1h 00m', reason: 'Inventory audit', status: 'Pending', rate: '125', amount: '125' },
   ]);
 
   // ──────────────────────────────────────────────────────────────

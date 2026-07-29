@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MdQrCode, MdDownload, MdPrint, MdPerson } from 'react-icons/md';
 import { employeesApi, attendanceApi } from '../../utils/api';
+import QRCode from 'qrcode';
 
 const EmployeeQRCode = () => {
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [qrData, setQrData] = useState(null);
+  const [qrImageUrl, setQrImageUrl] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const qrCanvasRef = useRef(null);
 
   const fetchEmployees = async () => {
     try {
@@ -29,6 +32,17 @@ const EmployeeQRCode = () => {
     try {
       const response = await attendanceApi.generateQr(employeeId);
       setQrData(response.data);
+      
+      // Generate QR code image
+      const qrImage = await QRCode.toDataURL(response.data.qrToken, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      });
+      setQrImageUrl(qrImage);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to generate QR code');
     } finally {
@@ -37,31 +51,16 @@ const EmployeeQRCode = () => {
   };
 
   const downloadQR = () => {
-    if (!qrData) return;
-    
-    // Create a simple QR code representation
-    const canvas = document.createElement('canvas');
-    canvas.width = 300;
-    canvas.height = 300;
-    const ctx = canvas.getContext('2d');
-    
-    // Draw placeholder QR code
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, 300, 300);
-    ctx.fillStyle = '#000000';
-    ctx.font = '16px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('QR Code', 150, 140);
-    ctx.fillText(qrData.qrToken, 150, 160);
+    if (!qrImageUrl || !qrData) return;
     
     const link = document.createElement('a');
-    link.download = `qr_${qrData.employeeName}.png`;
-    link.href = canvas.toDataURL();
+    link.download = `qr_${qrData.employeeName.replace(/\s+/g, '_')}.png`;
+    link.href = qrImageUrl;
     link.click();
   };
 
   const printIDCard = () => {
-    if (!qrData) return;
+    if (!qrData || !qrImageUrl) return;
     
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
@@ -76,20 +75,18 @@ const EmployeeQRCode = () => {
               width: 300px; 
               margin: 0 auto;
               text-align: center;
+              background: white;
             }
-            .logo { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-            .qr-placeholder { 
+            .logo { font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1a1a1a; }
+            .qr-image { 
               width: 150px; 
               height: 150px; 
-              border: 2px dashed #000; 
               margin: 20px auto;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 12px;
+              border: 1px solid #ddd;
             }
-            .employee-name { font-size: 18px; font-weight: bold; margin: 10px 0; }
-            .employee-id { font-size: 14px; color: #666; }
+            .employee-name { font-size: 18px; font-weight: bold; margin: 10px 0; color: #333; }
+            .employee-id { font-size: 14px; color: #666; margin-bottom: 5px; }
+            .footer { font-size: 12px; color: #999; margin-top: 15px; }
           </style>
         </head>
         <body>
@@ -97,8 +94,8 @@ const EmployeeQRCode = () => {
             <div class="logo">AIRJET ERP</div>
             <div class="employee-name">${qrData.employeeName}</div>
             <div class="employee-id">ID: ${qrData.qrToken}</div>
-            <div class="qr-placeholder">QR Code</div>
-            <small>Scan for attendance</small>
+            <img src="${qrImageUrl}" class="qr-image" alt="QR Code" />
+            <div class="footer">Scan for attendance</div>
           </div>
         </body>
       </html>
@@ -161,12 +158,20 @@ const EmployeeQRCode = () => {
                   <h5 className="d_card_title mb-3">QR Code for {qrData.employeeName}</h5>
                   
                   <div className="qr-code-display mb-3">
-                    <div className="qr-placeholder">
-                      <MdQrCode size={150} />
-                      <div className="mt-2">
-                        <small>{qrData.qrToken}</small>
+                    {qrImageUrl ? (
+                      <img 
+                        src={qrImageUrl} 
+                        alt="QR Code" 
+                        style={{ width: '200px', height: '200px', border: '1px solid #ddd' }}
+                      />
+                    ) : (
+                      <div className="qr-placeholder">
+                        <MdQrCode size={150} />
+                        <div className="mt-2">
+                          <small>{qrData.qrToken}</small>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   <div className="d-flex gap-2 justify-content-center">

@@ -127,6 +127,7 @@ const Attendance = ({ defaultTab = 'records' }) => {
   const absent  = records.filter(r => r.status === 'Absent').length;
   const late    = records.filter(r => r.status === 'Late').length;
   const leave   = records.filter(r => r.status === 'Leave').length;
+  const earlyCheckout = records.filter(r => r.earlyCheckout === true).length;
 
   const canManage = canTakeAttendance(currentUser?.role);
 
@@ -180,7 +181,7 @@ const Attendance = ({ defaultTab = 'records' }) => {
       )}
 
       <div className="row g-3 mb-3">
-        {[['Present', present, 'd_success'], ['Absent', absent, 'd_danger'], ['Late', late, 'd_warning'], ['On Leave', leave, 'd_info']].map(([lbl, val, cls]) => (
+        {[['Present', present, 'd_success'], ['Absent', absent, 'd_danger'], ['Late', late, 'd_warning'], ['On Leave', leave, 'd_info'], ['Early Out', earlyCheckout, 'd_danger']].map(([lbl, val, cls]) => (
           <div key={lbl} className="col-6 col-md-3">
             <div className="d_stat_card" style={{ borderLeftColor: `var(--${cls.replace('d_', 'd-')})` }}>
               <div className="d_stat_value">{val}</div>
@@ -263,18 +264,24 @@ const Attendance = ({ defaultTab = 'records' }) => {
               </div>
               <div className="d_card_body p-0">
                 <div className="d_table_wrap">
-                  <table className="d_table">
-                    <thead><tr><th>ID</th><th>Employee</th><th>Date</th><th>Extra Hours</th><th>Reason</th><th>Rate</th><th>Amount</th></tr></thead>
-                    <tbody>
-                      {overtimeData.length === 0 && <tr className="d_empty"><td colSpan={7}>No overtime records.</td></tr>}
-                      {overtimeData.map(o => (
-                        <tr key={o._id}>
-                          <td><code>{o.id}</code></td>
-                          <td><strong>{o.emp}</strong></td>
-                          <td>{o.date}</td><td><strong>{o.extraHours}</strong></td>
-                          <td>{o.reason}</td><td>{o.rate}</td><td><strong>{o.amount}</strong></td>
-                        </tr>
-                      ))}
+<table className="d_table">
+                     <thead><tr><th>ID</th><th>Employee</th><th>Emp ID</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Status</th><th>Late Min</th><th>Early Checkout</th></tr></thead>
+                     <tbody>
+                       {records.length === 0 && <tr className="d_empty"><td colSpan={10}>No records found.</td></tr>}
+                       {records.map(r => (
+                         <tr key={r._id}>
+                           <td><code>{r.id}</code></td>
+                           <td><strong>{r.emp}</strong></td>
+                           <td><code>{r.empId}</code></td>
+                           <td>{r.date}</td>
+                           <td>{r.checkIn}</td>
+                           <td>{r.checkOut}</td>
+                           <td>{r.hours}</td>
+                           <td><span className={`d_badge ${statusClass[r.status]}`}>{r.status}</span></td>
+                           <td>{r.lateMinutes || 0} min</td>
+                           <td>{r.earlyCheckout ? <span className="d_badge d_danger">Yes</span> : <span className="d_badge d_success">No</span>}</td>
+                         </tr>
+                       ))}
                     </tbody>
                   </table>
                 </div>

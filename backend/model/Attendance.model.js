@@ -31,6 +31,7 @@ const attendanceSchema = new mongoose.Schema({
   updatedBy: { type: mongoose.Types.ObjectId, ref: 'user' },
   isHoliday: { type: Boolean, default: false },
   isWeekOff: { type: Boolean, default: false },
+  earlyCheckout: { type: Boolean, default: false },
   lastScannedAt: { type: Date },
 }, { timestamps: true });
 

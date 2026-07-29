@@ -36,7 +36,7 @@ const AttendanceReport = () => {
     if (!reportData) return;
     
     const csv = [
-      ['Employee', 'Employee ID', 'Date', 'Check In', 'Check Out', 'Working Hours', 'Status', 'Late Minutes', 'Overtime Minutes'],
+      ['Employee', 'Employee ID', 'Date', 'Check In', 'Check Out', 'Working Hours', 'Status', 'Late Minutes', 'Overtime Minutes', 'Early Checkout'],
       ...reportData.records.map(r => [
         r.emp,
         r.empId,
@@ -46,7 +46,8 @@ const AttendanceReport = () => {
         r.hours,
         r.status,
         r.lateMinutes,
-        r.overtimeMinutes
+        r.overtimeMinutes,
+        r.earlyCheckout ? 'Yes' : 'No',
       ])
     ].map(row => row.join(',')).join('\n');
 
@@ -159,16 +160,16 @@ const AttendanceReport = () => {
             <div className="col-md-2">
               <div className="d_card">
                 <div className="d_card_body text-center">
-                  <div className="d_stat_value">{reportData.stats.totalWorkingHours.toFixed(1)}h</div>
-                  <div className="d_stat_label">Total Hours</div>
+                  <div className="d_stat_value">{reportData.stats.earlyCheckout || 0}</div>
+                  <div className="d_stat_label">Early Checkout</div>
                 </div>
               </div>
             </div>
             <div className="col-md-2">
               <div className="d_card">
                 <div className="d_card_body text-center">
-                  <div className="d_stat_value">{reportData.stats.totalOvertime}m</div>
-                  <div className="d_stat_label">Overtime</div>
+                  <div className="d_stat_value">{reportData.stats.totalLateMinutes || 0}m</div>
+                  <div className="d_stat_label">Total Late Min</div>
                 </div>
               </div>
             </div>
@@ -191,36 +192,38 @@ const AttendanceReport = () => {
                 <table className="d_table">
                   <thead>
                     <tr>
-                      <th>Employee</th>
-                      <th>Employee ID</th>
-                      <th>Date</th>
-                      <th>Check In</th>
-                      <th>Check Out</th>
-                      <th>Working Hours</th>
-                      <th>Status</th>
-                      <th>Late Minutes</th>
-                      <th>Overtime</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportData.records.map((record) => (
-                      <tr key={record._id}>
-                        <td>{record.emp}</td>
-                        <td>{record.empId}</td>
-                        <td>{record.date}</td>
-                        <td>{record.checkIn}</td>
-                        <td>{record.checkOut}</td>
-                        <td>{record.hours}</td>
-                        <td>
-                          <span className={`d_badge ${
-                            record.status === 'Present' ? 'd_success' : 
-                            record.status === 'Absent' ? 'd_danger' : 'd_warning'
-                          }`}>
-                            {record.status}
-                          </span>
-                        </td>
-                        <td>{record.lateMinutes || 0}</td>
-                        <td>{record.overtimeMinutes || 0}</td>
+<th>Employee</th>
+                       <th>Employee ID</th>
+                       <th>Date</th>
+                       <th>Check In</th>
+                       <th>Check Out</th>
+                       <th>Working Hours</th>
+                       <th>Status</th>
+                       <th>Late Minutes</th>
+                       <th>Overtime</th>
+                       <th>Early Checkout</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     {reportData.records.map((record) => (
+                       <tr key={record._id}>
+                         <td>{record.emp}</td>
+                         <td>{record.empId}</td>
+                         <td>{record.date}</td>
+                         <td>{record.checkIn}</td>
+                         <td>{record.checkOut}</td>
+                         <td>{record.hours}</td>
+                         <td>
+                           <span className={`d_badge ${
+                             record.status === 'Present' ? 'd_success' : 
+                             record.status === 'Absent' ? 'd_danger' : 'd_warning'
+                           }`}>
+                             {record.status}
+                           </span>
+                         </td>
+                         <td>{record.lateMinutes || 0}</td>
+                         <td>{record.overtimeMinutes || 0}</td>
+                         <td>{record.earlyCheckout ? 'Yes' : 'No'}</td>
                       </tr>
                     ))}
                   </tbody>
