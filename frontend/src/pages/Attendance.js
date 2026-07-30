@@ -208,10 +208,10 @@ const Attendance = ({ defaultTab = 'records' }) => {
                 <div className="d_table_wrap">
                   <table className="d_table">
                     <thead>
-                      <tr><th>ID</th><th>Employee</th><th>Emp ID</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Status</th></tr>
+                      <tr><th>ID</th><th>Employee</th><th>Emp ID</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Status</th><th>Late Min</th></tr>
                     </thead>
                     <tbody>
-                      {records.length === 0 && <tr className="d_empty"><td colSpan={7}>No records found.</td></tr>}
+                      {records.length === 0 && <tr className="d_empty"><td colSpan={8}>No records found.</td></tr>}
                       {records.map(r => (
                         <tr key={r._id}>
                           <td><code>{r.id}</code></td>
@@ -221,6 +221,7 @@ const Attendance = ({ defaultTab = 'records' }) => {
                           <td>{r.checkIn}</td>
                           <td>{r.checkOut}</td>
                           <td><span className={`d_badge ${statusClass[r.status]}`}>{r.status}</span></td>
+                          <td>{r.lateMinutes > 0 ? <span className="d_badge d_warning">{r.lateMinutes}m</span> : <span className="text-muted">—</span>}</td>
                         </tr>
                       ))}
                     </tbody>
