@@ -68,9 +68,9 @@ router.delete('/attendance/:id', authenticate, authorize('Admin', 'Head', 'Manag
 router.post('/attendance/check-in', authenticate, authorize('Admin', 'Head', 'Manager'), controller.checkIn);
 router.post('/attendance/check-out', authenticate, authorize('Admin', 'Head', 'Manager'), controller.checkOut);
 router.get('/attendance/my', authenticate, controller.getMyAttendance);
-router.post('/attendance/scan', authenticate, authorize('Admin', 'HR', 'Manager'), controller.scanAttendance);
-router.get('/attendance/today', authenticate, authorize('Admin', 'HR', 'Manager'), controller.getTodayAttendance);
-router.get('/attendance/report', authenticate, authorize('Admin', 'HR', 'Manager'), controller.getAttendanceReport);
+router.post('/attendance/scan', authenticate, controller.scanAttendance);
+router.get('/attendance/today', authenticate, controller.getTodayAttendance);
+router.get('/attendance/report', authenticate, controller.getAttendanceReport);
 router.post('/employees/:employeeId/generate-qr', authenticate, authorize('Admin', 'HR', 'Manager'), controller.generateQrToken);
 
 // ──────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ router.delete('/attendance/overtime/:id', authenticate, authorize('Admin', 'Head
 // Leave Tracking Routes
 // ──────────────────────────────────────────────────────────────
 router.get('/attendance/leave', authenticate, authorize('Admin', 'HR', 'Manager', 'Head'), controller.getLeaveRecords);
-router.post('/attendance/leave', authenticate, authorize('Admin', 'HR', 'Manager'), controller.createAttendanceRecord);
+router.post('/attendance/leave', authenticate, authorize('Admin', 'HR', 'Manager'), controller.applyLeave);
 router.put('/attendance/leave/:id', authenticate, authorize('Admin', 'HR', 'Manager'), controller.updateLeaveRecord);
 router.delete('/attendance/leave/:id', authenticate, authorize('Admin', 'Head'), controller.deleteAttendanceRecord);
 
@@ -93,6 +93,7 @@ router.delete('/attendance/leave/:id', authenticate, authorize('Admin', 'Head'),
 // Late Entry Report Routes
 // ──────────────────────────────────────────────────────────────
 router.get('/attendance/late-entries', authenticate, authorize('Admin', 'HR', 'Manager', 'Head'), controller.getLateEntryReport);
+router.post('/attendance/initialize-daily', authenticate, authorize('Admin', 'HR'), controller.initializeDailyAttendance);
 
 // ──────────────────────────────────────────────────────────────
 // ERP Records (Payroll, Sales docs, GRN, Service, Accounts, etc.)

@@ -13,11 +13,9 @@ import EmployeeMaster   from './pages/EmployeeMaster';
 import Department       from './pages/Department';
 import Designation      from './pages/Designation';
 import Attendance       from './pages/Attendance';
-import AttendanceDashboard from './pages/attendance/AttendanceDashboard';
 import QRScanner        from './pages/attendance/QRScanner';
 import TodayAttendance  from './pages/attendance/TodayAttendance';
 import EmployeeQRCode   from './pages/attendance/EmployeeQRCode';
-import CheckInOut       from './pages/attendance/CheckInOut';
 import LeaveTracking    from './pages/attendance/LeaveTracking';
 import OvertimeCalculation from './pages/attendance/OvertimeCalculation';
 import LateEntryReport  from './pages/attendance/LateEntryReport';
@@ -62,10 +60,8 @@ const PAGE_MAP = {
 
   // ── Attendance ─────────────────────────────────────────────
   attendance:                   { component: Attendance, defaultTab: 'records' },
-  'Attendance Dashboard':       { component: AttendanceDashboard },
-  'QR Scanner':                 { component: QRScanner },
   'Today Attendance':           { component: TodayAttendance },
-  'Check In/Out':               { component: CheckInOut },
+  'QR Scanner':                 { component: QRScanner },
   'Leave Tracking':             { component: LeaveTracking },
   'Overtime Calculation':       { component: OvertimeCalculation },
   'Late Entry Report':          { component: LateEntryReport },

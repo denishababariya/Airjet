@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { MdEdit, MdDelete, MdVisibility, MdEventNote, MdRefresh, MdAdd } from 'react-icons/md';
-import { attendanceApi } from '../../utils/api';
+import React, { useState, useEffect } from 'react';
+import { MdEdit, MdDelete, MdVisibility, MdEventNote, MdClose, MdAdd, MdPerson, MdSearch } from 'react-icons/md';
+import { attendanceApi, employeesApi } from '../../utils/api';
+import Modal from '../../components/Modal';
 
 const statusBadge = (status) => {
   if (status === 'Approved') return 'd_success';
@@ -19,26 +20,39 @@ const tabs = ['All Leaves', 'Pending Approval', 'Approved', 'Rejected'];
 export default function LeaveTracking() {
   const [activeTab, setActiveTab] = useState('All Leaves');
   const [leaves, setLeaves] = useState([]);
-  const [stats, setStats] = useState({ total: 0, approved: 0, pending: 0, rejected: 0, totalDays: 0 });
   const [loading, setLoading] = useState(true);
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [showModal, setShowModal] = useState(false);
+  const [employees, setEmployees] = useState([]);
+  const [search, setSearch] = useState('');
+  const [form, setForm] = useState({
+    employeeId: '',
+    from: '',
+    to: '',
+    fromTime: '',
+    toTime: '',
+    type: 'Casual',
+    reason: '',
+    status: 'Pending'
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [editId, setEditId] = useState(null);
 
-  const fetchLeaves = useCallback(async () => {
+  const fetchLeaves = async () => {
     setLoading(true);
     try {
-      const params = { month, year };
-      const res = await attendanceApi.getLeave(params);
+      const res = await attendanceApi.getLeave();
       setLeaves(res.data.records || []);
-      setStats(res.data.stats || { total: 0, approved: 0, pending: 0, rejected: 0, totalDays: 0 });
     } catch (err) {
-      console.error('Failed to fetch leave data:', err);
+      console.error('Failed to fetch leaves:', err);
     } finally {
       setLoading(false);
     }
-  }, [month, year]);
+  };
 
-  useEffect(() => { fetchLeaves(); }, [fetchLeaves]);
+  useEffect(() => {
+    fetchLeaves();
+    employeesApi.getAll().then(res => setEmployees(res.data)).catch(() => {});
+  }, []);
 
   const filtered = leaves.filter(l => {
     if (activeTab === 'All Leaves') return true;
@@ -48,48 +62,193 @@ export default function LeaveTracking() {
     return true;
   });
 
+  const handleApplyLeave = async (e) => {
+    e.preventDefault();
+    if (!form.employeeId || !form.from || !form.to || !form.reason) return;
+    setSubmitting(true);
+    try {
+      if (editId) {
+        await attendanceApi.updateLeave(editId, {
+          employeeId: form.employeeId,
+          from: form.from,
+          to: form.to,
+          fromTime: form.fromTime,
+          toTime: form.toTime,
+          type: form.type,
+          reason: form.reason,
+          status: form.status
+        });
+      } else {
+        await attendanceApi.createLeave({
+          employeeId: form.employeeId,
+          from: form.from,
+          to: form.to,
+          fromTime: form.fromTime,
+          toTime: form.toTime,
+          type: form.type,
+          reason: form.reason
+        });
+      }
+      setShowModal(false);
+      setEditId(null);
+      setForm({ employeeId: '', from: '', to: '', fromTime: '', toTime: '', type: 'Casual', reason: '', status: 'Pending' });
+      fetchLeaves();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to apply leave');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEdit = (leave) => {
+    setEditId(leave._id);
+    setForm({
+      employeeId: leave.employeeId?._id || leave.employeeId,
+      from: leave.from,
+      to: leave.to,
+      fromTime: leave.fromTime || '',
+      toTime: leave.toTime || '',
+      type: leave.type,
+      reason: leave.reason,
+      status: leave.status
+    });
+    setShowModal(true);
+  };
+
+  const handleAddNew = () => {
+    setEditId(null);
+    setForm({ employeeId: '', from: '', to: '', fromTime: '', toTime: '', type: 'Casual', reason: '', status: 'Pending' });
+    setShowModal(true);
+  };
+
   return (
     <div>
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
-          <div className="d_page_title">Leave Tracking</div>
-          <div className="d_page_subtitle">Manage and monitor employee leave requests</div>
+          <h1 className="d_page_title">Leave Tracking</h1>
+          <p className="d_page_subtitle">Manage and monitor employee leave requests</p>
         </div>
-        <div className="d-flex gap-2 align-items-center">
-          <select className="d_form_select d_select_sm" value={month} onChange={e => setMonth(Number(e.target.value))}>
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('en-US', { month: 'long' })}</option>
-            ))}
-          </select>
-          <select className="d_form_select d_select_sm" value={year} onChange={e => setYear(Number(e.target.value))}>
-            {[2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-          <button className="d_btn d_btn_outline" onClick={fetchLeaves}><MdRefresh /> Refresh</button>
-          <button className="d_btn d_btn_primary"><MdAdd /> Apply Leave</button>
-        </div>
+        <button className="d_btn d_btn_primary" onClick={handleAddNew}>
+          <MdAdd /> Apply Leave
+        </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div className="d_card">
-          <div className="d_card_header"><div className="d_card_title"><span className="d_card_icon"><MdEventNote /></span>Total Leaves</div></div>
-          <div className="d_card_body" style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--d-primary)' }}>{stats.total}</div>
-        </div>
-        <div className="d_card">
-          <div className="d_card_header"><div className="d_card_title"><span className="d_card_icon" style={{ color: 'var(--d-success)' }}>✓</span>Approved</div></div>
-          <div className="d_card_body" style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--d-success)' }}>{stats.approved}</div>
-        </div>
-        <div className="d_card">
-          <div className="d_card_header"><div className="d_card_title"><span className="d_card_icon" style={{ color: 'var(--d-warning)' }}>⏳</span>Pending</div></div>
-          <div className="d_card_body" style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--d-warning)' }}>{stats.pending}</div>
-        </div>
-        <div className="d_card">
-          <div className="d_card_header"><div className="d_card_title"><span className="d_card_icon" style={{ color: 'var(--d-danger)' }}>✗</span>Rejected</div></div>
-          <div className="d_card_body" style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--d-danger)' }}>{stats.rejected}</div>
-        </div>
-      </div>
+      {showModal && (
+        <Modal open={showModal} onClose={() => { setShowModal(false); setEditId(null); setForm({ employeeId: '', from: '', to: '', fromTime: '', toTime: '', type: 'Casual', reason: '', status: 'Pending' }); }} title={editId ? 'Edit Leave' : 'Apply Leave'} size="md">
+          <form onSubmit={handleApplyLeave}>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Employee <span className="d_req">*</span></label>
+                <select
+                  className="d_form_control"
+                  value={form.employeeId}
+                  onChange={e => setForm({...form, employeeId: e.target.value})}
+                  required
+                >
+                  <option value="">Select Employee</option>
+                  {employees.map(emp => (
+                    <option key={emp._id} value={emp._id}>{emp.name} ({emp.id})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Leave Type <span className="d_req">*</span></label>
+                <select
+                  className="d_form_control"
+                  value={form.type}
+                  onChange={e => setForm({...form, type: e.target.value})}
+                  required
+                >
+                  <option value="Casual">Casual</option>
+                  <option value="Sick">Sick</option>
+                  <option value="Annual">Annual</option>
+                </select>
+              </div>
+            </div>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">From Date <span className="d_req">*</span></label>
+                <input
+                  type="date"
+                  className="d_form_control"
+                  value={form.from}
+                  onChange={e => setForm({...form, from: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">From Time</label>
+                <input
+                  type="time"
+                  className="d_form_control"
+                  value={form.fromTime}
+                  onChange={e => setForm({...form, fromTime: e.target.value})}
+                />
+              </div>
+            </div>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">To Date <span className="d_req">*</span></label>
+                <input
+                  type="date"
+                  className="d_form_control"
+                  value={form.to}
+                  onChange={e => setForm({...form, to: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">To Time</label>
+                <input
+                  type="time"
+                  className="d_form_control"
+                  value={form.toTime}
+                  onChange={e => setForm({...form, toTime: e.target.value})}
+                />
+              </div>
+            </div>
+            <div className="d_form_row">
+              <div className="d_form_group">
+                <label className="d_form_label">Reason <span className="d_req">*</span></label>
+                <textarea
+                  className="d_form_control"
+                  rows="3"
+                  value={form.reason}
+                  onChange={e => setForm({...form, reason: e.target.value})}
+                  required
+                  placeholder="Please provide reason for leave"
+                ></textarea>
+              </div>
+            </div>
+            {editId && (
+              <div className="d_form_row cols-2">
+                <div className="d_form_group">
+                  <label className="d_form_label">Status <span className="d_req">*</span></label>
+                  <select
+                    className="d_form_control"
+                    value={form.status}
+                    onChange={e => setForm({...form, status: e.target.value})}
+                    required
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                  </select>
+                </div>
+              </div>
+            )}
+            <div className="d_form_actions">
+              <button type="button" className="d_btn d_btn_outline" onClick={() => setShowModal(false)}>Cancel</button>
+              <button type="submit" className="d_btn d_btn_primary" disabled={submitting}>
+                {submitting ? 'Submitting...' : (editId ? 'Update Leave' : 'Submit Leave')}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
-      <div className="d_card">
-        <div className="d_card_header">
+      <div className="d_card mb-4">
+        <div className="d_card_body">
           <div className="d_tabs">
             {tabs.map(tab => (
               <button
@@ -102,25 +261,61 @@ export default function LeaveTracking() {
             ))}
           </div>
         </div>
-        <div className="d_card_body">
-          <div className="d_table_wrap">
-            <table className="d_table" style={{ minWidth: 750 }}>
-              <thead>
-                <tr>
-                  <th>Leave ID</th><th>Employee</th><th>Type</th><th>From Date</th>
-                  <th>To Date</th><th>Days</th><th>Reason</th><th>Status</th><th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={9} className="text-center py-4">Loading...</td></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><td colSpan={9} className="text-center py-4 text-muted">No leave records found</td></tr>
-                ) : (
-                  filtered.map(l => (
+      </div>
+
+      <div className="d_card">
+        <div className="d_card_header d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div className="d_card_title">
+            <span className="d_card_icon"><MdEventNote /></span>
+            Leave Requests
+          </div>
+          <div className="d_search_box">
+            <span className="d_search_icon"><MdSearch /></span>
+            <input
+              className="d_search_input"
+              placeholder="Search employee..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="d_card_body p-0">
+          {loading ? (
+            <div className="text-center py-4">Loading...</div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-4 text-muted">No leave records found</div>
+          ) : (
+            <div className="d_table_wrap">
+              <table className="d_table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Type</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Days</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.filter(l => 
+                    l.emp?.toLowerCase().includes(search.toLowerCase())
+                  ).map(l => (
                     <tr key={l._id}>
-                      <td>{l.id || l.empId}</td>
-                      <td>{l.emp}</td>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          {l.employeeId?.image ? (
+                            <img src={l.employeeId.image} alt={l.emp} className="d_table_avatar me-2" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+                          ) : (
+                            <div className="d-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: 32, height: 32, fontSize: 12 }}>
+                              {l.emp?.charAt(0)}
+                            </div>
+                          )}
+                          {l.emp}
+                        </div>
+                      </td>
                       <td><span className={`d_badge ${typeBadge(l.type)}`}>{l.type}</span></td>
                       <td>{l.from}</td>
                       <td>{l.to}</td>
@@ -130,16 +325,15 @@ export default function LeaveTracking() {
                       <td>
                         <div className="d_action_btns">
                           <button className="d_icon_btn d_view"><MdVisibility /></button>
-                          <button className="d_icon_btn d_edit"><MdEdit /></button>
-                          <button className="d_icon_btn d_del"><MdDelete /></button>
+                          <button className="d_icon_btn d_edit" onClick={() => handleEdit(l)}><MdEdit /></button>
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

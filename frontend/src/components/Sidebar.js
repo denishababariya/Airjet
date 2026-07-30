@@ -25,7 +25,7 @@ const menuConfig = [
       },
       {
         label: 'Attendance', icon: <MdAccessTime />, id: 'attendance',
-        children: ['Attendance Dashboard', 'QR Scanner', 'Today Attendance', 'Check In/Out', 'Leave Tracking', 'Overtime Calculation', 'Employee QR Codes', 'Late Entry Report'],
+        children: ['Today Attendance', 'QR Scanner', 'Leave Tracking', 'Overtime Calculation', 'Employee QR Codes', 'Late Entry Report'],
         module: 'Attendance',
       },
       {
