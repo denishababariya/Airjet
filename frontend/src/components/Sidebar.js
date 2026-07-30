@@ -7,6 +7,7 @@ import {
 } from 'react-icons/md';
 import { usePermissions } from '../context/PermissionContext';
 import { canTakeAttendance } from '../utils/roles';
+import { isAdminRole, isManagerRole, isHeadRole, isHRRole } from '../utils/roles';
 
 const menuConfig = [
   {
@@ -105,6 +106,9 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
   const [openMenu, setOpenMenu] = useState(null);
   const { hasModuleAccess } = usePermissions();
 
+  const userRole = currentUser?.role || 'User';
+  const hasAdminPanelAccess = isAdminRole(userRole) || isManagerRole(userRole) || isHeadRole(userRole) || isHRRole(userRole);
+
   const toggleMenu = (id) => {
     // If already open → close it; else open this one and close previous
     setOpenMenu(prev => (prev === id ? null : id));
@@ -124,7 +128,6 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
     mobileOpen ? 'd_mobile_open' : '',
   ].filter(Boolean).join(' ');
 
-  const userRole = currentUser?.role || 'User';
   const userName = currentUser?.employee?.name || 'User';
 
   return (
@@ -145,6 +148,9 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
           const hasVisibleItems = section.items.some(item => hasModuleAccess(item.module));
           if (!hasVisibleItems) return null;
 
+          // Hide Administration section for users without admin panel access
+          if (section.section === 'Administration' && !hasAdminPanelAccess) return null;
+
           return (
             <div key={section.section}>
               <div className="d_section_title">{section.section}</div>
@@ -152,6 +158,8 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
               {section.items.map((item) => {
                 if (!hasModuleAccess(item.module)) return null;
                 if (item.id === 'QR Scanner' && !canTakeAttendance(userRole)) return null;
+                // Hide Role Management for users without admin panel access
+                if (item.id === 'Role Management' && !hasAdminPanelAccess) return null;
 
                 const hasChildren = item.children && item.children.length > 0;
                 const isOpen      = openMenu === item.id;   // ← single open check

@@ -4,7 +4,16 @@ import Modal from '../components/Modal';
 import { stockApi, erpApi } from '../utils/api';
 
 const statusClass = { Active:'d_success', Completed:'d_success', 'In Transit':'d_info', Pending:'d_warning', Inactive:'d_danger' };
-const blankWH  = { name: '', location: '', capacity: '', manager: '', status: 'Active' };
+const blankWH  = { name: '', location: '', capacity: '', unitPrice: '', manager: '', status: 'Active' };
+
+const toISODate = (d) => {
+  if (!d) return '';
+  if (d.includes('-') && d.length === 10) return d;
+  const months = { Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12' };
+  const parts = d.split('-');
+  if (parts.length === 3 && months[parts[1]]) return `${parts[2]}-${months[parts[1]]}-${parts[0]}`;
+  return d;
+};
 const blankTRF = { from: '', to: '', part: '', qty: '', date: '', status: 'Pending' };
 const blankAUD = { location: '', date: '', items: '', status: 'Pending', notes: '' };
 
@@ -66,9 +75,9 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
     setForm(blank); setEditId(null); setErrors({}); setModal(true);
   };
   const openEdit = (row) => {
-    if (isWH) setForm({ name: row.itemName, location: row.location || '', capacity: row.quantity || 0, manager: row.supplier || '', status: 'Active' });
-    else if (isAUD) setForm({ location: row.location, date: row.date, items: row.items, status: row.status, notes: row.notes || '' });
-    else setForm({ from: row.from, to: row.to, part: row.part, qty: row.qty, date: row.date, status: row.status });
+    if (isWH) setForm({ name: row.itemName, location: row.location || '', capacity: row.quantity || 0, unitPrice: row.unitPrice || 0, manager: row.supplier || '', status: 'Active' });
+    else if (isAUD) setForm({ location: row.location, date: toISODate(row.date), items: row.items, status: row.status, notes: row.notes || '' });
+    else setForm({ from: row.from, to: row.to, part: row.part, qty: row.qty, date: toISODate(row.date), status: row.status });
     setEditId(row._id || row.id); setErrors({}); setModal(true);
   };
 
@@ -92,6 +101,7 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
     if (Object.keys(e).length) { setErrors(e); return; }
     if (isWH) {
       const capacity = parseInt(form.capacity) || 0;
+      const unitPrice = parseFloat(String(form.unitPrice || '0').replace(/[^\d.]/g, '')) || 0;
       const payload = {
         id: `STK${String(Date.now()).slice(-6)}`,
         itemName: form.name,
@@ -99,7 +109,8 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
         category: 'General',
         quantity: capacity,
         unit: 'pieces',
-        unitPrice: 0,
+        unitPrice: unitPrice,
+        totalPrice: capacity * unitPrice,
         location: form.location,
         supplier: form.manager,
         minimumStock: 0,
@@ -289,6 +300,12 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
               <label className="d_form_label">Total Capacity</label>
               <input type="number" className="d_form_control" placeholder="e.g. 5000" {...f('capacity')} />
             </div>
+            <div className="d_form_group">
+              <label className="d_form_label">Unit Price (₹)</label>
+              <input type="number" className="d_form_control" placeholder="e.g. 500" {...f('unitPrice')} />
+            </div>
+          </div>
+          <div className="d_form_row cols-1">
             <div className="d_form_group">
               <label className="d_form_label">Manager <span className="d_req">*</span></label>
               <input className="d_form_control" placeholder="Manager name" {...f('manager')} />

@@ -5,6 +5,7 @@ const ID_PREFIX = {
   'payroll:allowance': 'ALW',
   'payroll:deduction': 'DED',
   'payroll:payslip': 'SLP',
+  'purchase:order': 'PO',
   'purchase:grn': 'GRN',
   'purchase:return': 'RET',
   'sales:quotation': 'QT',

@@ -65,6 +65,7 @@ const erpRecordSchema = new mongoose.Schema({
   capacity: String,
   manager: String,
   status: { type: String, default: 'Active' },
+  entityType: { type: String },
   notes: String,
 }, { timestamps: true });
 

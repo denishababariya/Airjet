@@ -107,7 +107,7 @@ const resetUserPassword = async (req, res) => {
 // Create user with role assignment (Admin only)
 const createUserWithRole = async (req, res) => {
     try {
-        const { employeeId, role } = req.body;
+        const { employeeId, role, password } = req.body;
         
         // Find employee
         const employee = await Employee.findById(employeeId);
@@ -121,8 +121,8 @@ const createUserWithRole = async (req, res) => {
             return res.status(400).json({ error: 'User already exists for this employee' });
         }
 
-        // Generate password
-        const newPassword = generatePassword(10);
+        // Use provided password or generate one
+        const newPassword = password || generatePassword(10);
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         // Create user

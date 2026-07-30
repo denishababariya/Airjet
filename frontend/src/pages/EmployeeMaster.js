@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MdPeople, MdAdd, MdEdit, MdDelete, MdSearch, MdVpnKey } from 'react-icons/md';
+import { MdPeople, MdAdd, MdEdit, MdDelete, MdSearch } from 'react-icons/md';
 import Modal from '../components/Modal';
 import { employeesApi, departmentsApi, designationsApi, hrApi } from '../utils/api';
 
@@ -7,7 +7,10 @@ const blank = {
   name: '', email: '', phone: '', address: '', gender: '', salary: '',
   workShift: 'Day', cast: '', bod: '', age: '', joiningDate: '',
   department: '', designation: '', status: 'Active',
+  password: '', confirmPassword: '',
 };
+
+const ADMIN_DESIGNATIONS = ['HR', 'Admin', 'Manager', 'Head'];
 
 const statusClass = { Active: 'd_success', Inactive: 'd_danger', 'On Leave': 'd_warning' };
 
@@ -19,14 +22,18 @@ const EmployeeMaster = ({ currentUser }) => {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(false);
-  const [pwdModal, setPwdModal] = useState(false);
-  const [generatedPwd, setGeneratedPwd] = useState('');
-  const [pwdEmployee, setPwdEmployee] = useState(null);
   const [form, setForm] = useState(blank);
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
 
   const canManage = ['Admin', 'HR', 'Manager'].includes(currentUser?.role);
+
+  const isAdminDesignation = (designationId) => {
+    const designation = designations.find(d => d._id === designationId);
+    return designation && ADMIN_DESIGNATIONS.some(admin => 
+      designation.title?.toLowerCase().includes(admin.toLowerCase())
+    );
+  };
 
   const fetchAll = async () => {
     setLoading(true);
@@ -91,6 +98,18 @@ const EmployeeMaster = ({ currentUser }) => {
     if (!form.phone.trim()) e.phone = 'Phone number is required';
     if (!form.email.trim()) e.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
+    
+    // Password required for admin designations
+    if (!editId && isAdminDesignation(form.designation)) {
+      if (!form.password.trim()) {
+        e.password = 'Password is required for admin role employees';
+      } else if (form.password.length < 6) {
+        e.password = 'Password must be at least 6 characters';
+      } else if (form.password !== form.confirmPassword) {
+        e.confirmPassword = 'Passwords do not match';
+      }
+    }
+    
     return e;
   };
 
@@ -114,10 +133,18 @@ const EmployeeMaster = ({ currentUser }) => {
         designation: form.designation,
         status: form.status,
       };
+      
       if (editId) {
         await employeesApi.update(editId, payload);
       } else {
-        await employeesApi.create(payload);
+        const employee = await employeesApi.create(payload);
+        
+        // Create user account with password for admin designations
+        if (isAdminDesignation(form.designation) && form.password) {
+          const designation = designations.find(d => d._id === form.designation);
+          const role = designation?.title || 'User';
+          await hrApi.createUserWithRole(employee.data._id, role, form.password);
+        }
       }
       setModal(false);
       fetchAll();
@@ -133,18 +160,6 @@ const EmployeeMaster = ({ currentUser }) => {
       fetchAll();
     } catch (err) {
       setError(err.displayMessage || 'Failed to delete employee');
-    }
-  };
-
-  const handleCreateLogin = async (emp) => {
-    if (!window.confirm(`Create login account for ${emp.name}?`)) return;
-    try {
-      const { data: result } = await hrApi.generatePassword(emp._id);
-      setGeneratedPwd(result.password);
-      setPwdEmployee(result.employee);
-      setPwdModal(true);
-    } catch (err) {
-      setError(err.displayMessage || 'Failed to create login');
     }
   };
 
@@ -225,7 +240,6 @@ const EmployeeMaster = ({ currentUser }) => {
                         {canManage && (
                           <>
                             <button className="d_icon_btn d_edit" onClick={() => openEdit(e)} title="Edit"><MdEdit /></button>
-                            <button className="d_icon_btn" style={{ color: 'var(--d-warning)' }} onClick={() => handleCreateLogin(e)} title="Create Login"><MdVpnKey /></button>
                             <button className="d_icon_btn d_del" onClick={() => handleDelete(e._id)} title="Delete"><MdDelete /></button>
                           </>
                         )}
@@ -329,25 +343,23 @@ const EmployeeMaster = ({ currentUser }) => {
             <input className="d_form_control" placeholder="e.g. General" {...f('cast')} />
           </div>
         </div>
+        {!editId && isAdminDesignation(form.designation) && (
+          <div className="d_form_row cols-2">
+            <div className="d_form_group">
+              <label className="d_form_label">Password <span className="d_req">*</span></label>
+              <input type="password" className="d_form_control" placeholder="Enter password" {...f('password')} />
+              {errors.password && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.password}</span>}
+            </div>
+            <div className="d_form_group">
+              <label className="d_form_label">Confirm Password</label>
+              <input type="password" className="d_form_control" placeholder="Confirm password" {...f('confirmPassword')} />
+              {errors.confirmPassword && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.confirmPassword}</span>}
+            </div>
+          </div>
+        )}
         <div className="d_form_actions">
           <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
           <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Employee' : 'Save Employee'}</button>
-        </div>
-      </Modal>
-
-      <Modal open={pwdModal} onClose={() => setPwdModal(false)} title="Worker Login Created" size="md">
-        <div className="alert alert-success">
-          Login account created for <strong>{pwdEmployee?.name}</strong>
-        </div>
-        <p>Share this temporary password with the employee:</p>
-        <div style={{ background: '#f5f5f5', padding: '12px 16px', borderRadius: 8, fontFamily: 'monospace', fontSize: 18, fontWeight: 700, textAlign: 'center' }}>
-          {generatedPwd}
-        </div>
-        <p style={{ fontSize: 12, color: 'var(--d-text-muted)', marginTop: 12 }}>
-          Employee can login using their email: <strong>{pwdEmployee?.email}</strong>
-        </p>
-        <div className="d_form_actions">
-          <button className="d_btn d_btn_primary" onClick={() => setPwdModal(false)}>Done</button>
         </div>
       </Modal>
     </div>

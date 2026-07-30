@@ -119,7 +119,7 @@ const authorizeHR = (req, res, next) => {
         return res.status(401).json({ error: 'Authentication required' });
     }
 
-    if (!roleMatches(req.user.role, 'HR') && !roleMatches(req.user.role, 'Admin') && !roleMatches(req.user.role, 'Manager')) {
+    if (!roleMatches(req.user.role, 'HR') && !roleMatches(req.user.role, 'Admin') && !roleMatches(req.user.role, 'Manager') && !roleMatches(req.user.role, 'Head')) {
         return res.status(403).json({ 
             error: 'Access denied. HR privileges required.' 
         });

@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { MdShoppingCart, MdAdd, MdEdit, MdVisibility, MdDelete } from 'react-icons/md';
 import Modal from '../components/Modal';
-import { incomeApi, suppliersApi, erpApi } from '../utils/api';
+import { suppliersApi, erpApi } from '../utils/api';
 
-const statusClass = { Active:'d_success', Inactive:'d_danger', Pending:'d_warning', Received:'d_success', 'In Transit':'d_info', Verified:'d_success', Partial:'d_warning', Approved:'d_success' };
+const statusClass = { Active:'d_success', Inactive:'d_danger', Pending:'d_warning', Received:'d_success', 'In Transit':'d_info', Verified:'d_success', Partial:'d_warning', Approved:'d_success', Cancelled:'d_danger' };
 const blankSup = { name: '', contact: '', phone: '', city: '', gst: '', status: 'Active' };
 const blankPO  = { supplier: '', date: '', items: '', amount: '', delivery: '', status: 'Pending' };
+
+const toISODate = (d) => {
+  if (!d) return '';
+  if (d.includes('-') && d.length === 10) return d;
+  const months = { Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12' };
+  const parts = d.split('-');
+  if (parts.length === 3 && months[parts[1]]) return `${parts[2]}-${months[parts[1]]}-${parts[0]}`;
+  return d;
+};
 const blankGRN = { po: '', supplier: '', date: '', items: '', amount: '', receivedBy: '', status: 'Pending' };
 const blankRet = { supplier: '', part: '', qty: '', date: '', reason: '', amount: '', status: 'Pending' };
 
@@ -57,7 +66,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
     setLoading(true);
     setError('');
     try {
-      const { data: list } = await incomeApi.getAll({ incomeType: 'Purchase' });
+      const { data: list } = await erpApi.getAll('purchase', 'order');
       setOrders(list);
     } catch (err) {
       setError(err.displayMessage || 'Failed to load purchase orders');
@@ -81,9 +90,9 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
   };
   const openEdit = (row) => {
     if (isSup) setForm({ name: row.name, contact: row.contact, phone: row.phone, city: row.city, gst: row.gst, status: row.status });
-    else if (isGRN) setForm({ po: row.po, supplier: row.supplier, date: row.date, items: row.items, amount: row.amount, receivedBy: row.receivedBy, status: row.status });
-    else if (isRet) setForm({ supplier: row.supplier, part: row.part, qty: row.qty, date: row.date, reason: row.reason, amount: row.amount, status: row.status });
-    else setForm({ supplier: row.supplier || row.description || '', date: row.date ? row.date.slice(0,10) : '', items: row.items || '', amount: row.amount, delivery: row.delivery || '', status: row.paymentStatus || row.status });
+    else if (isGRN) setForm({ po: row.po, supplier: row.supplier, date: toISODate(row.date), items: row.items, amount: row.amount, receivedBy: row.receivedBy, status: row.status });
+    else if (isRet) setForm({ supplier: row.supplier, part: row.part, qty: row.qty, date: toISODate(row.date), reason: row.reason, amount: row.amount, status: row.status });
+    else setForm({ supplier: row.supplier || '', date: toISODate(row.date), items: row.items || '', amount: row.amount || '', delivery: toISODate(row.delivery), status: row.status || 'Pending' });
     setEditId(row._id || row.id); setErrors({}); setModal(true);
   };
 
@@ -135,17 +144,19 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
       }
     } else {
       const payload = {
-        id: `INC${String(Date.now()).slice(-6)}`,
-        incomeType: 'Purchase',
+        module: 'purchase',
+        recordType: 'order',
+        supplier: form.supplier || '',
+        date: form.date || '',
+        items: Number(form.items) || 0,
         amount: parseFloat(String(form.amount).replace(/[^\d.]/g, '')) || 0,
-        date: form.date,
-        description: form.supplier,
-        paymentStatus: form.status,
-        paymentMethod: 'Bank Transfer',
+        delivery: form.delivery || '',
+        status: form.status || 'Pending',
       };
+      if (!editId) payload.id = `PO-${String(Date.now()).slice(-6)}`;
       try {
-        if (editId) await incomeApi.update(editId, payload);
-        else await incomeApi.create(payload);
+        if (editId) await erpApi.update(editId, payload);
+        else await erpApi.create(payload);
         setModal(false);
         fetchOrders();
       } catch (err) {
@@ -166,7 +177,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
       try { await erpApi.remove(id); fetchReturns(); }
       catch (err) { setError(err.displayMessage || 'Failed to delete return'); }
     } else {
-      try { await incomeApi.remove(id); fetchOrders(); }
+      try { await erpApi.remove(id); fetchOrders(); }
       catch (err) { setError(err.displayMessage || 'Failed to delete purchase order'); }
     }
   };
@@ -239,9 +250,9 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
                   {orders.length === 0 && <tr className="d_empty"><td colSpan={8}>No purchase orders found.</td></tr>}
                   {orders.map(o => (
                     <tr key={o._id}>
-                      <td><code>{o.id}</code></td><td><strong>{o.description || o.supplier || '-'}</strong></td><td>{o.date ? o.date.slice(0,10) : '-'}</td>
+                      <td><code>{o.id}</code></td><td><strong>{o.supplier || '-'}</strong></td><td>{o.date || '-'}</td>
                       <td>{o.items || '-'}</td><td><strong>₹{(o.amount || 0).toLocaleString()}</strong></td><td>{o.delivery || '-'}</td>
-                      <td><span className={`d_badge ${statusClass[o.paymentStatus] || 'd_info'}`}>{o.paymentStatus || o.status}</span></td>
+                      <td><span className={`d_badge ${statusClass[o.status] || 'd_info'}`}>{o.status}</span></td>
                       <td><div className="d_action_btns">
                         <button className="d_icon_btn d_view"><MdVisibility /></button>
                         <button className="d_icon_btn d_edit" onClick={() => openEdit(o)}><MdEdit /></button>
@@ -390,7 +401,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
             <div className="d_form_group">
               <label className="d_form_label">Status</label>
               <select className="d_form_control" {...f('status')}>
-                <option>Pending</option><option>In Transit</option><option>Received</option>
+                <option>Pending</option><option>In Transit</option><option>Received</option><option>Cancelled</option>
               </select>
             </div>
           </div>

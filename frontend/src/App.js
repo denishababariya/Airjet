@@ -5,7 +5,7 @@ import Layout from './components/Layout';
 import { auth } from './utils/api';
 import { SearchProvider } from './context/SearchContext';
 import { PermissionProvider } from './context/PermissionContext';
-import { isAdminRole, isManagerRole, isHeadRole } from './utils/roles';
+import { isAdminRole, isManagerRole, isHeadRole, isHRRole } from './utils/roles';
 
 // Pages
 import Dashboard        from './pages/Dashboard';
@@ -133,7 +133,7 @@ const PAGE_MAP = {
 
 // Check if user has access to admin panel
 const hasAdminAccess = (role) => {
-  return isAdminRole(role) || isManagerRole(role) || isHeadRole(role);
+  return isAdminRole(role) || isManagerRole(role) || isHeadRole(role) || isHRRole(role);
 };
 
 function App() {
