@@ -1,118 +1,169 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { MdAccessTime, MdWarning, MdPeople, MdBusiness, MdRefresh } from 'react-icons/md';
+import React, { useState, useEffect } from 'react';
+import { MdWarning, MdPeople, MdBusiness, MdAccessTime, MdSearch, MdFilterList } from 'react-icons/md';
 import { attendanceApi } from '../../utils/api';
 
-export default function LateEntryReport() {
-  const [lateEntries, setLateEntries] = useState([]);
-  const [stats, setStats] = useState({ totalLate: 0, totalLateMinutes: 0, avgLateMinutes: 0 });
+const LateEntryReport = () => {
+  const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
-  const fetchLateEntries = useCallback(async () => {
+  const fetchReport = async () => {
     setLoading(true);
     try {
       const params = {};
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
       const res = await attendanceApi.getLateEntries(params);
-      setLateEntries(res.data.lateEntries || []);
-      setStats(res.data.stats || { totalLate: 0, totalLateMinutes: 0, avgLateMinutes: 0 });
+      setEntries(res.data.lateEntries || []);
     } catch (err) {
       console.error('Failed to fetch late entries:', err);
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate]);
+  };
 
-  useEffect(() => { fetchLateEntries(); }, [fetchLateEntries]);
+  useEffect(() => {
+    fetchReport();
+  }, []);
+
+  const avgDelay = entries.length > 0
+    ? Math.round(entries.reduce((sum, e) => sum + (e.lateMinutes || 0), 0) / entries.length)
+    : 0;
 
   return (
     <div>
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
-          <div className="d_page_title">Late Entry Report</div>
-          <div className="d_page_subtitle">Employees with late check-in entries</div>
+          <h1 className="d_page_title">Late Entry Report</h1>
+          <p className="d_page_subtitle">Employees with late check-in entries</p>
         </div>
-        <div className="d-flex gap-2 align-items-center">
-          <button className="d_btn d_btn_outline d_btn_sm" onClick={() => {
-            const today = new Date().toISOString().split('T')[0];
-            setStartDate(today);
-            setEndDate(today);
-          }}>Today</button>
-          <button className="d_btn d_btn_outline d_btn_sm" onClick={() => {
-            setStartDate('');
-            setEndDate('');
-          }}>All</button>
-          <input type="date" className="d_form_input d_input_sm" value={startDate} onChange={e => setStartDate(e.target.value)} placeholder="From" />
-          <input type="date" className="d_form_input d_input_sm" value={endDate} onChange={e => setEndDate(e.target.value)} placeholder="To" />
-          <button className="d_btn d_btn_outline d_btn_sm" onClick={fetchLateEntries}><MdRefresh /> Refresh</button>
+        <div className="d-flex gap-2">
+          <input
+            type="date"
+            className="d_form_control"
+            value={startDate}
+            onChange={e => setStartDate(e.target.value)}
+            style={{ width: 150 }}
+          />
+          <input
+            type="date"
+            className="d_form_control"
+            value={endDate}
+            onChange={e => setEndDate(e.target.value)}
+            style={{ width: 150 }}
+          />
+          <button className="d_btn d_btn_primary" onClick={fetchReport}>
+            <MdFilterList /> Apply
+          </button>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div className="d_card">
-          <div className="d_card_header"><div className="d_card_title"><span className="d_card_icon"><MdPeople /></span>Total Late Entries</div></div>
-          <div className="d_card_body" style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--d-accent)' }}>{stats.totalLate}</div>
+      <div className="row g-3 mb-4">
+        <div className="col-md-4">
+          <div className="d_card h-100">
+            <div className="d_card_body">
+              <div className="d-flex align-items-center justify-content-between">
+                <div>
+                  <div className="d_stat_value" style={{ color: 'var(--d-warning)' }}>{entries.length}</div>
+                  <div className="d_stat_label">Total Late Entries</div>
+                </div>
+                <div className="d_stat_icon" style={{ color: 'var(--d-warning)', backgroundColor: '#fffbeb', fontSize: 32, padding: 8, borderRadius: 8 }}><MdWarning /></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="d_card">
-          <div className="d_card_header"><div className="d_card_title"><span className="d_card_icon"><MdAccessTime /></span>Avg Delay</div></div>
-          <div className="d_card_body" style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--d-warning)' }}>{stats.avgLateMinutes} min</div>
+        <div className="col-md-4">
+          <div className="d_card h-100">
+            <div className="d_card_body">
+              <div className="d-flex align-items-center justify-content-between">
+                <div>
+                  <div className="d_stat_value" style={{ color: '#f59e0b' }}>{avgDelay} min</div>
+                  <div className="d_stat_label">Average Delay</div>
+                </div>
+                <div className="d_stat_icon" style={{ color: '#f59e0b', backgroundColor: '#fffbeb', fontSize: 32, padding: 8, borderRadius: 8 }}><MdAccessTime /></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="d_card">
-          <div className="d_card_header"><div className="d_card_title"><span className="d_card_icon"><MdBusiness /></span>Total Late Minutes</div></div>
-          <div className="d_card_body" style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--d-danger)' }}>{stats.totalLateMinutes}</div>
+        <div className="col-md-4">
+          <div className="d_card h-100">
+            <div className="d_card_body">
+              <div className="d-flex align-items-center justify-content-between">
+                <div>
+                  <div className="d_stat_value" style={{ color: '#3b82f6' }}>{entries.length > 0 ? entries[0]?.department || 'N/A' : 'N/A'}</div>
+                  <div className="d_stat_label">Most Late Department</div>
+                </div>
+                <div className="d_stat_icon" style={{ color: '#3b82f6', backgroundColor: '#eff6ff', fontSize: 32, padding: 8, borderRadius: 8 }}><MdBusiness /></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="d_card">
         <div className="d_card_header">
-          <div className="d_card_title"><span className="d_card_icon"><MdWarning /></span> Late Entry Details</div>
+          <div className="d_card_title">
+            <span className="d_card_icon"><MdWarning /></span>
+            Late Entry Details
+          </div>
         </div>
-        <div className="d_card_body">
-          <div className="d_table_wrap">
-            <table className="d_table" style={{ minWidth: 900 }}>
-              <thead>
-                <tr>
-                  <th>Emp ID</th><th>Name</th><th>Department</th><th>Date</th>
-                  <th>Scheduled</th><th>Actual In</th><th>Check Out</th><th>Working Hrs</th>
-                  <th>Status</th><th>Delay (min)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={10} className="text-center py-4">Loading...</td></tr>
-                ) : lateEntries.length === 0 ? (
-                  <tr><td colSpan={10} className="text-center py-4 text-muted">No late entries found</td></tr>
-                ) : (
-                  lateEntries.map(e => (
+        <div className="d_card_body p-0">
+          {loading ? (
+            <div className="text-center py-4">Loading...</div>
+          ) : entries.length === 0 ? (
+            <div className="text-center py-4 text-muted">No late entries found</div>
+          ) : (
+            <div className="d_table_wrap">
+              <table className="d_table">
+                <thead>
+                  <tr>
+                    <th>Emp ID</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Date</th>
+                    <th>Scheduled</th>
+                    <th>Actual In</th>
+                    <th>Delay</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map(e => (
                     <tr key={e._id}>
-                      <td>{e.empId}</td>
-                      <td>{e.emp}</td>
-                      <td>{e.department}</td>
+                      <td><code>{e.empId}</code></td>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          {e.employeeId?.image ? (
+                            <img src={e.employeeId.image} alt={e.emp} className="d_table_avatar me-2" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+                          ) : (
+                            <div className="d-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: 32, height: 32, fontSize: 12 }}>
+                              {e.emp?.charAt(0)}
+                            </div>
+                          )}
+                          {e.emp}
+                        </div>
+                      </td>
+                      <td>{typeof e.department === 'object' ? e.department?.title : (e.department || 'N/A')}</td>
                       <td>{e.date}</td>
                       <td>09:00 AM</td>
                       <td>{e.checkIn}</td>
-                      <td>{e.checkOut || '--'}</td>
-                      <td>{e.hours || '--'}</td>
-                      <td>
-                        <span className={`d_badge ${e.status === 'Absent' ? 'd_danger' : 'd_warning'}`}>
-                          {e.status}
-                        </span>
-                      </td>
                       <td>
                         <span className={`d_badge ${e.lateMinutes > 30 ? 'd_danger' : e.lateMinutes > 15 ? 'd_warning' : 'd_info'}`}>
                           {e.lateMinutes} min
                         </span>
                       </td>
+                      <td>—</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default LateEntryReport;

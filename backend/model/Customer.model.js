@@ -77,7 +77,10 @@ const customerSchema = new mongoose.Schema({
     },
     alternatePhone: {
         type: String
-    }
+    },
+    machines: [{
+        type: String
+    }]
 }, {
     timestamps: true
 });

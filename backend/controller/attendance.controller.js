@@ -5,6 +5,75 @@ const User = require('../model/User.model');
 const generateId = (prefix, count) =>
   `${prefix}${String(count + 1).padStart(3, '0')}`;
 const DUPLICATE_SCAN_WINDOW_MS = 30 * 1000;
+const generateAbsentId = (empId, date) => `ABS_${date.replace(/-/g, '')}_${empId}`;
+
+let dailyAttendanceInitialized = null;
+
+const ensureDailyAttendance = async (today, employees) => {
+  if (dailyAttendanceInitialized === today) return null;
+
+  const attendanceRecords = await Attendance.find({
+    date: today,
+    recordType: 'attendance'
+  });
+
+  const approvedLeaves = await Attendance.find({
+    date: today,
+    recordType: 'leave',
+    status: 'Approved'
+  });
+
+  const attendanceMap = {};
+  attendanceRecords.forEach(r => {
+    attendanceMap[r.employeeId.toString()] = r;
+  });
+
+  const leaveMap = {};
+  approvedLeaves.forEach(l => {
+    leaveMap[l.employeeId.toString()] = l;
+  });
+
+  const missingEmployees = employees.filter(emp => {
+    const empId = emp._id.toString();
+    return !attendanceMap[empId] && !leaveMap[empId];
+  });
+
+  if (missingEmployees.length > 0) {
+    const bulkOps = missingEmployees.map(emp => ({
+      updateOne: {
+        filter: {
+          employeeId: emp._id,
+          date: today,
+          recordType: 'attendance'
+        },
+        update: {
+          $setOnInsert: {
+            id: generateAbsentId(emp.id, today),
+            recordType: 'attendance',
+            employeeId: emp._id,
+            emp: emp.name,
+            empId: emp.id,
+            date: today,
+            checkIn: '--',
+            checkOut: '--',
+            hours: '--',
+            status: 'Absent',
+            lateMinutes: 0,
+            overtimeMinutes: 0,
+            workingHours: 0,
+            earlyCheckout: false,
+          }
+        },
+        upsert: true
+      }
+    }));
+
+    await Attendance.bulkWrite(bulkOps);
+  }
+
+  dailyAttendanceInitialized = today;
+  return { attendanceMap, leaveMap };
+};
 
 const checkIn = async (req, res) => {
   try {
@@ -35,18 +104,16 @@ const checkIn = async (req, res) => {
     let status = 'Present';
     let lateMinutes = 0;
 
-    if (hour > 9 || (hour === 9 && minute >= 0)) {
+    if (hour > 9 || (hour === 9 && minute > 15)) {
       status = 'Late';
-      lateMinutes = (hour * 60 + minute) - (9 * 60 + 0);
+      lateMinutes = (hour * 60 + minute) - (9 * 60 + 15);
     }
 
-    // If existing record exists and has no checkIn, update it
     if (existingRecord) {
       if (existingRecord.checkIn !== '--') {
         return res.status(400).json({ error: 'Already checked in today' });
       }
       
-      // Update the existing record with check-in details
       existingRecord.checkIn = checkInTime;
       existingRecord.status = status;
       existingRecord.lateMinutes = lateMinutes;
@@ -56,7 +123,6 @@ const checkIn = async (req, res) => {
       return res.status(200).json(existingRecord);
     }
 
-    // Create new record if none exists
     const count = await Attendance.countDocuments({ recordType: 'attendance' });
     const record = await Attendance.create({
       id: generateId('ATT', count),
@@ -165,7 +231,15 @@ const getMyAttendance = async (req, res) => {
       filter.date = { $regex: `^${year}-${month.padStart(2, '0')}` };
     }
 
-    const records = await Attendance.find(filter).sort({ date: -1 });
+    const records = await Attendance.find(filter)
+      .populate({
+        path: 'employeeId',
+        populate: [
+          { path: 'department' },
+          { path: 'designation' }
+        ]
+      })
+      .sort({ date: -1 });
     res.status(200).json(records);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -176,6 +250,15 @@ const createRecord = async (req, res) => {
   try {
     const count = await Attendance.countDocuments({ recordType: req.body.recordType || 'attendance' });
     const prefix = req.body.recordType === 'leave' ? 'LVE' : req.body.recordType === 'overtime' ? 'OT' : 'ATT';
+    
+    // Validate extraHours for overtime records
+    if (req.body.recordType === 'overtime' && req.body.extraHours) {
+      const extraHours = parseFloat(req.body.extraHours);
+      if (extraHours < 1 || extraHours > 4) {
+        return res.status(400).json({ error: 'Extra hours must be between 1 and 4 hours' });
+      }
+    }
+    
     const record = await Attendance.create({
       ...req.body,
       id: req.body.id || generateId(prefix, count),
@@ -201,6 +284,15 @@ const getAllRecords = async (req, res) => {
 const updateRecord = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Validate extraHours for overtime records
+    if (req.body.recordType === 'overtime' && req.body.extraHours) {
+      const extraHours = parseFloat(req.body.extraHours);
+      if (extraHours < 1 || extraHours > 4) {
+        return res.status(400).json({ error: 'Extra hours must be between 1 and 4 hours' });
+      }
+    }
+    
     const record = await Attendance.findByIdAndUpdate(id, req.body, { new: true });
     if (!record) return res.status(404).json({ error: 'Record not found' });
     res.status(200).json(record);
@@ -267,9 +359,9 @@ const scanAttendance = async (req, res) => {
     let status = 'Present';
     let lateMinutes = 0;
 
-    if (hour > 9 || (hour === 9 && minute >= 0)) {
+    if (hour > 9 || (hour === 9 && minute > 15)) {
       status = 'Late';
-      lateMinutes = (hour * 60 + minute) - (9 * 60 + 0);
+      lateMinutes = (hour * 60 + minute) - (9 * 60 + 15);
     }
 
     // Case 1: No attendance exists - Create check-in
@@ -390,12 +482,88 @@ const scanAttendance = async (req, res) => {
 const getTodayAttendance = async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const records = await Attendance.find({ 
-      date: today,
-      recordType: 'attendance'
-    }).populate('employeeId').sort({ checkIn: 1 });
     
-    res.status(200).json(records);
+    const employees = await Employee.find({ status: 'Active' })
+      .populate('department')
+      .populate('designation')
+      .sort({ name: 1 });
+
+    const maps = await ensureDailyAttendance(today, employees);
+    const attendanceMap = maps?.attendanceMap || {};
+    const leaveMap = maps?.leaveMap || {};
+
+    if (!maps) {
+      const attendanceRecords = await Attendance.find({ 
+        date: today,
+        recordType: 'attendance'
+      });
+      const approvedLeaves = await Attendance.find({
+        date: today,
+        recordType: 'leave',
+        status: 'Approved'
+      });
+      attendanceRecords.forEach(r => {
+        attendanceMap[r.employeeId.toString()] = r;
+      });
+      approvedLeaves.forEach(l => {
+        leaveMap[l.employeeId.toString()] = l;
+      });
+    }
+
+    const result = employees.map(emp => {
+      const empId = emp._id.toString();
+      const attendance = attendanceMap[empId];
+      const leave = leaveMap[empId];
+      
+      if (leave) {
+        return {
+          ...leave.toObject(),
+          employeeId: emp._id,
+          emp: emp.name,
+          empId: emp.id,
+          department: emp.department,
+          designation: emp.designation,
+          status: 'Leave',
+          checkIn: '--',
+          checkOut: '--',
+          hours: '--',
+          lateMinutes: 0,
+          overtimeMinutes: 0,
+        };
+      }
+      
+      if (attendance) {
+        return {
+          ...attendance.toObject(),
+          employeeId: emp._id,
+          emp: emp.name,
+          empId: emp.id,
+          department: emp.department,
+          designation: emp.designation,
+        };
+      }
+      
+      return {
+        _id: `temp_${empId}`,
+        recordType: 'attendance',
+        employeeId: emp._id,
+        emp: emp.name,
+        empId: emp.id,
+        date: today,
+        checkIn: '--',
+        checkOut: '--',
+        hours: '--',
+        status: 'Absent',
+        lateMinutes: 0,
+        overtimeMinutes: 0,
+        workingHours: 0,
+        earlyCheckout: false,
+        department: emp.department,
+        designation: emp.designation,
+      };
+    });
+
+    res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -415,7 +583,13 @@ const getAttendanceReport = async (req, res) => {
     }
 
     const records = await Attendance.find(filter)
-      .populate('employeeId')
+      .populate({
+        path: 'employeeId',
+        populate: [
+          { path: 'department' },
+          { path: 'designation' }
+        ]
+      })
       .populate('createdBy')
       .populate('updatedBy')
       .sort({ date: -1 });
@@ -487,7 +661,13 @@ const getLateEntryReport = async (req, res) => {
     }
 
     const records = await Attendance.find(filter)
-      .populate('employeeId')
+      .populate({
+        path: 'employeeId',
+        populate: [
+          { path: 'department' },
+          { path: 'designation' }
+        ]
+      })
       .sort({ date: -1, checkIn: 1 });
 
     const lateEntries = records.map(r => ({
@@ -589,7 +769,7 @@ const getLeaveRecords = async (req, res) => {
 const updateLeaveRecord = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { employeeId, from, to, fromTime, toTime, type, reason, status } = req.body;
     const record = await Attendance.findById(id);
 
     if (!record) {
@@ -600,10 +780,161 @@ const updateLeaveRecord = async (req, res) => {
       return res.status(400).json({ error: 'Record is not a leave record' });
     }
 
-    record.status = status || record.status;
+    if (employeeId) record.employeeId = employeeId;
+    if (from) record.from = from;
+    if (to) record.to = to;
+    if (fromTime !== undefined) record.fromTime = fromTime;
+    if (toTime !== undefined) record.toTime = toTime;
+    if (type) record.type = type;
+    if (reason) record.reason = reason;
+    if (status) record.status = status;
+    
     await record.save();
 
     res.status(200).json(record);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const applyLeave = async (req, res) => {
+  try {
+    const { employeeId, from, to, fromTime, toTime, type, reason } = req.body;
+    const userId = req.user?._id;
+
+    if (!employeeId || !from || !to || !type) {
+      return res.status(400).json({ error: 'Employee, dates, and leave type are required' });
+    }
+
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    const startDate = new Date(from);
+    const endDate = new Date(to);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (startDate < today) {
+      return res.status(400).json({ error: 'Cannot apply leave for past dates' });
+    }
+
+    const days = [];
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      days.push(new Date(current).toISOString().split('T')[0]);
+      current.setDate(current.getDate() + 1);
+    }
+
+    const createdRecords = [];
+    const updatedRecords = [];
+
+    for (const dateStr of days) {
+      const existingAttendance = await Attendance.findOne({
+        employeeId: employee._id,
+        date: dateStr,
+        recordType: 'attendance'
+      });
+
+      const existingLeave = await Attendance.findOne({
+        employeeId: employee._id,
+        date: dateStr,
+        recordType: 'leave'
+      });
+
+      if (existingLeave) {
+        continue;
+      }
+
+      if (existingAttendance) {
+        existingAttendance.status = 'Leave';
+        existingAttendance.updatedBy = userId;
+        await existingAttendance.save();
+        updatedRecords.push(existingAttendance);
+      } else {
+        const count = await Attendance.countDocuments({ recordType: 'leave' });
+        const leaveRecord = await Attendance.create({
+          id: generateId('LVE', count),
+          recordType: 'leave',
+          employeeId: employee._id,
+          emp: employee.name,
+          empId: employee.id,
+          date: dateStr,
+          from,
+          to,
+          fromTime: fromTime || null,
+          toTime: toTime || null,
+          type,
+          reason,
+          status: 'Pending',
+          days: 1,
+          createdBy: userId,
+        });
+        createdRecords.push(leaveRecord);
+      }
+    }
+
+    res.status(201).json({
+      message: 'Leave applied successfully',
+      createdRecords,
+      updatedRecords,
+      totalDays: days.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const initializeDailyAttendance = async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Check if attendance already initialized for today
+    const existingCount = await Attendance.countDocuments({ 
+      recordType: 'attendance', 
+      date: today 
+    });
+    
+    if (existingCount > 0) {
+      return res.status(200).json({ 
+        message: 'Attendance already initialized for today',
+        existingRecords: existingCount
+      });
+    }
+    
+    // Get all active employees
+    const employees = await Employee.find({ status: 'Active' });
+    
+    // Get current count for ID generation
+    const count = await Attendance.countDocuments({ recordType: 'attendance' });
+    
+    const attendanceRecords = employees.map((employee, index) => ({
+      id: generateId('ATT', count + index),
+      recordType: 'attendance',
+      employeeId: employee._id,
+      emp: employee.name,
+      empId: employee.id,
+      date: today,
+      checkIn: '--',
+      checkOut: '--',
+      hours: '--',
+      workingHours: 0,
+      status: 'Absent',
+      lateMinutes: 0,
+      overtimeMinutes: 0,
+      isHoliday: false,
+      isWeekOff: false,
+      earlyCheckout: false,
+      createdBy: req.user?._id || null,
+    }));
+    
+    const inserted = await Attendance.insertMany(attendanceRecords);
+    
+    res.status(201).json({ 
+      message: 'Daily attendance initialized successfully',
+      recordsCreated: inserted.length
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -625,4 +956,6 @@ module.exports = {
   getOvertimeRecords,
   getLeaveRecords,
   updateLeaveRecord,
+  applyLeave,
+  initializeDailyAttendance,
 };
