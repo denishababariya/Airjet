@@ -232,6 +232,7 @@ export const reportsApi = {
 export const dashboardApi = {
   getStats: () => api.get('/dashboard/stats'),
   getActivity: () => api.get('/dashboard/activity'),
+  getAttendanceStats: () => api.get('/dashboard/attendance-stats'),
   getAllModuleData: () => api.get('/dashboard/all-modules'),
 };
 

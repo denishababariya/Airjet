@@ -2906,9 +2906,8 @@ textarea.d_form_control { resize: vertical; min-height: 80px; }
 
    ACTIVITY FEED
 
-   ============================================ */
-
-.d_activity_item {
+0  ============================================ */
+  {
 
   display: flex;
 

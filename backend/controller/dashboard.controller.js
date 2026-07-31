@@ -1,4 +1,5 @@
 const Employee = require('../model/Empl.model');
+const Attendance = require('../model/Attendance.model');
 const Stock = require('../model/Stock.model');
 const SpareParts = require('../model/SpareParts.model');
 const Income = require('../model/Income.model');
@@ -28,6 +29,8 @@ const getDashboardStats = async (req, res) => {
       recentInvoices,
       recentServiceTickets,
       pendingPOs,
+      receivables,
+      payables,
     ] = await Promise.all([
       Employee.countDocuments(),
       Promise.all([Stock.countDocuments(), SpareParts.countDocuments()]).then(([s, p]) => s + p),
@@ -42,11 +45,15 @@ const getDashboardStats = async (req, res) => {
       ErpRecord.find({ module: 'sales', recordType: 'order' }).sort({ createdAt: -1 }).limit(5),
       ErpRecord.find({ module: 'sales', recordType: 'invoice' }).sort({ createdAt: -1 }).limit(5),
       ErpRecord.find({ module: 'service', recordType: 'ticket' }).sort({ createdAt: -1 }).limit(5),
-      ErpRecord.find({ module: 'purchase', recordType: 'grn' }).sort({ createdAt: -1 }).limit(5),
+      ErpRecord.find({ module: 'purchase', recordType: 'order' }).sort({ createdAt: -1 }).limit(5),
+      ErpRecord.aggregate([{ $match: { module: 'accounts', recordType: 'receivable' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      ErpRecord.aggregate([{ $match: { module: 'accounts', recordType: 'payable' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
     ]);
 
     const salesTotal = todayIncome[0]?.total || 0;
     const lowStockTotal = lowStockItems + spareLowStock;
+    const totalReceivables = receivables[0]?.total || 0;
+    const totalPayables = payables[0]?.total || 0;
 
     const orders = [
       ...recentSalesOrders.map(o => ({ id: o.id, customer: o.customer, amount: formatCurrency(o.amount), date: o.date ? new Date(o.date).toLocaleDateString('en-IN') : '-', status: o.status })),
@@ -76,7 +83,12 @@ const getDashboardStats = async (req, res) => {
         todaySales: formatCurrency(salesTotal),
         todayPurchases: formatCurrency(0),
         lowStockAlerts: `${lowStockTotal} Parts`,
-        pendingPayments: formatCurrency(0),
+        lowStockCount: lowStockTotal,
+        pendingPayments: formatCurrency(totalPayables),
+        totalReceivables: formatCurrency(totalReceivables),
+        totalReceivablesRaw: totalReceivables,
+        totalPayables: formatCurrency(totalPayables),
+        totalPayablesRaw: totalPayables,
         totalEmployees: totalEmployees,
         totalStockItems: totalStockItems,
         openTickets,
@@ -272,9 +284,41 @@ const globalSearch = async (req, res) => {
   }
 };
 
+const getAttendanceStats = async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const [totalActive, todayRecords, leaveRecords] = await Promise.all([
+      Employee.countDocuments({ status: 'Active' }),
+      Attendance.find({ date: today, recordType: 'attendance' }),
+      Attendance.find({ date: today, recordType: 'leave', status: 'Approved' }),
+    ]);
+
+    const present = todayRecords.filter(r => r.status === 'Present').length;
+    const late    = todayRecords.filter(r => r.status === 'Late').length;
+    const leave   = leaveRecords.length;
+    // Absent = active employees with no attendance record and no approved leave
+    const attendedIds = new Set(todayRecords.map(r => String(r.employeeId)));
+    const leaveIds    = new Set(leaveRecords.map(r => String(r.employeeId)));
+    const checkedIn   = new Set([...attendedIds, ...leaveIds]);
+    const absent      = Math.max(0, totalActive - checkedIn.size);
+
+    res.status(200).json({
+      todayPresent: present,
+      todayLate:    late,
+      todayLeave:   leave,
+      todayAbsent:  absent,
+      totalActive,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getRecentActivity,
   getAllModuleData: getAllModuleDataController,
   globalSearch,
+  getAttendanceStats,
 };

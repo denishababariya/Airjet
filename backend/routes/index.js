@@ -173,6 +173,7 @@ router.patch('/customers/:id/purchase', authenticate, controller.updateCustomerP
 // ──────────────────────────────────────────────────────────────
 router.get('/dashboard/stats', authenticate, controller.getDashboardStats);
 router.get('/dashboard/activity', authenticate, controller.getRecentActivity);
+router.get('/dashboard/attendance-stats', authenticate, controller.getAttendanceStats);
 router.get('/dashboard/all-modules', authenticate, controller.getAllModuleData);
 router.get('/search', authenticate, controller.globalSearch);
 

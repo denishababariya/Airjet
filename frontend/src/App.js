@@ -137,10 +137,18 @@ const hasAdminAccess = (role) => {
 };
 
 function App() {
-  const [activeMenu, setActiveMenu] = useState(() => {
+  const [activeMenu, setActiveMenuState] = useState(() => {
     const saved = localStorage.getItem('activeMenu');
     return saved || 'Login';
   });
+
+  // Persist active menu on every change so page refresh restores position
+  const setActiveMenu = (menu) => {
+    setActiveMenuState(menu);
+    if (!['Login', 'Register', 'ForgotPassword', 'ChangePassword'].includes(menu)) {
+      localStorage.setItem('activeMenu', menu);
+    }
+  };
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('currentUser');
     return saved ? JSON.parse(saved) : null;

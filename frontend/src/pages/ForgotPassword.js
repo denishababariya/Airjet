@@ -159,6 +159,7 @@ const ForgotPassword = ({ setActiveMenu }) => {
               <form onSubmit={handleEmailSubmit} className="d_login_form">
                 {apiError && (
                   <div className="alert alert-danger" role="alert">
+                    
                     {apiError}
                   </div>
                 )}

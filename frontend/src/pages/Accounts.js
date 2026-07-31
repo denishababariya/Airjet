@@ -401,7 +401,7 @@ const Accounts = ({ defaultTab = "receivables" }) => {
                       </td>
                       <td>{r.type}</td>
                       <td>
-                        <strong>₹{r.amount.toLocaleString()}</strong>
+                        <strong>₹{(r.amount ?? 0).toLocaleString()}</strong>
                       </td>
                       <td>{r.dueDate ? new Date(r.dueDate).toLocaleDateString('en-IN') : '-'}</td>
                       <td>
@@ -474,7 +474,7 @@ const Accounts = ({ defaultTab = "receivables" }) => {
                       </td>
                       <td>{p.type}</td>
                       <td>
-                        <strong>₹{p.amount.toLocaleString()}</strong>
+                        <strong>₹{(p.amount ?? 0).toLocaleString()}</strong>
                       </td>
                       <td>{p.dueDate ? new Date(p.dueDate).toLocaleDateString('en-IN') : '-'}</td>
                       <td>

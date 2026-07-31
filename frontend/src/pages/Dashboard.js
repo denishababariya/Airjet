@@ -6,7 +6,7 @@ import {
   MdAccessTime, MdAccountBalance, MdCheckCircle,
   MdEventBusy, MdCancel,
 } from 'react-icons/md';
-import { dashboardApi, sparePartsApi, attendanceApi } from '../utils/api';
+import { dashboardApi, sparePartsApi } from '../utils/api';
 
 const ICON_MAP = {
   MdPointOfSale,
@@ -29,7 +29,7 @@ const statusBadge = (s) => {
   return <span className={`d_badge ${map[s] || 'd_info'}`}>{s}</span>;
 };
 
-const Dashboard = ({ currentUser }) => {
+const Dashboard = ({ currentUser, setActiveMenu }) => {
   const [stats, setStats] = useState([
     { label: "Today's Sales",      value: '₹0',       icon: <MdPointOfSale />,  iconClass: 'd_accent',   cardClass: 'd_accent',   change: '+0%',     dir: 'up' },
     { label: "Today's Purchases",  value: '₹0',       icon: <MdShoppingCart />, iconClass: 'd_primary',  cardClass: '',           change: '+0%',     dir: 'up' },
@@ -51,6 +51,10 @@ const Dashboard = ({ currentUser }) => {
   const [pendingPO, setPendingPO] = useState([]);
   const [activityFeed, setActivityFeed] = useState([]);
   const [topPartsList, setTopPartsList] = useState([]);
+  const [lowStockCount, setLowStockCount] = useState(0);
+  const [totalReceivables, setTotalReceivables] = useState('₹0');
+  const [totalPayables, setTotalPayables] = useState('₹0');
+  const [openTickets, setOpenTickets] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,7 +65,7 @@ const Dashboard = ({ currentUser }) => {
           dashboardApi.getStats(),
           sparePartsApi.getAll(),
           dashboardApi.getActivity(),
-          attendanceApi.getToday(),
+          dashboardApi.getAttendanceStats(),
         ]);
 
         if (dashRes.status === 'fulfilled') {
@@ -76,6 +80,10 @@ const Dashboard = ({ currentUser }) => {
             newStats[5] = { ...newStats[5], value: String(d.stats?.totalStockItems || 0) };
             return newStats;
           });
+          setLowStockCount(d.stats?.lowStockCount ?? 0);
+          setTotalReceivables(d.stats?.totalReceivables || '₹0');
+          setTotalPayables(d.stats?.totalPayables || '₹0');
+          setOpenTickets(d.stats?.openTickets ?? 0);
           setRecentOrders(d.recentOrders || []);
           setRecentTickets(d.recentTickets || []);
           setPendingPO(d.pendingPOs || []);
@@ -84,10 +92,10 @@ const Dashboard = ({ currentUser }) => {
         if (attendanceRes.status === 'fulfilled') {
           const todayData = attendanceRes.value.data;
           setAttendanceStats({
-            todayPresent: todayData.filter(r => r.status === 'Present').length,
-            todayAbsent: todayData.filter(r => r.status === 'Absent').length,
-            todayLeave: todayData.filter(r => r.status === 'Leave').length,
-            todayLate: todayData.filter(r => r.status === 'Late').length
+            todayPresent: todayData.todayPresent,
+            todayAbsent: todayData.todayAbsent,
+            todayLeave: todayData.todayLeave,
+            todayLate: todayData.todayLate,
           });
         }
 
@@ -180,13 +188,15 @@ const Dashboard = ({ currentUser }) => {
       </div>
 
       {/* ── Low Stock Alert ────────────────────────────────────── */}
-      <div className="d_alert d_danger mb-4">
-        <MdWarning style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }} />
-        <div>
-          <strong>Low Stock Warning:</strong> {stats[2].value} are below minimum stock level.
-          Immediate purchase orders recommended.
+      {lowStockCount > 0 && (
+        <div className="d_alert d_danger mb-4">
+          <MdWarning style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <strong>Low Stock Warning:</strong> {lowStockCount} item{lowStockCount !== 1 ? 's are' : ' is'} below minimum stock level.
+            Immediate purchase orders recommended.
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Row 2: Recent Orders + Pending POs ────────────────── */}
       <div className="row g-3 mb-4">
@@ -197,7 +207,7 @@ const Dashboard = ({ currentUser }) => {
               <h2 className="d_card_title">
                 <MdPointOfSale className="d_card_icon" /> Recent Orders
               </h2>
-              <button className="d_btn d_btn_outline d_btn_sm">View All</button>
+              <button className="d_btn d_btn_outline d_btn_sm" onClick={() => setActiveMenu?.('Sales Orders')}>View All</button>
             </div>
             <div className="d_card_body p-0">
               <div className="d_table_wrap">
@@ -230,7 +240,7 @@ const Dashboard = ({ currentUser }) => {
               <h2 className="d_card_title">
                 <MdShoppingCart className="d_card_icon" /> Pending POs
               </h2>
-              <button className="d_btn d_btn_outline d_btn_sm">View All</button>
+              <button className="d_btn d_btn_outline d_btn_sm" onClick={() => setActiveMenu?.('Purchase Orders')}>View All</button>
             </div>
             <div className="d_card_body p-0">
               <div className="d_table_wrap">
@@ -266,7 +276,7 @@ const Dashboard = ({ currentUser }) => {
               <h2 className="d_card_title">
                 <MdBuildCircle className="d_card_icon" /> Recent Service Tickets
               </h2>
-              <button className="d_btn d_btn_outline d_btn_sm">View All</button>
+              <button className="d_btn d_btn_outline d_btn_sm" onClick={() => setActiveMenu?.('Service Tickets')}>View All</button>
             </div>
             <div className="d_card_body p-0">
               <div className="d_table_wrap">
@@ -294,16 +304,17 @@ const Dashboard = ({ currentUser }) => {
 
         {/* Activity Feed */}
         <div className="col-12 col-lg-5">
-          <div className="d_card h-100">
+          <div className="d_card h-100 pb-2">
             <div className="d_card_header">
               <h2 className="d_card_title">
                 <MdAccessTime className="d_card_icon" /> Recent Activity
               </h2>
             </div>
-            <div className="d_card_body" style={{ padding: '8px 16px' }}>
-              {activityFeed.length === 0 && <p className="text-center text-muted py-3">No recent activity</p>}
+            <div className="d_card_body" style={{ padding: '2px 16px', height:'300px',overflowY:'scroll' }}>
+              {activityFeed.length === 0 && <p className="text-center text-muted py-3">No recent act0 
+                `1123`ivity</p>}
               {activityFeed.map((a, i) => (
-                <div key={i} className="d_activity_item">
+                <div key={i} className="d_activity_item d-flex gap-3 my-2 border p-2">
                   <div className="d_activity_icon" style={{ background: a.color + '18', color: a.color }}>
                     {ICON_MAP[a.icon] || <MdAccessTime />}
                   </div>
@@ -324,7 +335,7 @@ const Dashboard = ({ currentUser }) => {
           <h2 className="d_card_title">
             <MdTrendingUp className="d_card_icon" /> Top Selling Spare Parts
           </h2>
-          <button className="d_btn d_btn_outline d_btn_sm">View All</button>
+          <button className="d_btn d_btn_outline d_btn_sm" onClick={() => setActiveMenu?.('Part Number')}>View All</button>
         </div>
         <div className="d_card_body p-0">
           <div className="d_table_wrap">
@@ -353,13 +364,17 @@ const Dashboard = ({ currentUser }) => {
       {/* ── Row 5: Quick Summary Pills ─────────────────────────── */}
       <div className="row g-3">
         {[
-          { icon: <MdAccountBalance />, label: 'Total Receivables', value: '₹81,500',  color: 'var(--d-success)' },
-          { icon: <MdAccountBalance />, label: 'Total Payables',    value: '₹2,11,700', color: 'var(--d-danger)' },
-          { icon: <MdPeople />,         label: 'Total Employees',   value: String(stats[4].value),         color: 'var(--d-primary)' },
-          { icon: <MdBuildCircle />,    label: 'Open Tickets',      value: String(stats[5].value),          color: 'var(--d-warning)' },
+          { icon: <MdAccountBalance />, label: 'Total Receivables', value: totalReceivables,         color: 'var(--d-success)', menu: 'Receivables' },
+          { icon: <MdAccountBalance />, label: 'Total Payables',    value: totalPayables,             color: 'var(--d-danger)',  menu: 'Payables' },
+          { icon: <MdPeople />,         label: 'Total Employees',   value: String(stats[4].value),    color: 'var(--d-primary)', menu: 'Employee Master' },
+          { icon: <MdBuildCircle />,    label: 'Open Tickets',      value: String(openTickets),       color: 'var(--d-warning)', menu: 'Service Tickets' },
         ].map((item, i) => (
           <div key={i} className="col-6 col-md-3">
-            <div className="d_card" style={{ borderLeft: `4px solid ${item.color}` }}>
+            <div
+              className="d_card"
+              style={{ borderLeft: `4px solid ${item.color}`, cursor: item.menu ? 'pointer' : 'default' }}
+              onClick={() => item.menu && setActiveMenu?.(item.menu)}
+            >
               <div className="d_card_body d-flex align-items-center gap-3" style={{ padding: '16px 18px' }}>
                 <div style={{
                   width: 42, height: 42, borderRadius: 10, flexShrink: 0,
