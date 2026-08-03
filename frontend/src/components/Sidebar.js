@@ -26,7 +26,7 @@ const menuConfig = [
       },
       {
         label: 'Attendance', icon: <MdAccessTime />, id: 'attendance',
-        children: ['Today Attendance', 'QR Scanner', 'Leave Tracking', 'Overtime Calculation', 'Employee QR Codes', 'Late Entry Report'],
+        children: ['Today Attendance', 'Check In/Out', 'QR Scanner', 'Leave Tracking', 'Employee QR Codes', 'Late Entry Report'],
         module: 'Attendance',
       },
       {
@@ -92,11 +92,7 @@ const menuConfig = [
       {
         label: 'Role Management', icon: <MdSecurity />, id: 'Role Management',
         module: 'Roles',
-      },
-      {
-        label: 'QR Scanner', icon: <MdQrCodeScanner />, id: 'QR Scanner',
-        module: 'Attendance',
-      },
+      }
     ],
   },
 ];

@@ -135,11 +135,6 @@ export const attendanceApi = {
   getEmployee: (id) => api.get(`/attendance/employee/${id}`),
   manual: (data) => api.put('/attendance/manual', data),
   generateQr: (employeeId) => api.post(`/employees/${employeeId}/generate-qr`),
-  // Overtime
-  getOvertime: (params = {}) => api.get('/attendance/overtime', { params }),
-  createOvertime: (data) => api.post('/attendance/overtime', data),
-  updateOvertime: (id, data) => api.put(`/attendance/overtime/${id}`, data),
-  deleteOvertime: (id) => api.delete(`/attendance/overtime/${id}`),
   // Leave
   getLeave: (params = {}) => api.get('/attendance/leave', { params }),
   createLeave: (data) => api.post('/attendance/leave', data),

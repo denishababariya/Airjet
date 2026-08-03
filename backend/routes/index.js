@@ -74,14 +74,6 @@ router.get('/attendance/report', authenticate, controller.getAttendanceReport);
 router.post('/employees/:employeeId/generate-qr', authenticate, authorize('Admin', 'HR', 'Manager'), controller.generateQrToken);
 
 // ──────────────────────────────────────────────────────────────
-// Overtime Routes
-// ──────────────────────────────────────────────────────────────
-router.get('/attendance/overtime', authenticate, authorize('Admin', 'HR', 'Manager', 'Head'), controller.getOvertimeRecords);
-router.post('/attendance/overtime', authenticate, authorize('Admin', 'HR', 'Manager'), controller.createAttendanceRecord);
-router.put('/attendance/overtime/:id', authenticate, authorize('Admin', 'HR', 'Manager'), controller.updateAttendanceRecord);
-router.delete('/attendance/overtime/:id', authenticate, authorize('Admin', 'Head'), controller.deleteAttendanceRecord);
-
-// ──────────────────────────────────────────────────────────────
 // Leave Tracking Routes
 // ──────────────────────────────────────────────────────────────
 router.get('/attendance/leave', authenticate, authorize('Admin', 'HR', 'Manager', 'Head'), controller.getLeaveRecords);

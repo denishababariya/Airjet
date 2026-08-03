@@ -60,7 +60,6 @@ async function initializeDailyAttendance() {
       workingHours: 0,
       status: 'Absent',
       lateMinutes: 0,
-      overtimeMinutes: 0,
       isHoliday: false,
       isWeekOff: false,
       earlyCheckout: false,

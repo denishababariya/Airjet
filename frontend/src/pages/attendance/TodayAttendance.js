@@ -144,7 +144,6 @@ const TodayAttendance = () => {
                     <th>Hours</th>
                     <th>Status</th>
                     <th>Late</th>
-                    <th>OT</th>
                     <th>Early Out</th>
                   </tr>
                 </thead>
@@ -161,7 +160,7 @@ const TodayAttendance = () => {
                               style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
                             />
                           ) : (
-                            <div className="d-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: 32, height: 32, fontSize: 12 }}>
+                            <div className="d-avatar text-white rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: 32, height: 32, fontSize: 12, backgroundColor: '#1a3c5e' }}>
                               {record.emp?.charAt(0)}
                             </div>
                           )}
@@ -181,7 +180,6 @@ const TodayAttendance = () => {
                           ? <span className="d_badge d_warning">{record.lateMinutes}m</span>
                           : <span className="d_badge d_info">—</span>}
                       </td>
-                      <td>{record.overtimeMinutes || 0}m</td>
                       <td>
                         {record.earlyCheckout ? (
                           <span className="d_badge d_danger"><MdHighlightOff /> Yes</span>

@@ -36,7 +36,7 @@ const AttendanceReport = () => {
     if (!reportData) return;
     
     const csv = [
-      ['Employee', 'Employee ID', 'Date', 'Check In', 'Check Out', 'Working Hours', 'Status', 'Late Minutes', 'Overtime Minutes', 'Early Checkout'],
+      ['Employee', 'Employee ID', 'Date', 'Check In', 'Check Out', 'Working Hours', 'Status', 'Late Minutes', 'Early Checkout'],
       ...reportData.records.map(r => [
         r.emp,
         r.empId,
@@ -46,7 +46,6 @@ const AttendanceReport = () => {
         r.hours,
         r.status,
         r.lateMinutes,
-        r.overtimeMinutes,
         r.earlyCheckout ? 'Yes' : 'No',
       ])
     ].map(row => row.join(',')).join('\n');
@@ -200,7 +199,6 @@ const AttendanceReport = () => {
                        <th>Working Hours</th>
                        <th>Status</th>
                        <th>Late Minutes</th>
-                       <th>Overtime</th>
                        <th>Early Checkout</th>
                      </tr>
                    </thead>
@@ -222,7 +220,6 @@ const AttendanceReport = () => {
                            </span>
                          </td>
                          <td>{record.lateMinutes || 0}</td>
-                         <td>{record.overtimeMinutes || 0}</td>
                          <td>{record.earlyCheckout ? 'Yes' : 'No'}</td>
                       </tr>
                     ))}

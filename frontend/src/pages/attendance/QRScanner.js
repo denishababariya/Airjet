@@ -152,7 +152,7 @@ const QRScanner = () => {
                         <tr key={idx}>
                           <td>
                             <div className="d-flex align-items-center">
-                              <div className="d-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: 32, height: 32 }}>
+                              <div className="d-avatar text-white rouned-circle d-flex align-items-center justify-content-center me-2" style={{ width: 32, height: 32, backgroundColor: '#1a3c5e' }}>
                                 {scan.employee?.name?.charAt(0) || 'E'}
                               </div>
                               <div>
