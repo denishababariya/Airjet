@@ -217,10 +217,6 @@ const EmployeeMaster = ({ currentUser }) => {
         if (field === 'department') next.designation = '';
         if (field === 'bod') next.age = calculateAge(val);
         return next;
-
-
-
-        
       });
       setErrors(p => ({ ...p, [field]: '' }));
     },
