@@ -6,17 +6,15 @@ import { canTakeAttendance } from '../utils/roles';
 
 const statusClass = { Present: 'd_success', Late: 'd_warning', Absent: 'd_danger', Leave: 'd_info', Approved: 'd_success', Pending: 'd_warning' };
 
-const TAB_TYPE = { records: 'attendance', leave: 'leave', overtime: 'overtime' };
+const TAB_TYPE = { records: 'attendance', leave: 'leave' };
 
 const blankAttendance = { emp: '', empId: '', date: '', checkIn: '', checkOut: '', status: 'Present' };
 const blankLeave = { emp: '', empId: '', from: '', to: '', days: '', type: 'Casual Leave', reason: '', status: 'Pending' };
-const blankOvertime = { emp: '', empId: '', date: '', extraHours: '', reason: '', rate: '', amount: '' };
 
 const Attendance = ({ defaultTab = 'records' }) => {
   const [tab, setTab] = useState(defaultTab);
   const [records, setRecords] = useState([]);
   const [leaveData, setLeaveData] = useState([]);
-  const [overtimeData, setOvertimeData] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -37,28 +35,25 @@ const Attendance = ({ defaultTab = 'records' }) => {
       
       const canManageAttendance = canTakeAttendance(user?.role);
       
-      let attRes, leaveRes, otRes, empRes;
+      let attRes, leaveRes, empRes;
       
       if (canManageAttendance) {
-        [attRes, leaveRes, otRes, empRes] = await Promise.all([
+        [attRes, leaveRes, empRes] = await Promise.all([
           attendanceApi.getAll({ recordType: 'attendance' }),
           attendanceApi.getAll({ recordType: 'leave' }),
-          attendanceApi.getAll({ recordType: 'overtime' }),
           employeesApi.getAll(),
         ]);
       } else {
         // Non-admin users see only their own attendance
-        [attRes, leaveRes, otRes] = await Promise.all([
+        [attRes, leaveRes] = await Promise.all([
           attendanceApi.getMy({ recordType: 'attendance', month: selectedMonth, year: selectedYear }),
           attendanceApi.getMy({ recordType: 'leave' }),
-          attendanceApi.getMy({ recordType: 'overtime' }),
         ]);
         empRes = { data: [] };
       }
       
       setRecords(attRes.data);
       setLeaveData(leaveRes.data);
-      setOvertimeData(otRes.data);
       setEmployees(empRes.data);
     } catch (err) {
       setError(err.displayMessage || 'Failed to load attendance');
@@ -75,7 +70,7 @@ const Attendance = ({ defaultTab = 'records' }) => {
     }
   }, [selectedMonth, selectedYear]);
 
-  const getBlank = () => tab === 'leave' ? blankLeave : tab === 'overtime' ? blankOvertime : blankAttendance;
+  const getBlank = () => tab === 'leave' ? blankLeave : blankAttendance;
 
   const openAdd = () => { setForm(getBlank()); setEditId(null); setErrors({}); setModal(true); };
 
@@ -84,7 +79,6 @@ const Attendance = ({ defaultTab = 'records' }) => {
     if (!form.emp?.trim()) e.emp = 'Employee name is required';
     if (tab === 'records' && !form.date?.trim()) e.date = 'Date is required';
     if (tab === 'leave' && !form.from?.trim()) e.from = 'From date is required';
-    if (tab === 'overtime' && !form.date?.trim()) e.date = 'Date is required';
     return e;
   };
 
@@ -96,8 +90,6 @@ const Attendance = ({ defaultTab = 'records' }) => {
       let payload = { recordType, emp: form.emp, empId: form.empId };
       if (tab === 'leave') {
         payload = { ...payload, from: form.from, to: form.to, days: Number(form.days) || 1, type: form.type, reason: form.reason, status: form.status };
-      } else if (tab === 'overtime') {
-        payload = { ...payload, date: form.date, extraHours: form.extraHours, reason: form.reason, rate: form.rate, amount: form.amount };
       } else {
         payload = { ...payload, date: form.date, checkIn: form.checkIn || '--', checkOut: form.checkOut || '--', hours: '--', status: form.status };
       }
@@ -136,7 +128,7 @@ const Attendance = ({ defaultTab = 'records' }) => {
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <h1 className="d_page_title">Attendance</h1>
-          <p className="d_page_subtitle">Track employee check-in, leave and overtime</p>
+          <p className="d_page_subtitle">Track employee check-in, leave</p>
         </div>
         <div className="d-flex gap-2">
           {canManage && (
@@ -192,7 +184,7 @@ const Attendance = ({ defaultTab = 'records' }) => {
       </div>
 
       <div className="d_tabs mb-3">
-        {[['records', "Today's Records"], ['leave', 'Leave Requests'], ['overtime', 'Overtime']].map(([k, v]) => (
+        {[['records', "Today's Records"], ['leave', 'Leave Requests']].map(([k, v]) => (
           <button key={k} className={`d_tab_btn ${tab === k ? 'd_active' : ''}`} onClick={() => setTab(k)}>{v}</button>
         ))}
       </div>
@@ -251,38 +243,6 @@ const Attendance = ({ defaultTab = 'records' }) => {
                           <td><span className={`d_badge ${statusClass[l.status]}`}>{l.status}</span></td>
                         </tr>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {tab === 'overtime' && (
-            <div className="d_card">
-              <div className="d_card_header">
-                <h2 className="d_card_title"><MdAccessTime className="d_card_icon" /> Overtime Records ({overtimeData.length})</h2>
-              </div>
-              <div className="d_card_body p-0">
-                <div className="d_table_wrap">
-<table className="d_table">
-                     <thead><tr><th>ID</th><th>Employee</th><th>Emp ID</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Status</th><th>Late Min</th><th>Early Checkout</th></tr></thead>
-                     <tbody>
-                       {records.length === 0 && <tr className="d_empty"><td colSpan={10}>No records found.</td></tr>}
-                       {records.map(r => (
-                         <tr key={r._id}>
-                           <td><code>{r.id}</code></td>
-                           <td><strong>{r.emp}</strong></td>
-                           <td><code>{r.empId}</code></td>
-                           <td>{r.date}</td>
-                           <td>{r.checkIn}</td>
-                           <td>{r.checkOut}</td>
-                           <td>{r.hours}</td>
-                           <td><span className={`d_badge ${statusClass[r.status]}`}>{r.status}</span></td>
-                           <td>{r.lateMinutes || 0} min</td>
-                           <td>{r.earlyCheckout ? <span className="d_badge d_danger">Yes</span> : <span className="d_badge d_success">No</span>}</td>
-                         </tr>
-                       ))}
                     </tbody>
                   </table>
                 </div>
@@ -359,35 +319,6 @@ const Attendance = ({ defaultTab = 'records' }) => {
                 <select className="d_form_control" {...f('status')}>
                   <option>Pending</option><option>Approved</option>
                 </select>
-              </div>
-            </div>
-            <div className="d_form_group">
-              <label className="d_form_label">Reason</label>
-              <input className="d_form_control" {...f('reason')} />
-            </div>
-          </>
-        )}
-
-        {tab === 'overtime' && (
-          <>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">Date <span className="d_req">*</span></label>
-                <input type="date" className="d_form_control" {...f('date')} />
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Extra Hours</label>
-                <input className="d_form_control" placeholder="e.g. 2h 30m" {...f('extraHours')} />
-              </div>
-            </div>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">Rate</label>
-                <input className="d_form_control" placeholder="₹350/hr" {...f('rate')} />
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Amount</label>
-                <input className="d_form_control" placeholder="₹875" {...f('amount')} />
               </div>
             </div>
             <div className="d_form_group">

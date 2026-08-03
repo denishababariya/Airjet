@@ -8,7 +8,6 @@ const permissions = [
   'Check In / Out – Full Access',
   'Leave Tracking – Full Access',
   'Late Entry Report – Full Access',
-  'Overtime Calculation – Full Access',
   'Payroll – Full Access',
   'Salary Generation – Full Access',
   'Allowances & Deductions – Full Access',

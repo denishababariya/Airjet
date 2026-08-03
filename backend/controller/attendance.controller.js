@@ -59,7 +59,6 @@ const ensureDailyAttendance = async (today, employees) => {
             hours: '--',
             status: 'Absent',
             lateMinutes: 0,
-            overtimeMinutes: 0,
             workingHours: 0,
             earlyCheckout: false,
           }
@@ -136,7 +135,6 @@ const checkIn = async (req, res) => {
       hours: '--',
       status: status,
       lateMinutes: lateMinutes,
-      overtimeMinutes: 0,
       createdBy: userId,
     });
 
@@ -249,16 +247,7 @@ const getMyAttendance = async (req, res) => {
 const createRecord = async (req, res) => {
   try {
     const count = await Attendance.countDocuments({ recordType: req.body.recordType || 'attendance' });
-    const prefix = req.body.recordType === 'leave' ? 'LVE' : req.body.recordType === 'overtime' ? 'OT' : 'ATT';
-    
-    // Validate extraHours for overtime records
-    if (req.body.recordType === 'overtime' && req.body.extraHours) {
-      const extraHours = parseFloat(req.body.extraHours);
-      if (extraHours < 1 || extraHours > 4) {
-        return res.status(400).json({ error: 'Extra hours must be between 1 and 4 hours' });
-      }
-    }
-    
+    const prefix = req.body.recordType === 'leave' ? 'LVE' : 'ATT';
     const record = await Attendance.create({
       ...req.body,
       id: req.body.id || generateId(prefix, count),
@@ -284,15 +273,6 @@ const getAllRecords = async (req, res) => {
 const updateRecord = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Validate extraHours for overtime records
-    if (req.body.recordType === 'overtime' && req.body.extraHours) {
-      const extraHours = parseFloat(req.body.extraHours);
-      if (extraHours < 1 || extraHours > 4) {
-        return res.status(400).json({ error: 'Extra hours must be between 1 and 4 hours' });
-      }
-    }
-    
     const record = await Attendance.findByIdAndUpdate(id, req.body, { new: true });
     if (!record) return res.status(404).json({ error: 'Record not found' });
     res.status(200).json(record);
@@ -380,7 +360,6 @@ const scanAttendance = async (req, res) => {
         workingHours: 0,
         status: status,
         lateMinutes: lateMinutes,
-        overtimeMinutes: 0,
         qrToken: qrToken,
         createdBy: userId,
         lastScannedAt: now
@@ -432,11 +411,6 @@ const scanAttendance = async (req, res) => {
       const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
       const workingHours = diffHours + (diffMins / 60);
 
-      let overtimeMinutes = 0;
-      if (workingHours > 8) {
-        overtimeMinutes = Math.round((workingHours - 8) * 60);
-      }
-
       const checkoutHour = now.getHours();
       const checkoutMinute = now.getMinutes();
       let earlyCheckoutWarning = null;
@@ -448,7 +422,6 @@ const scanAttendance = async (req, res) => {
       existingRecord.checkOut = currentTime;
       existingRecord.hours = `${diffHours}h ${diffMins}m`;
       existingRecord.workingHours = workingHours;
-      existingRecord.overtimeMinutes = overtimeMinutes;
       existingRecord.earlyCheckout = earlyCheckoutWarning ? true : false;
       existingRecord.updatedBy = userId;
       existingRecord.lastScannedAt = now;
@@ -528,7 +501,6 @@ const getTodayAttendance = async (req, res) => {
           checkOut: '--',
           hours: '--',
           lateMinutes: 0,
-          overtimeMinutes: 0,
         };
       }
       
@@ -555,7 +527,6 @@ const getTodayAttendance = async (req, res) => {
         hours: '--',
         status: 'Absent',
         lateMinutes: 0,
-        overtimeMinutes: 0,
         workingHours: 0,
         earlyCheckout: false,
         department: emp.department,
@@ -602,7 +573,6 @@ const getAttendanceReport = async (req, res) => {
       late: records.filter(r => r.status === 'Late').length,
       earlyCheckout: records.filter(r => r.earlyCheckout === true).length,
       totalWorkingHours: records.reduce((sum, r) => sum + (r.workingHours || 0), 0),
-      totalOvertime: records.reduce((sum, r) => sum + (r.overtimeMinutes || 0), 0),
       totalLateMinutes: records.reduce((sum, r) => sum + (r.lateMinutes || 0), 0),
     };
 
@@ -693,39 +663,6 @@ const getLateEntryReport = async (req, res) => {
     };
 
     res.status(200).json({ lateEntries, stats });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-const getOvertimeRecords = async (req, res) => {
-  try {
-    const { month, year, employeeId } = req.query;
-    const filter = { recordType: 'overtime' };
-
-    if (month && year) {
-      filter.date = { $regex: `^${year}-${String(month).padStart(2, '0')}` };
-    }
-
-    if (employeeId) {
-      filter.employeeId = employeeId;
-    }
-
-    const records = await Attendance.find(filter)
-      .populate('employeeId')
-      .sort({ date: -1 });
-
-    const totalOvertimeMinutes = records.reduce((sum, r) => sum + (r.overtimeMinutes || 0), 0);
-    const totalOvertimeHours = (totalOvertimeMinutes / 60).toFixed(2);
-
-    res.status(200).json({
-      records,
-      stats: {
-        totalRecords: records.length,
-        totalOvertimeMinutes,
-        totalOvertimeHours,
-      },
-    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -922,7 +859,6 @@ const initializeDailyAttendance = async (req, res) => {
       workingHours: 0,
       status: 'Absent',
       lateMinutes: 0,
-      overtimeMinutes: 0,
       isHoliday: false,
       isWeekOff: false,
       earlyCheckout: false,
@@ -953,7 +889,6 @@ module.exports = {
   getAttendanceReport,
   generateQrToken,
   getLateEntryReport,
-  getOvertimeRecords,
   getLeaveRecords,
   updateLeaveRecord,
   applyLeave,

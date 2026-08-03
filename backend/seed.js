@@ -31,7 +31,7 @@ async function seedDatabase() {
     console.log('[Seed] Data already exists, skipping seed.');
     return;
   }
-  
+
   // Clear existing data only if no data exists
   console.log('[Seed] Clearing existing data...');
   await Promise.all([
@@ -87,51 +87,51 @@ async function seedDatabase() {
   ]);
 
   const employees = await Employee.insertMany([
-    { 
-      id: 'EMP001', name: 'Rajesh Kumar', email: 'rajesh@airjet.in', phoneNo: 9876501001, 
-      address: '123, Main Road, Surat', gender: 'Male', salary: 35000, workShift: 'Day', 
+    {
+      id: 'EMP001', name: 'Rajesh Kumar', email: 'rajesh@airjet.in', phoneNo: 9876501001,
+      address: '123, Main Road, Surat', gender: 'Male', salary: 35000, workShift: 'Day',
       cast: 'General', bod: new Date('1990-05-15'), age: 36, joiningDate: new Date('2020-01-10'),
       department: depts[0]._id, designation: desigs[0]._id, status: 'Active', qrToken: generateQrToken()
     },
-    { 
-      id: 'EMP002', name: 'Priya Sharma', email: 'priya@airjet.in', phoneNo: 9876501002, 
-      address: '456, Park Street, Ahmedabad', gender: 'Female', salary: 30000, workShift: 'Day', 
+    {
+      id: 'EMP002', name: 'Priya Sharma', email: 'priya@airjet.in', phoneNo: 9876501002,
+      address: '456, Park Street, Ahmedabad', gender: 'Female', salary: 30000, workShift: 'Day',
       cast: 'OBC', bod: new Date('1995-08-22'), age: 31, joiningDate: new Date('2021-03-15'),
       department: depts[0]._id, designation: desigs[1]._id, status: 'Active', qrToken: generateQrToken()
     },
-    { 
-      id: 'EMP003', name: 'Amit Patel', email: 'amit@airjet.in', phoneNo: 9876501003, 
-      address: '789, Market Yard, Mumbai', gender: 'Male', salary: 32000, workShift: 'Day', 
+    {
+      id: 'EMP003', name: 'Amit Patel', email: 'amit@airjet.in', phoneNo: 9876501003,
+      address: '789, Market Yard, Mumbai', gender: 'Male', salary: 32000, workShift: 'Day',
       cast: 'SC', bod: new Date('1988-11-30'), age: 38, joiningDate: new Date('2019-07-01'),
       department: depts[1]._id, designation: desigs[2]._id, status: 'Active', qrToken: generateQrToken()
     },
-    { 
-      id: 'EMP004', name: 'Sunita Singh', email: 'sunita@airjet.in', phoneNo: 9876501004, 
-      address: '101, Green Colony, Vadodara', gender: 'Female', salary: 25000, workShift: 'Day', 
+    {
+      id: 'EMP004', name: 'Sunita Singh', email: 'sunita@airjet.in', phoneNo: 9876501004,
+      address: '101, Green Colony, Vadodara', gender: 'Female', salary: 25000, workShift: 'Day',
       cast: 'ST', bod: new Date('1997-02-18'), age: 29, joiningDate: new Date('2022-09-05'),
       department: depts[1]._id, designation: desigs[3]._id, status: 'Active', qrToken: generateQrToken()
     },
-    { 
-      id: 'EMP005', name: 'Karan Mehta', email: 'karan@airjet.in', phoneNo: 9876501005, 
-      address: '202, River View, Rajkot', gender: 'Male', salary: 28000, workShift: 'Rotational', 
+    {
+      id: 'EMP005', name: 'Karan Mehta', email: 'karan@airjet.in', phoneNo: 9876501005,
+      address: '202, River View, Rajkot', gender: 'Male', salary: 28000, workShift: 'Rotational',
       cast: 'General', bod: new Date('1993-04-25'), age: 33, joiningDate: new Date('2020-11-20'),
       department: depts[3]._id, designation: desigs[7]._id, status: 'Active', qrToken: generateQrToken()
     },
-    { 
-      id: 'EMP006', name: 'Divya Verma', email: 'divya@airjet.in', phoneNo: 9876501006, 
-      address: '303, Skyline, Surat', gender: 'Female', salary: 29000, workShift: 'Day', 
+    {
+      id: 'EMP006', name: 'Divya Verma', email: 'divya@airjet.in', phoneNo: 9876501006,
+      address: '303, Skyline, Surat', gender: 'Female', salary: 29000, workShift: 'Day',
       cast: 'OBC', bod: new Date('1996-09-10'), age: 30, joiningDate: new Date('2021-06-12'),
       department: depts[4]._id, designation: desigs[9]._id, status: 'Active', qrToken: generateQrToken()
     },
-    { 
-      id: 'EMP007', name: 'Nikhil Rao', email: 'nikhil@airjet.in', phoneNo: 9876501007, 
-      address: '404, Lake Road, Ahmedabad', gender: 'Male', salary: 31000, workShift: 'Day', 
+    {
+      id: 'EMP007', name: 'Nikhil Rao', email: 'nikhil@airjet.in', phoneNo: 9876501007,
+      address: '404, Lake Road, Ahmedabad', gender: 'Male', salary: 31000, workShift: 'Day',
       cast: 'General', bod: new Date('1991-12-05'), age: 35, joiningDate: new Date('2019-02-28'),
       department: depts[4]._id, designation: desigs[9]._id, status: 'Active', qrToken: generateQrToken()
     },
-    { 
-      id: 'EMP008', name: 'Meera Joshi', email: 'meera@airjet.in', phoneNo: 9876501008, 
-      address: '505, Hill View, Surat', gender: 'Female', salary: 27000, workShift: 'Day', 
+    {
+      id: 'EMP008', name: 'Meera Joshi', email: 'meera@airjet.in', phoneNo: 9876501008,
+      address: '505, Hill View, Surat', gender: 'Female', salary: 27000, workShift: 'Day',
       cast: 'SC', bod: new Date('1994-07-07'), age: 32, joiningDate: new Date('2022-01-10'),
       department: depts[5]._id, designation: desigs[10]._id, status: 'Active', qrToken: generateQrToken()
     },
@@ -266,9 +266,6 @@ async function seedDatabase() {
     { id: 'LVE-001', recordType: 'leave', emp: 'Divya Verma', empId: 'EMP006', from: formatDateISO(today), to: formatDateISO(new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000)), days: 3, type: 'Sick Leave', reason: 'Fever and rest', status: 'Approved' },
     { id: 'LVE-002', recordType: 'leave', emp: 'Priya Sharma', empId: 'EMP002', from: formatDateISO(yesterday), to: formatDateISO(yesterday), days: 1, type: 'Casual Leave', reason: 'Personal work', status: 'Approved' },
     { id: 'LVE-003', recordType: 'leave', emp: 'Meera Joshi', empId: 'EMP008', from: formatDateISO(today), to: formatDateISO(today), days: 1, type: 'Sick Leave', reason: 'Headache', status: 'Pending' },
-    { id: 'OVE-001', recordType: 'overtime', emp: 'Karan Mehta', empId: 'EMP005', date: formatDateISO(yesterday), extraHours: '2h 00m', reason: 'Stock counting', status: 'Approved', rate: '150', amount: '300' },
-    { id: 'OVE-002', recordType: 'overtime', emp: 'Rajesh Kumar', empId: 'EMP001', date: formatDateISO(yesterday), extraHours: '1h 30m', reason: 'Monthly report', status: 'Approved', rate: '150', amount: '225' },
-    { id: 'OVE-003', recordType: 'overtime', emp: 'Sunita Singh', empId: 'EMP004', date: formatDateISO(yesterday), extraHours: '1h 00m', reason: 'Inventory audit', status: 'Pending', rate: '125', amount: '125' },
   ]);
 
   // ──────────────────────────────────────────────────────────────
@@ -407,7 +404,7 @@ async function seedDatabase() {
   }
 
   // Sales Manager
-  const salesManagerPerms = permissions.filter(p => 
+  const salesManagerPerms = permissions.filter(p =>
     ['Dashboard', 'Customers', 'Sales', 'Reports'].includes(p.module)
   );
   for (const perm of salesManagerPerms) {
@@ -424,7 +421,7 @@ async function seedDatabase() {
   }
 
   // Sales Executive
-  const salesExecPerms = permissions.filter(p => 
+  const salesExecPerms = permissions.filter(p =>
     ['Dashboard', 'Customers', 'Sales'].includes(p.module)
   );
   for (const perm of salesExecPerms) {
@@ -441,7 +438,7 @@ async function seedDatabase() {
   }
 
   // Purchase Manager
-  const purchaseManagerPerms = permissions.filter(p => 
+  const purchaseManagerPerms = permissions.filter(p =>
     ['Dashboard', 'Suppliers', 'Purchase', 'Reports'].includes(p.module)
   );
   for (const perm of purchaseManagerPerms) {
@@ -458,7 +455,7 @@ async function seedDatabase() {
   }
 
   // Purchase Executive
-  const purchaseExecPerms = permissions.filter(p => 
+  const purchaseExecPerms = permissions.filter(p =>
     ['Dashboard', 'Suppliers', 'Purchase'].includes(p.module)
   );
   for (const perm of purchaseExecPerms) {
@@ -475,7 +472,7 @@ async function seedDatabase() {
   }
 
   // Inventory Manager
-  const inventoryManagerPerms = permissions.filter(p => 
+  const inventoryManagerPerms = permissions.filter(p =>
     ['Dashboard', 'Spare Parts', 'Inventory', 'Reports'].includes(p.module)
   );
   for (const perm of inventoryManagerPerms) {
@@ -492,7 +489,7 @@ async function seedDatabase() {
   }
 
   // Warehouse Staff
-  const warehouseStaffPerms = permissions.filter(p => 
+  const warehouseStaffPerms = permissions.filter(p =>
     ['Dashboard', 'Inventory'].includes(p.module)
   );
   for (const perm of warehouseStaffPerms) {
@@ -509,7 +506,7 @@ async function seedDatabase() {
   }
 
   // HR Manager
-  const hrManagerPerms = permissions.filter(p => 
+  const hrManagerPerms = permissions.filter(p =>
     ['Dashboard', 'Employees', 'Attendance', 'Payroll', 'Reports'].includes(p.module)
   );
   for (const perm of hrManagerPerms) {
@@ -526,7 +523,7 @@ async function seedDatabase() {
   }
 
   // Accountant
-  const accountantPerms = permissions.filter(p => 
+  const accountantPerms = permissions.filter(p =>
     ['Dashboard', 'Reports'].includes(p.module)
   );
   for (const perm of accountantPerms) {
@@ -543,7 +540,7 @@ async function seedDatabase() {
   }
 
   // Service Manager
-  const serviceManagerPerms = permissions.filter(p => 
+  const serviceManagerPerms = permissions.filter(p =>
     ['Dashboard', 'Reports'].includes(p.module)
   );
   for (const perm of serviceManagerPerms) {
@@ -560,7 +557,7 @@ async function seedDatabase() {
   }
 
   // Quality Inspector
-  const qualityInspectorPerms = permissions.filter(p => 
+  const qualityInspectorPerms = permissions.filter(p =>
     ['Dashboard', 'Reports'].includes(p.module)
   );
   for (const perm of qualityInspectorPerms) {
@@ -577,7 +574,7 @@ async function seedDatabase() {
   }
 
   // CEO/Director - Read only
-  const ceoPerms = permissions.filter(p => 
+  const ceoPerms = permissions.filter(p =>
     ['Dashboard', 'Reports'].includes(p.module)
   );
   for (const perm of ceoPerms) {
@@ -619,14 +616,14 @@ if (require.main === module) {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(async () => {
-    console.log('MongoDB connected for seeding');
-    await seedDatabase();
-    mongoose.connection.close();
-    console.log('Seed complete, connection closed');
-  })
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
-  });
+    .then(async () => {
+      console.log('MongoDB connected for seeding');
+      await seedDatabase();
+      mongoose.connection.close();
+      console.log('Seed complete, connection closed');
+    })
+    .catch(err => {
+      console.error('MongoDB connection error:', err);
+      process.exit(1);
+    });
 }

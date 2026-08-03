@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MdPeople, MdAdd, MdEdit, MdDelete, MdSearch } from 'react-icons/md';
+import { MdPeople, MdAdd, MdEdit, MdDelete, MdSearch, MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import Modal from '../components/Modal';
 import { employeesApi, departmentsApi, designationsApi, hrApi } from '../utils/api';
 
@@ -10,7 +10,7 @@ const blank = {
   password: '', confirmPassword: '',
 };
 
-const ADMIN_DESIGNATIONS = ['HR', 'Admin', 'Manager', 'Head'];
+const ADMIN_DESIGNATIONS = ['HR', 'Admin', 'Manager', 'Head', 'HR Manager'];
 
 const statusClass = { Active: 'd_success', Inactive: 'd_danger', 'On Leave': 'd_warning' };
 
@@ -25,6 +25,8 @@ const EmployeeMaster = ({ currentUser }) => {
   const [form, setForm] = useState(blank);
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const canManage = ['Admin', 'HR', 'Manager'].includes(currentUser?.role);
 
@@ -33,6 +35,16 @@ const EmployeeMaster = ({ currentUser }) => {
     return designation && ADMIN_DESIGNATIONS.some(admin => 
       designation.title?.toLowerCase().includes(admin.toLowerCase())
     );
+  };
+
+  const isHRDepartment = (departmentId) => {
+    const department = departments.find(d => d._id === departmentId);
+    return department && department.title?.toLowerCase().includes('hr');
+  };
+
+  const isHRManagerDesignation = (designationId) => {
+    const designation = designations.find(d => d._id === designationId);
+    return designation && designation.title?.toLowerCase().includes('hr manager');
   };
 
   const fetchAll = async () => {
@@ -66,7 +78,7 @@ const EmployeeMaster = ({ currentUser }) => {
     (e.department?.title || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const openAdd = () => { setForm(blank); setEditId(null); setErrors({}); setModal(true); };
+  const openAdd = () => { setForm(blank); setEditId(null); setErrors({}); setShowPassword(false); setShowConfirmPassword(false); setModal(true); };
 
   const openEdit = (emp) => {
     setForm({
@@ -84,9 +96,13 @@ const EmployeeMaster = ({ currentUser }) => {
       department: emp.department?._id || emp.department || '',
       designation: emp.designation?._id || emp.designation || '',
       status: emp.status || 'Active',
+      password: '',
+      confirmPassword: '',
     });
     setEditId(emp._id);
     setErrors({});
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setModal(true);
   };
 
@@ -99,11 +115,21 @@ const EmployeeMaster = ({ currentUser }) => {
     if (!form.email.trim()) e.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
     
-    // Password required for admin designations
-    if (!editId && isAdminDesignation(form.designation)) {
+    // Password required for admin designations, HR department, or HR Manager designation (only in add mode)
+    const showPasswordField = (isAdminDesignation(form.designation) || isHRDepartment(form.department) || isHRManagerDesignation(form.designation));
+    if (showPasswordField && !editId) {
       if (!form.password.trim()) {
-        e.password = 'Password is required for admin role employees';
+        e.password = 'Password is required';
       } else if (form.password.length < 6) {
+        e.password = 'Password must be at least 6 characters';
+      } else if (form.password !== form.confirmPassword) {
+        e.confirmPassword = 'Passwords do not match';
+      }
+    }
+    
+    // In edit mode, if password is provided, validate it
+    if (showPasswordField && editId && form.password.trim()) {
+      if (form.password.length < 6) {
         e.password = 'Password must be at least 6 characters';
       } else if (form.password !== form.confirmPassword) {
         e.confirmPassword = 'Passwords do not match';
@@ -136,11 +162,18 @@ const EmployeeMaster = ({ currentUser }) => {
       
       if (editId) {
         await employeesApi.update(editId, payload);
+        
+        // Update user password if provided for admin designations, HR department, or HR Manager designation
+        if ((isAdminDesignation(form.designation) || isHRDepartment(form.department) || isHRManagerDesignation(form.designation)) && form.password) {
+          const designation = designations.find(d => d._id === form.designation);
+          const role = designation?.title || 'User';
+          await hrApi.createUserWithRole(editId, role, form.password);
+        }
       } else {
         const employee = await employeesApi.create(payload);
         
-        // Create user account with password for admin designations
-        if (isAdminDesignation(form.designation) && form.password) {
+        // Create user account with password for admin designations, HR department, or HR Manager designation
+        if ((isAdminDesignation(form.designation) || isHRDepartment(form.department) || isHRManagerDesignation(form.designation)) && form.password) {
           const designation = designations.find(d => d._id === form.designation);
           const role = designation?.title || 'User';
           await hrApi.createUserWithRole(employee.data._id, role, form.password);
@@ -343,16 +376,64 @@ const EmployeeMaster = ({ currentUser }) => {
             <input className="d_form_control" placeholder="e.g. General" {...f('cast')} />
           </div>
         </div>
-        {!editId && isAdminDesignation(form.designation) && (
+        {(isAdminDesignation(form.designation) || isHRDepartment(form.department) || isHRManagerDesignation(form.designation)) && (
           <div className="d_form_row cols-2">
             <div className="d_form_group">
-              <label className="d_form_label">Password <span className="d_req">*</span></label>
-              <input type="password" className="d_form_control" placeholder="Enter password" {...f('password')} />
+              <label className="d_form_label">Password {!editId && <span className="d_req">*</span>}</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type={showPassword ? 'text' : 'password'} 
+                  className="d_form_control" 
+                  placeholder={editId ? "Leave blank to keep existing password" : "Enter password"} 
+                  value={form.password}
+                  onChange={e => { setForm(p => ({ ...p, password: e.target.value })); setErrors(p => ({ ...p, password: '' })); }}
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ 
+                    position: 'absolute', 
+                    right: '10px', 
+                    top: '50%', 
+                    transform: 'translateY(-50%)', 
+                    background: 'none', 
+                    border: 'none', 
+                    cursor: 'pointer',
+                    color: 'var(--d-text-muted)'
+                  }}
+                >
+                  {showPassword ? <MdVisibilityOff /> : <MdVisibility />}
+                </button>
+              </div>
               {errors.password && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.password}</span>}
             </div>
             <div className="d_form_group">
-              <label className="d_form_label">Confirm Password</label>
-              <input type="password" className="d_form_control" placeholder="Confirm password" {...f('confirmPassword')} />
+              <label className="d_form_label">Confirm Password {!editId && <span className="d_req">*</span>}</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type={showConfirmPassword ? 'text' : 'password'} 
+                  className="d_form_control" 
+                  placeholder={editId ? "Leave blank to keep existing password" : "Confirm password"} 
+                  value={form.confirmPassword}
+                  onChange={e => { setForm(p => ({ ...p, confirmPassword: e.target.value })); setErrors(p => ({ ...p, confirmPassword: '' })); }}
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={{ 
+                    position: 'absolute', 
+                    right: '10px', 
+                    top: '50%', 
+                    transform: 'translateY(-50%)', 
+                    background: 'none', 
+                    border: 'none', 
+                    cursor: 'pointer',
+                    color: 'var(--d-text-muted)'
+                  }}
+                >
+                  {showConfirmPassword ? <MdVisibilityOff /> : <MdVisibility />}
+                </button>
+              </div>
               {errors.confirmPassword && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.confirmPassword}</span>}
             </div>
           </div>

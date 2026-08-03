@@ -17,9 +17,9 @@ import QRScanner        from './pages/attendance/QRScanner';
 import TodayAttendance  from './pages/attendance/TodayAttendance';
 import EmployeeQRCode   from './pages/attendance/EmployeeQRCode';
 import LeaveTracking    from './pages/attendance/LeaveTracking';
-import OvertimeCalculation from './pages/attendance/OvertimeCalculation';
 import LateEntryReport  from './pages/attendance/LateEntryReport';
 import AttendanceReport from './pages/attendance/AttendanceReport';
+import CheckInOut       from './pages/attendance/CheckInOut';
 import Payroll          from './pages/Payroll';
 import Purchase         from './pages/Purchase';
 import Sales            from './pages/Sales';
@@ -63,10 +63,10 @@ const PAGE_MAP = {
   'Today Attendance':           { component: TodayAttendance },
   'QR Scanner':                 { component: QRScanner },
   'Leave Tracking':             { component: LeaveTracking },
-  'Overtime Calculation':       { component: OvertimeCalculation },
-  'Late Entry Report':          { component: LateEntryReport },
   'Employee QR Codes':          { component: EmployeeQRCode },
+  'Late Entry Report':          { component: LateEntryReport },
   'Attendance Report':          { component: AttendanceReport },
+  'Check In/Out':               { component: CheckInOut },
 
   // ── Payroll ────────────────────────────────────────────────
   payroll:                      { component: Payroll, defaultTab: 'salary' },

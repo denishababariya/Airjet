@@ -137,7 +137,7 @@ const LateEntryReport = () => {
                           {e.employeeId?.image ? (
                             <img src={e.employeeId.image} alt={e.emp} className="d_table_avatar me-2" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
                           ) : (
-                            <div className="d-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: 32, height: 32, fontSize: 12 }}>
+                            <div className="d-avatar text-white rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: 32, height: 32, fontSize: 12, backgroundColor: '#1a3c5e' }}>
                               {e.emp?.charAt(0)}
                             </div>
                           )}
