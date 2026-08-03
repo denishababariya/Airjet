@@ -42,7 +42,7 @@ const SalaryInformation = () => (
                   <td>{fmt(e.allowances)}</td>
                   <td className="text-danger">{fmt(e.deductions)}</td>
                   <td><strong className="text-success">{fmt(e.net)}</strong></td>
-                  <td><div className="d_action_btns"><button className="d_icon_btn d_edit"><MdEdit /></button><button className="d_icon_btn d_view"><MdVisibility /></button></div></td>
+                  <td><div className="d_action_btns-"><button className="d_icon_btn d_edit"><MdEdit /></button><button className="d_icon_btn d_view"><MdVisibility /></button></div></td>
                 </tr>
               ))}
             </tbody>

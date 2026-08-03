@@ -46,8 +46,8 @@ const getDashboardStats = async (req, res) => {
       ErpRecord.find({ module: 'sales', recordType: 'invoice' }).sort({ createdAt: -1 }).limit(5),
       ErpRecord.find({ module: 'service', recordType: 'ticket' }).sort({ createdAt: -1 }).limit(5),
       ErpRecord.find({ module: 'purchase', recordType: 'order' }).sort({ createdAt: -1 }).limit(5),
-      ErpRecord.aggregate([{ $match: { module: 'accounts', recordType: 'receivable' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
-      ErpRecord.aggregate([{ $match: { module: 'accounts', recordType: 'payable' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      ErpRecord.aggregate([{ $match: { module: 'accounts', recordType: 'receivable', status: { $nin: ['Collected', 'Paid'] } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      ErpRecord.aggregate([{ $match: { module: 'accounts', recordType: 'payable', status: { $nin: ['Paid', 'Collected'] } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
     ]);
 
     const salesTotal = todayIncome[0]?.total || 0;
