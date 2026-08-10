@@ -1,4 +1,5 @@
 const ErpRecord = require('../model/ErpRecord.model');
+const Stock = require('../model/Stock.model');
 
 const ID_PREFIX = {
   'payroll:salary': 'PAY',
@@ -30,6 +31,21 @@ const generateId = async (module, recordType) => {
   return `${prefix}-${String(count + 1).padStart(3, '0')}`;
 };
 
+const calculateWarrantyExpiry = (deliveryDate, warrantyMonths) => {
+  if (!deliveryDate || !warrantyMonths) return null;
+  const date = new Date(deliveryDate);
+  date.setMonth(date.getMonth() + parseInt(warrantyMonths));
+  return date.toISOString().split('T')[0];
+};
+
+const checkWarrantyStatus = (warrantyExpiryDate) => {
+  if (!warrantyExpiryDate) return { status: 'N/A', isValid: false };
+  const today = new Date();
+  const expiry = new Date(warrantyExpiryDate);
+  const isValid = today <= expiry;
+  return { status: isValid ? 'Active' : 'Expired', isValid };
+};
+
 const createRecord = async (req, res) => {
   try {
     const { module, recordType } = req.body;
@@ -40,6 +56,65 @@ const createRecord = async (req, res) => {
       ...req.body,
       id: req.body.id || await generateId(module, recordType),
     };
+
+    // Calculate warranty expiry for sales orders
+    if (module === 'sales' && recordType === 'order' && payload.delivery && payload.warrantyMonths) {
+      payload.warrantyExpiryDate = calculateWarrantyExpiry(payload.delivery, payload.warrantyMonths);
+      const warrantyCheck = checkWarrantyStatus(payload.warrantyExpiryDate);
+      payload.warrantyStatus = warrantyCheck.status;
+    }
+
+    // Process sales order with items
+    if (module === 'sales' && recordType === 'order' && payload.items && Array.isArray(payload.items)) {
+      // Generate invoice number
+      const invoiceCount = await ErpRecord.countDocuments({ module: 'sales', recordType: 'invoice' });
+      payload.invoiceNo = `INV-${String(invoiceCount + 1).padStart(4, '0')}`;
+      payload.invoiceDate = new Date().toISOString().split('T')[0];
+
+      // Calculate totals
+      let totalAmount = 0;
+      payload.items = await Promise.all(payload.items.map(async (item) => {
+        const stockItem = await Stock.findById(item.stockId);
+        if (stockItem) {
+          // Update stock quantity
+          const newQuantity = stockItem.quantity - item.quantity;
+          await Stock.findByIdAndUpdate(item.stockId, { quantity: newQuantity });
+          item.unitPrice = stockItem.unitPrice;
+          item.totalPrice = item.quantity * item.unitPrice;
+        }
+        totalAmount += item.totalPrice || 0;
+        return item;
+      }));
+
+      payload.totalAmount = totalAmount;
+      const gstAmount = totalAmount * (payload.gstRate || 18) / 100;
+      payload.gstAmount = gstAmount;
+      payload.cgstAmount = gstAmount / 2;
+      payload.sgstAmount = gstAmount / 2;
+      payload.grandTotal = totalAmount + gstAmount;
+
+      // Create invoice record
+      const invoicePayload = {
+        ...payload,
+        module: 'sales',
+        recordType: 'invoice',
+        id: payload.invoiceNo,
+        so: payload.so
+      };
+      await ErpRecord.create(invoicePayload);
+    }
+
+    // Check warranty for service tickets linked to sales orders
+    if (module === 'service' && recordType === 'ticket' && payload.salesOrderNo) {
+      const salesOrder = await ErpRecord.findOne({ module: 'sales', recordType: 'order', so: payload.salesOrderNo });
+      if (salesOrder) {
+        const warrantyCheck = checkWarrantyStatus(salesOrder.warrantyExpiryDate);
+        payload.warranty = warrantyCheck.isValid ? 'Yes' : 'No';
+        payload.warrantyExpiryDate = salesOrder.warrantyExpiryDate;
+        payload.warrantyStatus = warrantyCheck.status;
+      }
+    }
+
     if (payload.basic != null && payload.allowances != null && payload.deductions != null) {
       payload.net = Number(payload.basic) + Number(payload.allowances) - Number(payload.deductions);
     }
@@ -75,6 +150,47 @@ const getRecordById = async (req, res) => {
 const updateRecord = async (req, res) => {
   try {
     const payload = { ...req.body };
+
+    // Calculate warranty expiry for sales orders
+    if (payload.module === 'sales' && payload.recordType === 'order' && payload.delivery && payload.warrantyMonths) {
+      payload.warrantyExpiryDate = calculateWarrantyExpiry(payload.delivery, payload.warrantyMonths);
+      const warrantyCheck = checkWarrantyStatus(payload.warrantyExpiryDate);
+      payload.warrantyStatus = warrantyCheck.status;
+    }
+
+    // Process sales order with items on update
+    if (payload.module === 'sales' && payload.recordType === 'order' && payload.items && Array.isArray(payload.items)) {
+      // Calculate totals
+      let totalAmount = 0;
+      payload.items = await Promise.all(payload.items.map(async (item) => {
+        const stockItem = await Stock.findById(item.stockId);
+        if (stockItem) {
+          item.unitPrice = stockItem.unitPrice;
+          item.totalPrice = item.quantity * item.unitPrice;
+        }
+        totalAmount += item.totalPrice || 0;
+        return item;
+      }));
+
+      payload.totalAmount = totalAmount;
+      const gstAmount = totalAmount * (payload.gstRate || 18) / 100;
+      payload.gstAmount = gstAmount;
+      payload.cgstAmount = gstAmount / 2;
+      payload.sgstAmount = gstAmount / 2;
+      payload.grandTotal = totalAmount + gstAmount;
+    }
+
+    // Check warranty for service tickets linked to sales orders
+    if (payload.module === 'service' && payload.recordType === 'ticket' && payload.salesOrderNo) {
+      const salesOrder = await ErpRecord.findOne({ module: 'sales', recordType: 'order', so: payload.salesOrderNo });
+      if (salesOrder) {
+        const warrantyCheck = checkWarrantyStatus(salesOrder.warrantyExpiryDate);
+        payload.warranty = warrantyCheck.isValid ? 'Yes' : 'No';
+        payload.warrantyExpiryDate = salesOrder.warrantyExpiryDate;
+        payload.warrantyStatus = warrantyCheck.status;
+      }
+    }
+
     if (payload.basic != null && payload.allowances != null && payload.deductions != null) {
       payload.net = Number(payload.basic) + Number(payload.allowances) - Number(payload.deductions);
     }
@@ -102,4 +218,6 @@ module.exports = {
   getRecordById,
   updateRecord,
   deleteRecord,
+  calculateWarrantyExpiry,
+  checkWarrantyStatus,
 };

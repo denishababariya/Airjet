@@ -152,7 +152,7 @@ const generateEmployeeRecordData = (data, module, baseData) => {
         machine: '',
         issue: '',
         priority: 'Medium',
-        ticket: `SRV-${id}`
+        ticket: `SRV-${data.id}`
       };
     case 'accounts':
       return {

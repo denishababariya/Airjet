@@ -31,19 +31,19 @@ const EmployeeMaster = ({ currentUser }) => {
   const canManage = ['Admin', 'HR', 'Manager'].includes(currentUser?.role);
 
   const isAdminDesignation = (designationId) => {
-    const designation = designations.find(d => d._id === designationId);
+    const designation = designations.find(d => (d._id || d.id) === designationId);
     return designation && ADMIN_DESIGNATIONS.some(admin => 
       designation.title?.toLowerCase().includes(admin.toLowerCase())
     );
   };
 
   const isHRDepartment = (departmentId) => {
-    const department = departments.find(d => d._id === departmentId);
+    const department = departments.find(d => (d._id || d.id) === departmentId);
     return department && department.title?.toLowerCase().includes('hr');
   };
 
   const isHRManagerDesignation = (designationId) => {
-    const designation = designations.find(d => d._id === designationId);
+    const designation = designations.find(d => (d._id || d.id) === designationId);
     return designation && designation.title?.toLowerCase().includes('hr manager');
   };
 
@@ -69,7 +69,7 @@ const EmployeeMaster = ({ currentUser }) => {
   useEffect(() => { fetchAll(); }, []);
 
   const filteredDesigs = form.department
-    ? designations.filter(d => (d.department?._id || d.department) === form.department)
+    ? designations.filter(d => (d.department?._id || d.department?.id || d.department) === form.department)
     : designations;
 
   const filtered = data.filter(e =>
@@ -93,13 +93,13 @@ const EmployeeMaster = ({ currentUser }) => {
       bod: emp.bod ? emp.bod.split('T')[0] : '',
       age: emp.age || '',
       joiningDate: emp.joiningDate ? emp.joiningDate.split('T')[0] : '',
-      department: emp.department?._id || emp.department || '',
-      designation: emp.designation?._id || emp.designation || '',
+      department: emp.department?._id || emp.department?.id || emp.department || '',
+      designation: emp.designation?._id || emp.designation?.id || emp.designation || '',
       status: emp.status || 'Active',
       password: '',
       confirmPassword: '',
     });
-    setEditId(emp._id);
+    setEditId(emp._id || emp.id);
     setErrors({});
     setShowPassword(false);
     setShowConfirmPassword(false);
@@ -165,7 +165,7 @@ const EmployeeMaster = ({ currentUser }) => {
         
         // Update user password if provided for admin designations, HR department, or HR Manager designation
         if ((isAdminDesignation(form.designation) || isHRDepartment(form.department) || isHRManagerDesignation(form.designation)) && form.password) {
-          const designation = designations.find(d => d._id === form.designation);
+          const designation = designations.find(d => (d._id || d.id) === form.designation);
           const role = designation?.title || 'User';
           await hrApi.createUserWithRole(editId, role, form.password);
         }
@@ -174,9 +174,9 @@ const EmployeeMaster = ({ currentUser }) => {
         
         // Create user account with password for admin designations, HR department, or HR Manager designation
         if ((isAdminDesignation(form.designation) || isHRDepartment(form.department) || isHRManagerDesignation(form.designation)) && form.password) {
-          const designation = designations.find(d => d._id === form.designation);
+          const designation = designations.find(d => (d._id || d.id) === form.designation);
           const role = designation?.title || 'User';
-          await hrApi.createUserWithRole(employee.data._id, role, form.password);
+          await hrApi.createUserWithRole(employee.data._id || employee.data.id, role, form.password);
         }
       }
       setModal(false);
@@ -258,8 +258,8 @@ const EmployeeMaster = ({ currentUser }) => {
               <tbody>
                 {filtered.length === 0 && <tr className="d_empty"><td colSpan={10}>No employees found.</td></tr>}
                 {filtered.map(e => (
-                  <tr key={e._id}>
-                    <td><code>{e.id}</code></td>
+                  <tr key={e._id || e.id}>
+                    <td><code>{e.id || e._id}</code></td>
                     <td><strong>{e.name}</strong></td>
                     <td>{e.department?.title || '-'}</td>
                     <td>{e.designation?.title || '-'}</td>
@@ -273,7 +273,7 @@ const EmployeeMaster = ({ currentUser }) => {
                         {canManage && (
                           <>
                             <button className="d_icon_btn d_edit" onClick={() => openEdit(e)} title="Edit"><MdEdit /></button>
-                            <button className="d_icon_btn d_del" onClick={() => handleDelete(e._id)} title="Delete"><MdDelete /></button>
+                            <button className="d_icon_btn d_del" onClick={() => handleDelete(e._id || e.id)} title="Delete"><MdDelete /></button>
                           </>
                         )}
                       </div>
@@ -305,7 +305,7 @@ const EmployeeMaster = ({ currentUser }) => {
             <label className="d_form_label">Department <span className="d_req">*</span></label>
             <select className="d_form_control" {...f('department')}>
               <option value="">Select Department</option>
-              {departments.map(d => <option key={d._id} value={d._id}>{d.title}</option>)}
+              {departments.map(d => <option key={d._id || d.id} value={d._id || d.id}>{d.title}</option>)}
             </select>
             {errors.department && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.department}</span>}
           </div>
@@ -313,7 +313,7 @@ const EmployeeMaster = ({ currentUser }) => {
             <label className="d_form_label">Designation <span className="d_req">*</span></label>
             <select className="d_form_control" {...f('designation')}>
               <option value="">Select Designation</option>
-              {filteredDesigs.map(d => <option key={d._id} value={d._id}>{d.title}</option>)}
+              {filteredDesigs.map(d => <option key={d._id || d.id} value={d._id || d.id}>{d.title}</option>)}
             </select>
             {errors.designation && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.designation}</span>}
           </div>

@@ -1,243 +1,46 @@
 import React, { useState } from 'react';
-import { MdBuildCircle, MdAdd, MdEdit, MdDelete, MdVisibility } from 'react-icons/md';
-import Modal from '../components/Modal';
-import { useErpRecords } from '../utils/useErpRecords';
-
-const statusClass = { Open: 'd_warning', 'In Progress': 'd_info', Resolved: 'd_success', Closed: 'd_danger', Completed: 'd_success' };
-const TAB_TYPE = { tickets: 'ticket', assignment: 'assignment', reports: 'report' };
-const blank = { customer: '', machine: '', issue: '', engineer: '', date: '', status: 'Open', priority: 'Medium' };
+import { MdBuildCircle } from 'react-icons/md';
+import ServiceTickets from './service/ServiceTickets';
+import EngineerAssignment from './service/EngineerAssignment';
+import EngineerVisit from './service/EngineerVisit';
+import SparePartsRequired from './service/SparePartsRequired';
+import ServiceReports from './service/ServiceReports';
 
 const Service = ({ defaultTab = 'tickets' }) => {
   const [tab, setTab] = useState(defaultTab);
-  const recordType = TAB_TYPE[tab];
-  const { data, loading, error, setError, save, remove } = useErpRecords('service', recordType);
-  const [modal, setModal] = useState(false);
-  const [form, setForm] = useState(blank);
-  const [editId, setEditId] = useState(null);
-  const [errors, setErrors] = useState({});
 
-  const openAdd = () => { setForm(blank); setEditId(null); setErrors({}); setModal(true); };
-  const openEdit = (t) => {
-    setForm({
-      customer: t.customer || '',
-      machine: t.machine || '',
-      issue: t.issue || '',
-      engineer: t.engineer || '',
-      date: t.date || '',
-      status: t.status || 'Open',
-      priority: t.priority || 'Medium',
-    });
-    setEditId(t._id);
-    setErrors({});
-    setModal(true);
-  };
+  const TABS = [
+    { key: 'tickets', label: 'Service Tickets', component: ServiceTickets },
+    { key: 'assignment', label: 'Engineer Assignment', component: EngineerAssignment },
+    { key: 'visit', label: 'Engineer Visit', component: EngineerVisit },
+    { key: 'parts', label: 'Spare Parts', component: SparePartsRequired },
+    { key: 'reports', label: 'Service Reports', component: ServiceReports },
+  ];
 
-  const validate = () => {
-    const e = {};
-    if (!form.customer.trim()) e.customer = 'Customer is required';
-    if (!form.machine.trim()) e.machine = 'Machine model is required';
-    if (!form.issue.trim()) e.issue = 'Issue description is required';
-    return e;
-  };
-
-  const handleSave = async () => {
-    const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
-    try {
-      await save(form, editId);
-      setModal(false);
-    } catch (err) {
-      setError(err.displayMessage || 'Failed to save');
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this record?')) return;
-    try { await remove(id); } catch (err) { setError(err.displayMessage || 'Failed to delete'); }
-  };
-
-  const f = (field) => ({
-    value: form[field] ?? '',
-    onChange: (ev) => { setForm(p => ({ ...p, [field]: ev.target.value })); setErrors(p => ({ ...p, [field]: '' })); },
-  });
-
-  const tickets = tab === 'tickets' ? data : [];
-  const open = tickets.filter(t => t.status === 'Open').length;
-  const inProgress = tickets.filter(t => t.status === 'In Progress').length;
-  const resolved = tickets.filter(t => t.status === 'Resolved').length;
+  const ActiveComponent = TABS.find(t => t.key === tab)?.component || ServiceTickets;
 
   return (
     <div>
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <h1 className="d_page_title">Service Management</h1>
-          <p className="d_page_subtitle">Manage service tickets, engineer assignment and service reports</p>
+          <p className="d_page_subtitle">Complete service workflow: Tickets → Assignment → Visit → Parts → Reports</p>
         </div>
-        {tab === 'tickets' && (
-          <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> New Ticket</button>
-        )}
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
-
-      {tab === 'tickets' && (
-        <div className="row g-3 mb-3">
-          {[['Open', open, '#f59e0b'], ['In Progress', inProgress, '#17a2b8'], ['Resolved', resolved, '#28a745']].map(([lbl, val, color]) => (
-            <div key={lbl} className="col-6 col-md-4">
-              <div className="d_stat_card" style={{ borderLeftColor: color }}>
-                <div className="d_stat_value">{val}</div>
-                <div className="d_stat_label">{lbl} Tickets</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className="d_tabs mb-3">
-        {[['tickets', 'Service Tickets'], ['assignment', 'Engineer Assignment'], ['reports', 'Service Reports']].map(([k, v]) => (
-          <button key={k} className={`d_tab_btn ${tab === k ? 'd_active' : ''}`} onClick={() => setTab(k)}>{v}</button>
+        {TABS.map(({ key, label }) => (
+          <button 
+            key={key} 
+            className={`d_tab_btn ${tab === key ? 'd_active' : ''}`} 
+            onClick={() => setTab(key)}
+          >
+            {label}
+          </button>
         ))}
       </div>
 
-      {loading ? <div className="text-center py-4">Loading…</div> : (
-        <>
-          {tab === 'tickets' && (
-            <div className="d_card">
-              <div className="d_card_header">
-                <h2 className="d_card_title"><MdBuildCircle className="d_card_icon" /> Service Tickets ({data.length})</h2>
-              </div>
-              <div className="d_card_body p-0">
-                <div className="d_table_wrap">
-                  <table className="d_table">
-                    <thead><tr><th>Ticket ID</th><th>Customer</th><th>Machine</th><th>Issue</th><th>Engineer</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
-                    <tbody>
-                      {data.length === 0 && <tr className="d_empty"><td colSpan={8}>No service tickets found.</td></tr>}
-                      {data.map(t => (
-                        <tr key={t._id}>
-                          <td><code>{t.id}</code></td><td><strong>{t.customer}</strong></td><td>{t.machine}</td>
-                          <td>{t.issue}</td><td>{t.engineer || 'Unassigned'}</td><td>{t.date}</td>
-                          <td><span className={`d_badge ${statusClass[t.status] || 'd_info'}`}>{t.status}</span></td>
-                          <td><div className="d_action_btns">
-                            <button className="d_icon_btn d_view"><MdVisibility /></button>
-                            <button className="d_icon_btn d_edit" onClick={() => openEdit(t)}><MdEdit /></button>
-                            <button className="d_icon_btn d_del" onClick={() => handleDelete(t._id)}><MdDelete /></button>
-                          </div></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {tab === 'assignment' && (
-            <div className="d_card">
-              <div className="d_card_header">
-                <h2 className="d_card_title"><MdBuildCircle className="d_card_icon" /> Engineer Assignments ({data.length})</h2>
-              </div>
-              <div className="d_card_body p-0">
-                <div className="d_table_wrap">
-                  <table className="d_table">
-                    <thead><tr><th>ID</th><th>Engineer</th><th>Emp ID</th><th>Assigned</th><th>In Progress</th><th>Resolved</th><th>Expertise</th><th>Available</th></tr></thead>
-                    <tbody>
-                      {data.length === 0 && <tr className="d_empty"><td colSpan={8}>No engineer assignments found.</td></tr>}
-                      {data.map(a => (
-                        <tr key={a._id}>
-                          <td><code>{a.id}</code></td><td><strong>{a.engineer}</strong></td><td><code>{a.empId}</code></td>
-                          <td><span className="d_badge d_warning">{a.assigned ?? 0}</span></td>
-                          <td><span className="d_badge d_info">{a.inProgress ?? 0}</span></td>
-                          <td><span className="d_badge d_success">{a.resolved ?? 0}</span></td>
-                          <td>{a.expertise}</td>
-                          <td><span className={`d_badge ${a.available === 'Yes' ? 'd_success' : 'd_danger'}`}>{a.available || 'Yes'}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {tab === 'reports' && (
-            <div className="d_card">
-              <div className="d_card_header">
-                <h2 className="d_card_title"><MdBuildCircle className="d_card_icon" /> Service Reports ({data.length})</h2>
-              </div>
-              <div className="d_card_body p-0">
-                <div className="d_table_wrap">
-                  <table className="d_table">
-                    <thead><tr><th>Report ID</th><th>Ticket</th><th>Customer</th><th>Engineer</th><th>Date</th><th>Parts Used</th><th>Hours</th><th>Cost</th><th>Status</th></tr></thead>
-                    <tbody>
-                      {data.length === 0 && <tr className="d_empty"><td colSpan={9}>No service reports found.</td></tr>}
-                      {data.map(r => (
-                        <tr key={r._id}>
-                          <td><code>{r.id}</code></td><td><code>{r.ticket}</code></td><td><strong>{r.customer}</strong></td>
-                          <td>{r.engineer}</td><td>{r.date}</td><td>{r.parts}</td>
-                          <td>{r.hours}</td><td><strong>{typeof r.cost === 'number' ? `₹${r.cost.toLocaleString()}` : r.cost}</strong></td>
-                          <td><span className={`d_badge ${statusClass[r.status] || 'd_info'}`}>{r.status}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {tab === 'tickets' && (
-        <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Service Ticket' : 'New Service Ticket'} size="lg">
-          <div className="d_form_row cols-2">
-            <div className="d_form_group">
-              <label className="d_form_label">Customer / Company <span className="d_req">*</span></label>
-              <input className="d_form_control" placeholder="Customer name" {...f('customer')} />
-              {errors.customer && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.customer}</span>}
-            </div>
-            <div className="d_form_group">
-              <label className="d_form_label">Machine Model <span className="d_req">*</span></label>
-              <input className="d_form_control" placeholder="e.g. AirJet AT-200" {...f('machine')} />
-              {errors.machine && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.machine}</span>}
-            </div>
-          </div>
-          <div className="d_form_row cols-1">
-            <div className="d_form_group">
-              <label className="d_form_label">Issue Description <span className="d_req">*</span></label>
-              <textarea className="d_form_control" placeholder="Describe the issue in detail…" rows={3} {...f('issue')} />
-              {errors.issue && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.issue}</span>}
-            </div>
-          </div>
-          <div className="d_form_row cols-2">
-            <div className="d_form_group">
-              <label className="d_form_label">Assigned Engineer</label>
-              <input className="d_form_control" placeholder="Engineer name" {...f('engineer')} />
-            </div>
-            <div className="d_form_group">
-              <label className="d_form_label">Date</label>
-              <input type="date" className="d_form_control" {...f('date')} />
-            </div>
-          </div>
-          <div className="d_form_row cols-2">
-            <div className="d_form_group">
-              <label className="d_form_label">Priority</label>
-              <select className="d_form_control" {...f('priority')}>
-                <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
-              </select>
-            </div>
-            <div className="d_form_group">
-              <label className="d_form_label">Status</label>
-              <select className="d_form_control" {...f('status')}>
-                <option>Open</option><option>In Progress</option><option>Resolved</option><option>Closed</option>
-              </select>
-            </div>
-          </div>
-          <div className="d_form_actions">
-            <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
-            <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Ticket' : 'Create Ticket'}</button>
-          </div>
-        </Modal>
-      )}
+      <ActiveComponent />
     </div>
   );
 };

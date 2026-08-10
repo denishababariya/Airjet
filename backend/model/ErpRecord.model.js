@@ -71,6 +71,28 @@ const erpRecordSchema = new mongoose.Schema({
   status: { type: String, default: 'Active' },
   entityType: { type: String },
   notes: String,
+  // Warranty fields for sales orders
+  warrantyMonths: { type: Number, default: 3 },
+  warrantyExpiryDate: String,
+  warrantyStatus: { type: String, default: 'Active' },
+  salesOrderNo: String,
+  // Product/Stock items for sales orders
+  items: [{
+    itemCode: String,
+    itemName: String,
+    quantity: Number,
+    unitPrice: Number,
+    totalPrice: Number,
+    stockId: { type: mongoose.Types.ObjectId, ref: 'stock' }
+  }],
+  invoiceNo: String,
+  invoiceDate: String,
+  gstRate: { type: Number, default: 18 },
+  cgstAmount: Number,
+  sgstAmount: Number,
+  igstAmount: Number,
+  totalAmount: Number,
+  grandTotal: Number,
 }, { timestamps: true });
 
 erpRecordSchema.index({ module: 1, recordType: 1 });
