@@ -9,6 +9,17 @@ const Supplier = require('../model/Supplier.model');
 const { getAllModuleData } = require('../services/universalDataSync.service');
 
 const formatCurrency = (n) => `₹${(n || 0).toLocaleString('en-IN')}`;
+const formatDisplayDate = (value) => {
+  if (!value) return '-';
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString('en-IN');
+  }
+  return value;
+};
+
+const isPendingStatus = (status = '') =>
+  !['Received', 'Delivered', 'Paid', 'Collected', 'Completed', 'Cancelled', 'Resolved', 'Closed'].includes(status);
 
 const getDashboardStats = async (req, res) => {
   try {
@@ -23,6 +34,7 @@ const getDashboardStats = async (req, res) => {
       lowStockItems,
       spareLowStock,
       todayIncome,
+      todayPurchaseIncome,
       openTickets,
       totalCustomers,
       recentSalesOrders,
@@ -34,10 +46,22 @@ const getDashboardStats = async (req, res) => {
     ] = await Promise.all([
       Employee.countDocuments(),
       Promise.all([Stock.countDocuments(), SpareParts.countDocuments()]).then(([s, p]) => s + p),
-      Stock.countDocuments({ status: { $in: ['Low Stock', 'Out of Stock'] } }),
-      SpareParts.countDocuments({ status: { $in: ['Low Stock', 'Out of Stock'] } }),
+      Stock.countDocuments({
+        $expr: {
+          $lte: ['$quantity', '$minimumStock'],
+        },
+      }),
+      SpareParts.countDocuments({
+        $expr: {
+          $lte: ['$quantity', '$minimumStock'],
+        },
+      }),
       Income.aggregate([
         { $match: { incomeType: 'Sales', date: { $gte: today, $lt: tomorrow } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
+      Income.aggregate([
+        { $match: { incomeType: 'Purchase', date: { $gte: today, $lt: tomorrow } } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
       ErpRecord.countDocuments({ module: 'service', recordType: 'ticket', status: 'Open' }),
@@ -46,21 +70,57 @@ const getDashboardStats = async (req, res) => {
       ErpRecord.find({ module: 'sales', recordType: 'invoice' }).sort({ createdAt: -1 }).limit(5),
       ErpRecord.find({ module: 'service', recordType: 'ticket' }).sort({ createdAt: -1 }).limit(5),
       ErpRecord.find({ module: 'purchase', recordType: 'order' }).sort({ createdAt: -1 }).limit(5),
-      ErpRecord.aggregate([{ $match: { module: 'accounts', recordType: 'receivable', status: { $nin: ['Collected', 'Paid'] } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
-      ErpRecord.aggregate([{ $match: { module: 'accounts', recordType: 'payable', status: { $nin: ['Paid', 'Collected'] } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      ErpRecord.aggregate([
+        {
+          $match: {
+            module: 'accounts',
+            recordType: 'receivable',
+            status: { $nin: ['Collected', 'Paid', 'Received'] },
+          },
+        },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
+      ErpRecord.aggregate([
+        {
+          $match: {
+            module: 'accounts',
+            recordType: 'payable',
+            status: { $nin: ['Paid', 'Collected', 'Received'] },
+          },
+        },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
     ]);
 
     const salesTotal = todayIncome[0]?.total || 0;
+    const purchaseTotal = todayPurchaseIncome[0]?.total || 0;
     const lowStockTotal = lowStockItems + spareLowStock;
     const totalReceivables = receivables[0]?.total || 0;
     const totalPayables = payables[0]?.total || 0;
 
     const orders = [
-      ...recentSalesOrders.map(o => ({ id: o.id, customer: o.customer, amount: formatCurrency(o.amount), date: o.date ? new Date(o.date).toLocaleDateString('en-IN') : '-', status: o.status })),
-      ...recentInvoices.map(i => ({ id: i.id, customer: i.customer, amount: formatCurrency(i.amount), date: i.date ? new Date(i.date).toLocaleDateString('en-IN') : '-', status: i.status })),
-    ].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 5);
+      ...recentSalesOrders.map((o) => ({
+        id: o.id,
+        customer: o.customer,
+        amount: formatCurrency(o.amount),
+        date: formatDisplayDate(o.date),
+        status: o.status,
+        createdAt: o.createdAt,
+      })),
+      ...recentInvoices.map((i) => ({
+        id: i.id,
+        customer: i.customer,
+        amount: formatCurrency(i.amount),
+        date: formatDisplayDate(i.date),
+        status: i.status,
+        createdAt: i.createdAt,
+      })),
+    ]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 5)
+      .map(({ createdAt, ...row }) => row);
 
-    const tickets = recentServiceTickets.map(t => ({
+    const tickets = recentServiceTickets.map((t) => ({
       id: t.id,
       customer: t.customer,
       machine: t.machine,
@@ -69,19 +129,21 @@ const getDashboardStats = async (req, res) => {
       status: t.status,
     }));
 
-    const pos = pendingPOs.map(p => ({
-      id: p.id,
-      supplier: p.supplier,
-      amount: formatCurrency(p.amount),
-      date: p.date ? new Date(p.date).toLocaleDateString('en-IN') : '-',
-      delivery: p.delivery || '-',
-      status: p.status,
-    }));
+    const pos = pendingPOs
+      .filter((p) => isPendingStatus(p.status))
+      .map((p) => ({
+        id: p.id,
+        supplier: p.supplier,
+        amount: formatCurrency(p.amount),
+        date: formatDisplayDate(p.date),
+        delivery: formatDisplayDate(p.delivery),
+        status: p.status,
+      }));
 
     res.status(200).json({
       stats: {
         todaySales: formatCurrency(salesTotal),
-        todayPurchases: formatCurrency(0),
+        todayPurchases: formatCurrency(purchaseTotal),
         lowStockAlerts: `${lowStockTotal} Parts`,
         lowStockCount: lowStockTotal,
         pendingPayments: formatCurrency(totalPayables),
@@ -288,27 +350,51 @@ const getAttendanceStats = async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    const [totalActive, todayRecords, leaveRecords] = await Promise.all([
-      Employee.countDocuments({ status: 'Active' }),
+    const [activeEmployees, todayRecords, leaveRecords] = await Promise.all([
+      Employee.find({ status: 'Active' }, { _id: 1, id: 1 }),
       Attendance.find({ date: today, recordType: 'attendance' }),
-      Attendance.find({ date: today, recordType: 'leave', status: 'Approved' }),
+      Attendance.find({
+        recordType: 'leave',
+        status: 'Approved',
+        $or: [
+          { date: today },
+          {
+            from: { $lte: today },
+            to: { $gte: today },
+          },
+        ],
+      }),
     ]);
 
-    const present = todayRecords.filter(r => r.status === 'Present').length;
-    const late    = todayRecords.filter(r => r.status === 'Late').length;
-    const leave   = leaveRecords.length;
-    // Absent = active employees with no attendance record and no approved leave
-    const attendedIds = new Set(todayRecords.map(r => String(r.employeeId)));
-    const leaveIds    = new Set(leaveRecords.map(r => String(r.employeeId)));
-    const checkedIn   = new Set([...attendedIds, ...leaveIds]);
-    const absent      = Math.max(0, totalActive - checkedIn.size);
+    const employeeKey = (record) => String(record.employeeId || record.empId || '').trim();
+    const activeIds = new Set(activeEmployees.map((employee) => String(employee._id)));
+    const activeEmpCodes = new Set(activeEmployees.map((employee) => String(employee.id)));
+    const isActiveRecord = (record) => {
+      const key = employeeKey(record);
+      return activeIds.has(key) || activeEmpCodes.has(key);
+    };
+
+    const filteredTodayRecords = todayRecords.filter(isActiveRecord);
+    const filteredLeaveRecords = leaveRecords.filter(isActiveRecord);
+    const presentRecords = filteredTodayRecords.filter((r) => r.status === 'Present');
+    const lateRecords = filteredTodayRecords.filter((r) => r.status === 'Late');
+    const coveredEmployees = new Set(
+      [...presentRecords, ...lateRecords, ...filteredLeaveRecords]
+        .map(employeeKey)
+        .filter(Boolean)
+    );
+
+    const present = presentRecords.length;
+    const late = lateRecords.length;
+    const leave = filteredLeaveRecords.length;
+    const absent = Math.max(0, activeEmployees.length - coveredEmployees.size);
 
     res.status(200).json({
       todayPresent: present,
-      todayLate:    late,
-      todayLeave:   leave,
-      todayAbsent:  absent,
-      totalActive,
+      todayLate: late,
+      todayLeave: leave,
+      todayAbsent: absent,
+      totalActive: activeEmployees.length,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

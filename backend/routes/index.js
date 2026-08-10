@@ -174,6 +174,7 @@ router.get('/search', authenticate, controller.globalSearch);
 // HR & Password Management Routes
 // ──────────────────────────────────────────────────────────────
 router.post('/hr/users/create', authenticate, authorize('Admin'), controller.createUserWithRole);
+router.get('/hr/employees/:employeeId/user-status', authenticate, authorize('Admin', 'HR', 'Manager'), controller.getEmployeeUserStatus);
 // Password generation functionality removed - no longer needed
 // router.post('/hr/employees/:employeeId/generate-password', authenticate, authorizeHR, controller.generateEmployeePassword);
 // router.post('/hr/users/:userId/reset-password', authenticate, authorizeHR, controller.resetUserPassword);

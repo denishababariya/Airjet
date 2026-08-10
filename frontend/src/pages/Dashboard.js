@@ -8,14 +8,15 @@ import {
 } from 'react-icons/md';
 import { dashboardApi, sparePartsApi } from '../utils/api';
 
+// Icon map: renders the component correctly as JSX
 const ICON_MAP = {
-  MdPointOfSale,
-  MdBuildCircle,
-  MdShoppingCart,
-  MdPeople,
-  MdWarning,
-  MdCheckCircle,
-  MdAccessTime,
+  MdPointOfSale: <MdPointOfSale />,
+  MdBuildCircle: <MdBuildCircle />,
+  MdShoppingCart: <MdShoppingCart />,
+  MdPeople: <MdPeople />,
+  MdWarning: <MdWarning />,
+  MdCheckCircle: <MdCheckCircle />,
+  MdAccessTime: <MdAccessTime />,
 };
 
 const statusBadge = (s) => {
@@ -30,6 +31,8 @@ const statusBadge = (s) => {
 };
 
 const Dashboard = ({ currentUser, setActiveMenu }) => {
+  const navigateTo = (menu) => setActiveMenu?.(menu);
+
   const [stats, setStats] = useState([
     { label: "Today's Sales",      value: '₹0',       icon: <MdPointOfSale />,  iconClass: 'd_accent',   cardClass: 'd_accent',   change: '+0%',     dir: 'up' },
     { label: "Today's Purchases",  value: '₹0',       icon: <MdShoppingCart />, iconClass: 'd_primary',  cardClass: '',           change: '+0%',     dir: 'up' },
@@ -72,30 +75,30 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
           const d = dashRes.value.data;
           setStats(prev => {
             const newStats = [...prev];
-            newStats[0] = { ...newStats[0], value: d.stats?.todaySales || '₹0' };
-            newStats[1] = { ...newStats[1], value: d.stats?.todayPurchases || '₹0' };
-            newStats[2] = { ...newStats[2], value: d.stats?.lowStockAlerts || '0 Parts' };
-            newStats[3] = { ...newStats[3], value: d.stats?.pendingPayments || '₹0' };
-            newStats[4] = { ...newStats[4], value: String(d.stats?.totalEmployees || 0) };
-            newStats[5] = { ...newStats[5], value: String(d.stats?.totalStockItems || 0) };
+            newStats[0] = { ...newStats[0], value: d.stats?.todaySales    ?? '₹0' };
+            newStats[1] = { ...newStats[1], value: d.stats?.todayPurchases ?? '₹0' };
+            newStats[2] = { ...newStats[2], value: d.stats?.lowStockAlerts ?? '0 Parts' };
+            newStats[3] = { ...newStats[3], value: d.stats?.pendingPayments ?? '₹0' };
+            newStats[4] = { ...newStats[4], value: String(d.stats?.totalEmployees  ?? 0) };
+            newStats[5] = { ...newStats[5], value: String(d.stats?.totalStockItems ?? 0) };
             return newStats;
           });
           setLowStockCount(d.stats?.lowStockCount ?? 0);
-          setTotalReceivables(d.stats?.totalReceivables || '₹0');
-          setTotalPayables(d.stats?.totalPayables || '₹0');
-          setOpenTickets(d.stats?.openTickets ?? 0);
-          setRecentOrders(d.recentOrders || []);
+          setTotalReceivables(d.stats?.totalReceivables ?? '₹0');
+          setTotalPayables(d.stats?.totalPayables     ?? '₹0');
+          setOpenTickets(d.stats?.openTickets         ?? 0);
+          setRecentOrders(d.recentOrders  || []);
           setRecentTickets(d.recentTickets || []);
-          setPendingPO(d.pendingPOs || []);
+          setPendingPO(d.pendingPOs       || []);
         }
 
         if (attendanceRes.status === 'fulfilled') {
           const todayData = attendanceRes.value.data;
           setAttendanceStats({
-            todayPresent: todayData.todayPresent,
-            todayAbsent: todayData.todayAbsent,
-            todayLeave: todayData.todayLeave,
-            todayLate: todayData.todayLate,
+            todayPresent: todayData.todayPresent ?? 0,
+            todayAbsent:  todayData.todayAbsent  ?? 0,
+            todayLeave:   todayData.todayLeave   ?? 0,
+            todayLate:    todayData.todayLate    ?? 0,
           });
         }
 
@@ -110,13 +113,16 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
         }
 
         if (partsRes.status === 'fulfilled') {
-          const parts = (partsRes.value.data || []).slice(0, 5).map(p => ({
-            part: p.partName,
-            partNo: p.partNumber,
-            sold: p.quantity,
-            revenue: `₹${((p.sellingPrice || 0) * (p.quantity || 0)).toLocaleString()}`,
-            status: p.status,
-          }));
+          const parts = [...(partsRes.value.data || [])]
+            .sort((a, b) => (b.quantity || 0) - (a.quantity || 0))
+            .slice(0, 5)
+            .map((p) => ({
+              part:    p.partName,
+              partNo:  p.partNumber,
+              sold:    p.quantity,
+              revenue: `₹${((p.sellingPrice || 0) * (p.quantity || 0)).toLocaleString('en-IN')}`,
+              status:  p.status,
+            }));
           setTopPartsList(parts);
         }
       } catch {
@@ -155,7 +161,10 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
       </div>
 
       {/* ── Attendance Stats ───────────────────────────────────── */}
-      <h5 className="mb-3">Today's Attendance</h5>
+      <div className="d-flex align-items-center justify-content-between gap-2 mb-3">
+        <h5 className="mb-0">Today's Attendance</h5>
+        <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('Today Attendance')}>View All</button>
+      </div>
       <div className="row g-3 mb-4">
         <div className="col-12 col-md-3">
           <div className="d_stat_card d_success">
@@ -191,10 +200,11 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
       {lowStockCount > 0 && (
         <div className="d_alert d_danger mb-4">
           <MdWarning style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }} />
-          <div>
+          <div style={{ flex: 1 }}>
             <strong>Low Stock Warning:</strong> {lowStockCount} item{lowStockCount !== 1 ? 's are' : ' is'} below minimum stock level.
             Immediate purchase orders recommended.
           </div>
+          <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('Part Number')}>View All</button>
         </div>
       )}
 
@@ -207,7 +217,7 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
               <h2 className="d_card_title">
                 <MdPointOfSale className="d_card_icon" /> Recent Orders
               </h2>
-              <button className="d_btn d_btn_outline d_btn_sm" onClick={() => setActiveMenu?.('Sales Orders')}>View All</button>
+              <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('Sales Orders')}>View All</button>
             </div>
             <div className="d_card_body p-0">
               <div className="d_table_wrap">
@@ -240,7 +250,7 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
               <h2 className="d_card_title">
                 <MdShoppingCart className="d_card_icon" /> Pending POs
               </h2>
-              <button className="d_btn d_btn_outline d_btn_sm" onClick={() => setActiveMenu?.('Purchase Orders')}>View All</button>
+              <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('Purchase Orders')}>View All</button>
             </div>
             <div className="d_card_body p-0">
               <div className="d_table_wrap">
@@ -276,7 +286,7 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
               <h2 className="d_card_title">
                 <MdBuildCircle className="d_card_icon" /> Recent Service Tickets
               </h2>
-              <button className="d_btn d_btn_outline d_btn_sm" onClick={() => setActiveMenu?.('Service Tickets')}>View All</button>
+              <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('Service Tickets')}>View All</button>
             </div>
             <div className="d_card_body p-0">
               <div className="d_table_wrap">
@@ -309,14 +319,14 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
               <h2 className="d_card_title">
                 <MdAccessTime className="d_card_icon" /> Recent Activity
               </h2>
+              <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('reports')}>View All</button>
             </div>
             <div className="d_card_body" style={{ padding: '2px 16px', height:'300px',overflowY:'scroll' }}>
-              {activityFeed.length === 0 && <p className="text-center text-muted py-3">No recent act0 
-                `1123`ivity</p>}
+              {activityFeed.length === 0 && <p className="text-center text-muted py-3">No recent activity</p>}
               {activityFeed.map((a, i) => (
                 <div key={i} className="d_activity_item d-flex gap-3 my-2 border p-2">
                   <div className="d_activity_icon" style={{ background: a.color + '18', color: a.color }}>
-                    {ICON_MAP[a.icon] || <MdAccessTime />}
+                    {ICON_MAP[a.icon] ?? <MdAccessTime />}
                   </div>
                   <div className="d_activity_content">
                     <p className="d_activity_text">{a.text}</p>
@@ -335,7 +345,7 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
           <h2 className="d_card_title">
             <MdTrendingUp className="d_card_icon" /> Top Selling Spare Parts
           </h2>
-          <button className="d_btn d_btn_outline d_btn_sm" onClick={() => setActiveMenu?.('Part Number')}>View All</button>
+          <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('Part Number')}>View All</button>
         </div>
         <div className="d_card_body p-0">
           <div className="d_table_wrap">
@@ -364,10 +374,10 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
       {/* ── Row 5: Quick Summary Pills ─────────────────────────── */}
       <div className="row g-3">
         {[
-          { icon: <MdAccountBalance />, label: 'Total Receivables', value: totalReceivables,         color: 'var(--d-success)', menu: 'Receivables' },
-          { icon: <MdAccountBalance />, label: 'Total Payables',    value: totalPayables,             color: 'var(--d-danger)',  menu: 'Payables' },
-          { icon: <MdPeople />,         label: 'Total Employees',   value: String(stats[4].value),    color: 'var(--d-primary)', menu: 'Employee Master' },
-          { icon: <MdBuildCircle />,    label: 'Open Tickets',      value: String(openTickets),       color: 'var(--d-warning)', menu: 'Service Tickets' },
+          { icon: <MdAccountBalance />, label: 'Total Receivables', value: totalReceivables,      color: 'var(--d-success)', menu: 'Receivables' },
+          { icon: <MdAccountBalance />, label: 'Total Payables',    value: totalPayables,          color: 'var(--d-danger)',  menu: 'Payables' },
+          { icon: <MdPeople />,         label: 'Total Employees',   value: String(stats[4].value), color: 'var(--d-primary)', menu: 'Employee Master' },
+          { icon: <MdBuildCircle />,    label: 'Open Tickets',      value: String(openTickets),    color: 'var(--d-warning)', menu: 'Service Tickets' },
         ].map((item, i) => (
           <div key={i} className="col-6 col-md-3">
             <div

@@ -194,11 +194,8 @@ export const customersApi = {
 export const hrApi = {
   createUserWithRole: (employeeId, role, password) =>
     api.post('/hr/users/create', { employeeId, role, password }),
-  // Password generation functionality removed - no longer needed
-  // generatePassword: (employeeId) =>
-  //   api.post(`/hr/employees/${employeeId}/generate-password`),
-  // resetPassword: (userId) =>
-  //   api.post(`/hr/users/${userId}/reset-password`),
+  getEmployeeUserStatus: (employeeId) =>
+    api.get(`/hr/employees/${employeeId}/user-status`),
 };
 
 export const erpApi = {

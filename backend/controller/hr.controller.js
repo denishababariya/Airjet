@@ -104,7 +104,7 @@ const resetUserPassword = async (req, res) => {
     }
 };
 
-// Create user with role assignment (Admin only)
+// Create or update user with role assignment (Admin only) — upsert behaviour
 const createUserWithRole = async (req, res) => {
     try {
         const { employeeId, role, password } = req.body;
@@ -115,17 +115,32 @@ const createUserWithRole = async (req, res) => {
             return res.status(404).json({ error: 'Employee not found' });
         }
 
-        // Check if user already exists
+        // Check if user already exists for this employee
         const existingUser = await User.findOne({ employeeId: employee._id });
+
         if (existingUser) {
-            return res.status(400).json({ error: 'User already exists for this employee' });
+            // ── UPDATE existing user ──────────────────────────────
+            const updates = { role: role || existingUser.role };
+            if (password) {
+                updates.password = await bcrypt.hash(password, 10);
+                updates.confirmPassword = updates.password;
+            }
+            const roleDoc = await Role.findOne({ name: updates.role });
+            if (roleDoc) updates.roleId = roleDoc._id;
+
+            const updated = await User.findByIdAndUpdate(existingUser._id, updates, { new: true });
+            return res.status(200).json({
+                message: 'User updated successfully',
+                user: { id: updated._id, role: updated.role, employee },
+            });
         }
 
-        // Use provided password or generate one
-        const newPassword = password || generatePassword(10);
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        // ── CREATE new user ───────────────────────────────────────
+        if (!password) {
+            return res.status(400).json({ error: 'Password is required to create a new user account' });
+        }
 
-        // Create user
+        const hashedPassword = await bcrypt.hash(password, 10);
         const userId = 'USR' + Date.now().toString().slice(-6);
         const roleDoc = await Role.findOne({ name: role || 'User' });
         const user = await User.create({
@@ -136,18 +151,27 @@ const createUserWithRole = async (req, res) => {
             password: hashedPassword,
             confirmPassword: hashedPassword,
             isVerified: true,
-            status: 'Active'
+            status: 'Active',
         });
 
         res.status(201).json({
             message: 'User created successfully',
-            password: newPassword,
-            user: {
-                id: user._id,
-                role: user.role,
-                employee: employee
-            }
+            user: { id: user._id, role: user.role, employee },
         });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Check whether an employee already has a login account
+const getEmployeeUserStatus = async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        const user = await User.findOne({ employeeId }).select('_id role status');
+        if (!user) {
+            return res.status(200).json({ hasUser: false });
+        }
+        res.status(200).json({ hasUser: true, role: user.role, status: user.status });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -156,5 +180,6 @@ const createUserWithRole = async (req, res) => {
 module.exports = {
     generateEmployeePassword,
     resetUserPassword,
-    createUserWithRole
+    createUserWithRole,
+    getEmployeeUserStatus,
 };

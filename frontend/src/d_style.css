@@ -2816,6 +2816,14 @@ body.d_modal_open { overflow: hidden; }
 
 }
 
+.d_field_error {
+  display: block;
+  font-size: 12px;
+  color: var(--d-danger);
+  margin-top: 3px;
+}
+
+
 
 
 .d_form_control {
@@ -2907,7 +2915,7 @@ textarea.d_form_control { resize: vertical; min-height: 80px; }
    ACTIVITY FEED
 
 0  ============================================ */
-  {
+ .d_activity_item {
 
   display: flex;
 

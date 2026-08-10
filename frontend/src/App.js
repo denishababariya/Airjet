@@ -132,23 +132,31 @@ const hasAdminAccess = (role) => {
   return isAdminRole(role) || isManagerRole(role) || isHeadRole(role) || isHRRole(role);
 };
 
+const AUTH_PAGES = ['Login', 'Register', 'ForgotPassword', 'ChangePassword'];
+const getStoredMenu = () => {
+  const saved = localStorage.getItem('activeMenu');
+  if (saved && !AUTH_PAGES.includes(saved)) {
+    return saved;
+  }
+  return null;
+};
+
 function App() {
   const [activeMenu, setActiveMenuState] = useState(() => {
-    const saved = localStorage.getItem('activeMenu');
-    return saved || 'Login';
+    const token = auth.getToken();
+    return getStoredMenu() || (token ? 'dashboard' : 'Login');
   });
+  const [currentUser, setCurrentUser] = useState(() => {
+    return auth.getCurrentUser();
+  });
+  const [authReady, setAuthReady] = useState(false);
 
-  // Persist active menu on every change so page refresh restores position
   const setActiveMenu = (menu) => {
     setActiveMenuState(menu);
-    if (!['Login', 'Register', 'ForgotPassword', 'ChangePassword'].includes(menu)) {
+    if (!AUTH_PAGES.includes(menu)) {
       localStorage.setItem('activeMenu', menu);
     }
   };
-  const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('currentUser');
-    return saved ? JSON.parse(saved) : null;
-  });
 
   // Handle login
   const handleLogin = (userData) => {
@@ -164,35 +172,47 @@ function App() {
     setActiveMenu('Login');
   };
 
-  const AUTH_PAGES = ['Login', 'Register', 'ForgotPassword', 'ChangePassword'];
-
-  // Check if user is authenticated on mount
+  // Bootstrap auth and restore the last valid page once on load.
+  // We intentionally bootstrap once from persisted auth/menu state on app load.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const token = auth.getToken();
     const savedUser = auth.getCurrentUser();
+    const savedMenu = getStoredMenu();
     
-    // If token exists but no currentUser, restore from localStorage
     if (token && !currentUser && savedUser) {
       setCurrentUser(savedUser);
     }
     
-    // If no token and not on auth page, redirect to Login
     if (!token && !AUTH_PAGES.includes(activeMenu)) {
-      setActiveMenu('Login');
+      setActiveMenuState('Login');
+      setAuthReady(true);
+      return;
     }
     
-    // If token exists and on auth page, redirect to dashboard
     if (token && AUTH_PAGES.includes(activeMenu)) {
-      setActiveMenu('dashboard');
+      setActiveMenuState(savedMenu || 'dashboard');
     }
-  }, [activeMenu, currentUser]);
 
-  const entry = PAGE_MAP[activeMenu] || { component: Dashboard };
+    setAuthReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!AUTH_PAGES.includes(activeMenu) && PAGE_MAP[activeMenu]) {
+      localStorage.setItem('activeMenu', activeMenu);
+    }
+  }, [activeMenu]);
+
+  const entry = PAGE_MAP[activeMenu] || PAGE_MAP['dashboard'];
   const PageComponent = entry.component;
   const defaultTab    = entry.defaultTab;
 
   // Only show Layout for authenticated routes
   const isAuthPage = AUTH_PAGES.includes(activeMenu);
+
+  if (!authReady) {
+    return <div className="text-center py-5">Loading…</div>;
+  }
 
   if (isAuthPage) {
     return (
