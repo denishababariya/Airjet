@@ -72,7 +72,8 @@ const LateEntryReport = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>AZ
+        
         <div className="col-md-4">
           <div className="d_card h-100">
             <div className="d_card_body">

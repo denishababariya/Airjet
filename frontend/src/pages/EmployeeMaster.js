@@ -30,35 +30,45 @@ const calcAge = (bod) => {
 };
 
 const EmployeeMaster = ({ currentUser }) => {
-  const [data, setData]               = useState([]);
-  const [departments, setDepartments] = useState([]);
+  const [data, setData]                 = useState([]);
+  const [departments, setDepartments]   = useState([]);
   const [designations, setDesignations] = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState('');
-  const [search, setSearch]           = useState('');
-  const [modal, setModal]             = useState(false);
-  const [form, setForm]               = useState(blank);
-  const [editId, setEditId]           = useState(null);
-  const [errors, setErrors]           = useState({});
-  const [showPwd, setShowPwd]         = useState(false);
-  const [showConfPwd, setShowConfPwd] = useState(false);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState('');
+  const [search, setSearch]             = useState('');
+  const [modal, setModal]               = useState(false);
+  const [form, setForm]                 = useState(blank);
+  const [editId, setEditId]             = useState(null);
+  const [errors, setErrors]             = useState({});
+  const [showPwd, setShowPwd]           = useState(false);
+  const [showConfPwd, setShowConfPwd]   = useState(false);
   // login-account status fetched when editing
-  const [userStatus, setUserStatus]   = useState(null); // null | { hasUser, role, status }
+  const [userStatus, setUserStatus]             = useState(null); // null | { hasUser, role, status }
   const [userStatusLoading, setUserStatusLoading] = useState(false);
 
   const canManage = ['Admin', 'HR', 'Manager'].includes(currentUser?.role);
 
-  // ── Designation/Dept helpers ────────────────────────────────
-  const isAdminDesig = (desigId) => {
-    const d = designations.find(x => x._id === desigId);
-    return d && ADMIN_DESIGNATIONS.some(a => d.title?.toLowerCase().includes(a.toLowerCase()));
+  // ── Designation / Department helpers ───────────────────────
+  const isAdminDesignation = (designationId) => {
+    const designation = designations.find(d => (d._id || d.id) === designationId);
+    return designation && ADMIN_DESIGNATIONS.some(admin =>
+      designation.title?.toLowerCase().includes(admin.toLowerCase())
+    );
   };
-  const isHRDept = (deptId) => {
-    const d = departments.find(x => x._id === deptId);
-    return d && d.title?.toLowerCase().includes('hr');
+
+  const isHRDepartment = (departmentId) => {
+    const department = departments.find(d => (d._id || d.id) === departmentId);
+    return department && department.title?.toLowerCase().includes('hr');
   };
+
+  const isHRManagerDesignation = (designationId) => {
+    const designation = designations.find(d => (d._id || d.id) === designationId);
+    return designation && designation.title?.toLowerCase().includes('hr manager');
+  };
+
+  // FIX: was calling undefined isAdminDesig / isHRDept
   const needsLoginAccount = () =>
-    isAdminDesig(form.designation) || isHRDept(form.department);
+    isAdminDesignation(form.designation) || isHRDepartment(form.department);
 
   // ── Fetch ───────────────────────────────────────────────────
   const fetchAll = async () => {
@@ -84,7 +94,7 @@ const EmployeeMaster = ({ currentUser }) => {
 
   // Designations filtered by selected department
   const filteredDesigs = form.department
-    ? designations.filter(d => (d.department?._id || d.department) === form.department)
+    ? designations.filter(d => (d.department?._id || d.department?.id || d.department) === form.department)
     : designations;
 
   // Table search
@@ -119,13 +129,13 @@ const EmployeeMaster = ({ currentUser }) => {
       bod:         emp.bod         ? emp.bod.split('T')[0] : '',
       age:         emp.age         || '',
       joiningDate: emp.joiningDate ? emp.joiningDate.split('T')[0] : '',
-      department:  emp.department?._id  || emp.department  || '',
-      designation: emp.designation?._id || emp.designation || '',
-      status:      emp.status      || 'Active',
+      department:  emp.department?._id  || emp.department?.id  || emp.department  || '',
+      designation: emp.designation?._id || emp.designation?.id || emp.designation || '',
+      status:      emp.status || 'Active',
       password:    '',
       confirmPassword: '',
     });
-    setEditId(emp._id);
+    setEditId(emp._id || emp.id);
     setErrors({});
     setShowPwd(false);
     setShowConfPwd(false);
@@ -136,7 +146,7 @@ const EmployeeMaster = ({ currentUser }) => {
     if (canManage) {
       setUserStatusLoading(true);
       try {
-        const res = await hrApi.getEmployeeUserStatus(emp._id);
+        const res = await hrApi.getEmployeeUserStatus(emp._id || emp.id);
         setUserStatus(res.data);
       } catch {
         setUserStatus(null);
@@ -149,7 +159,7 @@ const EmployeeMaster = ({ currentUser }) => {
   // ── Validate ────────────────────────────────────────────────
   const validate = () => {
     const e = {};
-    if (!form.name.trim())  e.name  = 'Employee name is required';
+    if (!form.name.trim())  e.name        = 'Employee name is required';
     if (!form.department)   e.department  = 'Department is required';
     if (!form.designation)  e.designation = 'Designation is required';
 
@@ -174,13 +184,13 @@ const EmployeeMaster = ({ currentUser }) => {
       const pwd = form.password.trim();
       if (!editId) {
         // Add mode: password required
-        if (!pwd)            e.password = 'Password is required for this role';
-        else if (pwd.length < 6) e.password = 'Password must be at least 6 characters';
-        else if (pwd !== form.confirmPassword) e.confirmPassword = 'Passwords do not match';
+        if (!pwd)                e.password        = 'Password is required for this role';
+        else if (pwd.length < 6) e.password        = 'Password must be at least 6 characters';
+        else if (pwd !== form.confirmPassword.trim()) e.confirmPassword = 'Passwords do not match';
       } else if (pwd) {
         // Edit mode: password optional but if given must be valid
-        if (pwd.length < 6)  e.password = 'Password must be at least 6 characters';
-        else if (pwd !== form.confirmPassword) e.confirmPassword = 'Passwords do not match';
+        if (pwd.length < 6)      e.password        = 'Password must be at least 6 characters';
+        else if (pwd !== form.confirmPassword.trim()) e.confirmPassword = 'Passwords do not match';
       }
     }
     return e;
@@ -198,33 +208,46 @@ const EmployeeMaster = ({ currentUser }) => {
         phoneNo:     form.phone,
         address:     form.address,
         gender:      form.gender,
-        salary:      form.salary     ? Number(form.salary) : undefined,
+        salary:      form.salary      ? Number(form.salary) : undefined,
         workShift:   form.workShift,
         cast:        form.cast,
-        bod:         form.bod        || undefined,
-        age:         form.age        ? Number(form.age)    : undefined,
+        bod:         form.bod         || undefined,
+        age:         form.age         ? Number(form.age)    : undefined,
         joiningDate: form.joiningDate || undefined,
         department:  form.department,
         designation: form.designation,
         status:      form.status,
       };
 
-      let savedEmployeeId;
-
       if (editId) {
         await employeesApi.update(editId, payload);
-        savedEmployeeId = editId;
-      } else {
-        const res = await employeesApi.create(payload);
-        savedEmployeeId = res.data._id;
-      }
 
-      // Create / update login account when designation needs one
-      if (needsLoginAccount() && (!editId || form.password.trim())) {
-        const desig = designations.find(d => d._id === form.designation);
-        const role  = desig?.title || 'User';
-        // Backend now upserts — safe to call for both add and edit
-        await hrApi.createUserWithRole(savedEmployeeId, role, form.password.trim() || undefined);
+        // Update login account password if provided
+        if (
+          (isAdminDesignation(form.designation) ||
+           isHRDepartment(form.department) ||
+           isHRManagerDesignation(form.designation)) &&
+          form.password.trim()
+        ) {
+          const designation = designations.find(d => (d._id || d.id) === form.designation);
+          const role = designation?.title || 'User';
+          await hrApi.createUserWithRole(editId, role, form.password.trim());
+        }
+      } else {
+        const employee = await employeesApi.create(payload);
+        const newId = employee.data._id || employee.data.id;
+
+        // Create login account for qualifying designations/departments
+        if (
+          (isAdminDesignation(form.designation) ||
+           isHRDepartment(form.department) ||
+           isHRManagerDesignation(form.designation)) &&
+          form.password.trim()
+        ) {
+          const designation = designations.find(d => (d._id || d.id) === form.designation);
+          const role = designation?.title || 'User';
+          await hrApi.createUserWithRole(newId, role, form.password.trim());
+        }
       }
 
       setModal(false);
@@ -300,18 +323,27 @@ const EmployeeMaster = ({ currentUser }) => {
               <table className="d_table">
                 <thead>
                   <tr>
-                    <th>Emp ID</th><th>Name</th><th>Department</th><th>Designation</th>
-                    <th>Phone</th><th>Email</th><th>Salary</th><th>Shift</th>
-                    <th>Status</th><th>Actions</th>
+                    <th>Emp ID</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Salary</th>
+                    <th>Shift</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.length === 0 && (
-                    <tr className="d_empty"><td colSpan={10}>No employees found.</td></tr>
+                    <tr className="d_empty">
+                      <td colSpan={10}>No employees found.</td>
+                    </tr>
                   )}
                   {filtered.map(e => (
-                    <tr key={e._id}>
-                      <td><code>{e.id || '—'}</code></td>
+                    <tr key={e._id || e.id}>
+                      <td><code>{e.id || e._id}</code></td>
                       <td><strong>{e.name}</strong></td>
                       <td>{e.department?.title || '-'}</td>
                       <td>{e.designation?.title || '-'}</td>
@@ -328,10 +360,18 @@ const EmployeeMaster = ({ currentUser }) => {
                         <div className="d_action_btns">
                           {canManage && (
                             <>
-                              <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(e)}>
+                              <button
+                                className="d_icon_btn d_edit"
+                                title="Edit"
+                                onClick={() => openEdit(e)}
+                              >
                                 <MdEdit />
                               </button>
-                              <button className="d_icon_btn d_del" title="Delete" onClick={() => handleDelete(e._id)}>
+                              <button
+                                className="d_icon_btn d_del"
+                                title="Delete"
+                                onClick={() => handleDelete(e._id || e.id)}
+                              >
                                 <MdDelete />
                               </button>
                             </>
@@ -391,7 +431,9 @@ const EmployeeMaster = ({ currentUser }) => {
             <label className="d_form_label">Department <span className="d_req">*</span></label>
             <select className="d_form_control" {...f('department')}>
               <option value="">Select Department</option>
-              {departments.map(d => <option key={d._id} value={d._id}>{d.title}</option>)}
+              {departments.map(d => (
+                <option key={d._id || d.id} value={d._id || d.id}>{d.title}</option>
+              ))}
             </select>
             {errors.department && <span className="d_field_error">{errors.department}</span>}
           </div>
@@ -399,7 +441,9 @@ const EmployeeMaster = ({ currentUser }) => {
             <label className="d_form_label">Designation <span className="d_req">*</span></label>
             <select className="d_form_control" {...f('designation')}>
               <option value="">Select Designation</option>
-              {filteredDesigs.map(d => <option key={d._id} value={d._id}>{d.title}</option>)}
+              {filteredDesigs.map(d => (
+                <option key={d._id || d.id} value={d._id || d.id}>{d.title}</option>
+              ))}
             </select>
             {errors.designation && <span className="d_field_error">{errors.designation}</span>}
           </div>

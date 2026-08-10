@@ -96,6 +96,28 @@ router.get('/erp/:id', authenticate, controller.getRecordById);
 router.put('/erp/:id', authenticate, authorizeByLevel(1), controller.updateRecord);
 router.delete('/erp/:id', authenticate, authorize('Admin', 'Manager', 'HR'), controller.deleteRecord);
 
+// Warranty Check Route
+router.get('/erp/warranty/check/:salesOrderNo', authenticate, async (req, res) => {
+  const ErpRecord = require('../model/ErpRecord.model');
+  try {
+    const salesOrder = await ErpRecord.findOne({ module: 'sales', recordType: 'order', so: req.params.salesOrderNo });
+    if (!salesOrder) {
+      return res.status(404).json({ error: 'Sales order not found' });
+    }
+    const { checkWarrantyStatus } = require('../controller/erp.controller');
+    const warrantyCheck = checkWarrantyStatus(salesOrder.warrantyExpiryDate);
+    res.status(200).json({
+      salesOrderNo: salesOrder.so,
+      warrantyExpiryDate: salesOrder.warrantyExpiryDate,
+      warrantyStatus: warrantyCheck.status,
+      isWarrantyValid: warrantyCheck.isValid,
+      warrantyMonths: salesOrder.warrantyMonths
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ──────────────────────────────────────────────────────────────
 // Suppliers
 // ──────────────────────────────────────────────────────────────
