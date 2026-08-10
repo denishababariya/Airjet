@@ -88,11 +88,21 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
     const blank = isSup ? blankSup : isGRN ? blankGRN : isRet ? blankRet : blankPO;
     setForm(blank); setEditId(null); setErrors({}); setModal(true);
   };
+  // Safely extract items count whether items is a Number or an array of objects
+  const itemsCount = (val) => Array.isArray(val) ? val.length : (val || '');
+  // Safely extract a string field that might be a populated object
+  const strField = (val) => (val && typeof val === 'object') ? (val.name || val.title || '') : (val || '');
+
   const openEdit = (row) => {
-    if (isSup) setForm({ name: row.name, contact: row.contact, phone: row.phone, city: row.city, gst: row.gst, status: row.status });
-    else if (isGRN) setForm({ po: row.po, supplier: row.supplier, date: toISODate(row.date), items: row.items, amount: row.amount, receivedBy: row.receivedBy, status: row.status });
-    else if (isRet) setForm({ supplier: row.supplier, part: row.part, qty: row.qty, date: toISODate(row.date), reason: row.reason, amount: row.amount, status: row.status });
-    else setForm({ supplier: row.supplier || '', date: toISODate(row.date), items: row.items || '', amount: row.amount || '', delivery: toISODate(row.delivery), status: row.status || 'Pending' });
+    if (isSup) {
+      setForm({ name: row.name, contact: row.contact, phone: row.phone, city: row.city, gst: row.gst, status: row.status });
+    } else if (isGRN) {
+      setForm({ po: row.po, supplier: strField(row.supplier), date: toISODate(row.date), items: itemsCount(row.items), amount: row.amount || row.totalAmount || '', receivedBy: row.receivedBy, status: row.status });
+    } else if (isRet) {
+      setForm({ supplier: strField(row.supplier), part: strField(row.part), qty: row.qty, date: toISODate(row.date), reason: row.reason, amount: row.amount || row.totalAmount || '', status: row.status });
+    } else {
+      setForm({ supplier: strField(row.supplier), date: toISODate(row.date), items: itemsCount(row.items), amount: row.amount || row.totalAmount || row.grandTotal || '', delivery: toISODate(row.delivery), status: row.status || 'Pending' });
+    }
     setEditId(row._id || row.id); setErrors({}); setModal(true);
   };
 
@@ -217,7 +227,9 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
                 <tbody>
                   {suppliers.map(s => (
                     <tr key={s._id}>
-                      <td><code>{s.id}</code></td><td><strong>{s.name}</strong></td><td>{s.contact}</td>
+                      <td><code>{s.id || s._id}</code></td>
+                      <td><strong>{s.name}</strong></td>
+                      <td>{s.contact}</td>
                       <td>{s.phone}</td><td>{s.city}</td><td><code>{s.gst}</code></td>
                       <td><span className={`d_badge ${statusClass[s.status]}`}>{s.status}</span></td>
                       <td><div className="d_action_btns">
@@ -250,8 +262,12 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
                   {orders.length === 0 && <tr className="d_empty"><td colSpan={8}>No purchase orders found.</td></tr>}
                   {orders.map(o => (
                     <tr key={o._id}>
-                      <td><code>{o.id}</code></td><td><strong>{o.supplier || '-'}</strong></td><td>{o.date || '-'}</td>
-                      <td>{o.items || '-'}</td><td><strong>₹{(o.amount || 0).toLocaleString()}</strong></td><td>{o.delivery || '-'}</td>
+                      <td><code>{o.id}</code></td>
+                      <td><strong>{typeof o.supplier === 'object' ? o.supplier?.name || '-' : o.supplier || '-'}</strong></td>
+                      <td>{o.date || '-'}</td>
+                      <td>{Array.isArray(o.items) ? o.items.length : (o.items || '-')}</td>
+                      <td><strong>₹{(o.amount || o.totalAmount || o.grandTotal || 0).toLocaleString()}</strong></td>
+                      <td>{o.delivery || '-'}</td>
                       <td><span className={`d_badge ${statusClass[o.status] || 'd_info'}`}>{o.status}</span></td>
                       <td><div className="d_action_btns">
                         <button className="d_icon_btn d_view"><MdVisibility /></button>
@@ -280,8 +296,13 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
                 <tbody>
                   {grnList.map(g => (
                     <tr key={g._id}>
-                      <td><code>{g.id}</code></td><td><code>{g.po}</code></td><td><strong>{g.supplier}</strong></td>
-                      <td>{g.date}</td><td>{g.items}</td><td><strong>₹{(g.amount||0).toLocaleString()}</strong></td><td>{g.receivedBy}</td>
+                      <td><code>{g.id}</code></td>
+                      <td><code>{g.po}</code></td>
+                      <td><strong>{typeof g.supplier === 'object' ? g.supplier?.name || '-' : g.supplier || '-'}</strong></td>
+                      <td>{g.date}</td>
+                      <td>{Array.isArray(g.items) ? g.items.length : (g.items || '-')}</td>
+                      <td><strong>₹{(g.amount || g.totalAmount || 0).toLocaleString()}</strong></td>
+                      <td>{g.receivedBy}</td>
                       <td><span className={`d_badge ${g.status === 'Verified' ? 'd_success' : g.status === 'Partial' ? 'd_warning' : 'd_info'}`}>{g.status}</span></td>
                     </tr>
                   ))}
@@ -305,8 +326,11 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
                 <tbody>
                   {returns.map(r => (
                     <tr key={r._id}>
-                      <td><code>{r.id}</code></td><td><strong>{r.supplier}</strong></td><td>{r.part}</td>
-                      <td>{r.qty}</td><td>{r.date}</td><td>{r.reason}</td><td><strong>₹{(r.amount||0).toLocaleString()}</strong></td>
+                      <td><code>{r.id}</code></td>
+                      <td><strong>{typeof r.supplier === 'object' ? r.supplier?.name || '-' : r.supplier || '-'}</strong></td>
+                      <td>{typeof r.part === 'object' ? r.part?.name || '-' : r.part || '-'}</td>
+                      <td>{r.qty}</td><td>{r.date}</td><td>{r.reason}</td>
+                      <td><strong>₹{(r.amount || r.totalAmount || 0).toLocaleString()}</strong></td>
                       <td><span className={`d_badge ${r.status === 'Approved' ? 'd_success' : 'd_warning'}`}>{r.status}</span></td>
                     </tr>
                   ))}
