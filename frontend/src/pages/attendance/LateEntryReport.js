@@ -72,7 +72,7 @@ const LateEntryReport = () => {
               </div>
             </div>
           </div>
-        </div>AZ
+        </div>
         
         <div className="col-md-4">
           <div className="d_card h-100">
@@ -92,7 +92,13 @@ const LateEntryReport = () => {
             <div className="d_card_body">
               <div className="d-flex align-items-center justify-content-between">
                 <div>
-                  <div className="d_stat_value" style={{ color: '#3b82f6' }}>{entries.length > 0 ? entries[0]?.department || 'N/A' : 'N/A'}</div>
+                  <div className="d_stat_value" style={{ color: '#3b82f6' }}>
+                    {entries.length > 0
+                      ? (typeof entries[0]?.department === 'object'
+                          ? entries[0]?.department?.title || 'N/A'
+                          : entries[0]?.department || 'N/A')
+                      : 'N/A'}
+                  </div>
                   <div className="d_stat_label">Most Late Department</div>
                 </div>
                 <div className="d_stat_icon" style={{ color: '#3b82f6', backgroundColor: '#eff6ff', fontSize: 32, padding: 8, borderRadius: 8 }}><MdBusiness /></div>

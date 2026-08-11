@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { MdCorporateFare, MdAdd, MdEdit, MdDelete } from 'react-icons/md';
 import Modal from '../components/Modal';
+import ConfirmDialog from '../components/ConfirmDialog';
+import ToastContainer from '../components/Toast';
+import useToast from '../hooks/useToast';
+import useConfirm from '../hooks/useConfirm';
 import { departmentsApi, employeesApi } from '../utils/api';
+import { V, validate } from '../utils/validators';
 
 const blank = { name: '', head: '', description: '', status: 'Active' };
 
@@ -9,15 +14,17 @@ const Department = () => {
   const [data, setData]   = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [modal, setModal] = useState(false);
   const [form, setForm]   = useState(blank);
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  const { toasts, toast, removeToast }       = useToast();
+  const { confirmState, confirm, closeConfirm } = useConfirm();
 
   const fetchDepartments = async () => {
     setLoading(true);
-    setError('');
     try {
       const [deptRes, empRes] = await Promise.all([
         departmentsApi.getAll(),
@@ -26,7 +33,7 @@ const Department = () => {
       setData(deptRes.data);
       setEmployees(empRes.data);
     } catch (err) {
-      setError(err.displayMessage || 'Failed to load departme');
+      toast.error(err.displayMessage || 'Failed to load departments');
     } finally {
       setLoading(false);
     }
@@ -52,41 +59,49 @@ const Department = () => {
     ? employees.filter(e => (e.department?._id || e.department) === editId)
     : employees;
 
-  const validate = () => {
-    const e = {};
-    if (!form.name.trim()) e.name = 'Department name is required';
-    return e;
-  };
+  const validateForm = () => validate({
+    name: V.title(form.name, 'Department name'),
+  });
 
   const handleSave = async () => {
-    const e = validate();
+    const e = validateForm();
     if (Object.keys(e).length) { setErrors(e); return; }
+    setSaving(true);
     try {
-      const payload = { 
-        title: form.name, 
+      const payload = {
+        title: form.name.trim(),
         isActive: form.status === 'Active',
-        head: form.head || undefined
+        head: form.head || undefined,
       };
-      if (editId) {
-        await departmentsApi.update(editId, payload);
-      } else {
-        await departmentsApi.create(payload);
-      }
+      if (editId) await departmentsApi.update(editId, payload);
+      else await departmentsApi.create(payload);
       setModal(false);
+      toast.success(editId ? 'Department updated successfully!' : 'Department added successfully!');
       fetchDepartments();
     } catch (err) {
-      setError(err.displayMessage || 'Failed to save department');
+      toast.error(err.displayMessage || 'Failed to save department');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this department?')) return;
-    try {
-      await departmentsApi.remove(id);
-      fetchDepartments();
-    } catch (err) {
-      setError(err.displayMessage || 'Failed to delete department');
-    }
+  const handleDelete = (id, name) => {
+    confirm({
+      title: 'Delete Department',
+      message: `Delete department "${name}"? This may affect employees assigned to it.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        closeConfirm();
+        try {
+          await departmentsApi.remove(id);
+          toast.success('Department deleted.');
+          fetchDepartments();
+        } catch (err) {
+          toast.error(err.displayMessage || 'Failed to delete department');
+        }
+      },
+    });
   };
 
   const f = (field) => ({
@@ -94,8 +109,14 @@ const Department = () => {
     onChange: (e) => { setForm(p => ({ ...p, [field]: e.target.value })); setErrors(p => ({ ...p, [field]: '' })); },
   });
 
+  const Err = ({ field }) => errors[field]
+    ? <span className="d_field_error">{errors[field]}</span> : null;
+
   return (
     <div>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ConfirmDialog {...confirmState} onCancel={closeConfirm} />
+
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <h1 className="d_page_title">Department</h1>
@@ -109,7 +130,6 @@ const Department = () => {
           <h2 className="d_card_title"><MdCorporateFare className="d_card_icon" /> Departments ({data.length})</h2>
         </div>
         <div className="d_card_body p-0">
-          {error && <div className="alert alert-danger m-3">{error}</div>}
           {loading ? (
             <div className="text-center py-4">Loading departments…</div>
           ) : (
@@ -129,7 +149,7 @@ const Department = () => {
                     <td>
                       <div className="d_action_btns">
                         <button className="d_icon_btn d_edit" onClick={() => openEdit(d)} title="Edit"><MdEdit /></button>
-                        <button className="d_icon_btn d_del"  onClick={() => handleDelete(d._id)} title="Delete"><MdDelete /></button>
+                        <button className="d_icon_btn d_del" onClick={() => handleDelete(d._id, d.title || d.name)} title="Delete"><MdDelete /></button>
                       </div>
                     </td>
                   </tr>
@@ -146,7 +166,7 @@ const Department = () => {
           <div className="d_form_group">
             <label className="d_form_label">Department Name <span className="d_req">*</span></label>
             <input className="d_form_control" placeholder="e.g. Sales" {...f('name')} />
-            {errors.name && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.name}</span>}
+            <Err field="name" />
           </div>
           <div className="d_form_group">
             <label className="d_form_label">Department Head</label>
@@ -167,7 +187,9 @@ const Department = () => {
         </div>
         <div className="d_form_actions">
           <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
-          <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update' : 'Save Department'}</button>
+          <button className="d_btn d_btn_primary" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : editId ? 'Update Department' : 'Save Department'}
+          </button>
         </div>
       </Modal>
     </div>

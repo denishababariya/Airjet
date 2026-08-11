@@ -94,7 +94,7 @@ export default function Payables() {
                     {payables.map(p => (
                       <tr key={p.id}>
                         <td>{p.id}</td>
-                        <td><strong>{p.supplier || p.party || '—'}</strong></td>
+                        <td><strong>{typeof p.supplier === 'object' ? (p.supplier?.name || '—') : (p.supplier || typeof p.party === 'object' ? p.party?.name || '—' : p.party || '—')}</strong></td>
                         <td><code>{p.po || p.id}</code></td>
                         <td>₹{(p.amount || 0).toLocaleString('en-IN')}</td>
                         <td>{p.poDate || p.date || '—'}</td>

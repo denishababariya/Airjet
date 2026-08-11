@@ -94,7 +94,7 @@ export default function Receivables() {
                     {receivables.map(r => (
                       <tr key={r.id}>
                         <td>{r.id}</td>
-                        <td><strong>{r.customer || r.party || '—'}</strong></td>
+                        <td><strong>{typeof r.customer === 'object' ? (r.customer?.name || '—') : (r.customer || typeof r.party === 'object' ? r.party?.name || '—' : r.party || '—')}</strong></td>
                         <td><code>{r.invoice || r.id}</code></td>
                         <td>₹{(r.amount || 0).toLocaleString('en-IN')}</td>
                         <td>{r.invoiceDate || r.date || '—'}</td>

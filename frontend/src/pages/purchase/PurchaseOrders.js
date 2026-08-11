@@ -66,6 +66,9 @@ export default function PurchaseOrders() {
     load();
   }, []);
 
+  const strField   = (v) => (v && typeof v === 'object') ? (v.name || v.title || '') : (v || '');
+  const itemsCount = (v) => Array.isArray(v) ? v.length : (v ?? '-');
+
   const filtered = activeTab === 'All' ? orders : orders.filter(o => o.status === activeTab);
 
   const openAdd = () => {
@@ -77,9 +80,9 @@ export default function PurchaseOrders() {
 
   const openEdit = (row) => {
     setForm({
-      supplier: row.supplier || '',
+      supplier: strField(row.supplier),
       date: toISODate(row.date),
-      items: row.items || '',
+      items: Array.isArray(row.items) ? row.items.length : (row.items || ''),
       amount: row.amount || '',
       delivery: toISODate(row.delivery),
       status: row.status || 'Pending',
@@ -197,9 +200,9 @@ export default function PurchaseOrders() {
                   {filtered.map(o => (
                     <tr key={o._id || o.id}>
                       <td><strong>{o.id || o.po}</strong></td>
-                      <td>{o.supplier || '-'}</td>
+                      <td>{strField(o.supplier) || '-'}</td>
                       <td>{o.date || '-'}</td>
-                      <td>{o.items ?? '-'}</td>
+                      <td>{itemsCount(o.items)}</td>
                       <td>₹{(o.amount || 0).toLocaleString('en-IN')}</td>
                       <td>{o.delivery || '-'}</td>
                       <td>

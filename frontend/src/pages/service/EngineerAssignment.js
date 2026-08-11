@@ -140,11 +140,17 @@ export default function EngineerAssignment() {
                     <tr key={a._id}>
                       <td><strong>{a.ticketNo}</strong></td>
                       <td>
-                        {Array.isArray(a.engineers) ? a.engineers.map((e, i) => (
-                          <div key={i} style={{ fontSize: '0.85rem' }}>
-                            {e.name} <code style={{ fontSize: '0.75rem' }}>({e.empId})</code>
-                          </div>
-                        )) : a.engineers}
+                        {Array.isArray(a.engineers)
+                          ? a.engineers.map((e, i) => (
+                              <div key={i} style={{ fontSize: '0.85rem' }}>
+                                {e.name} <code style={{ fontSize: '0.75rem' }}>({e.empId})</code>
+                              </div>
+                            ))
+                          : (a.engineers && typeof a.engineers === 'object'
+                              ? (a.engineers.name || '-')
+                              : (a.engineers || '-')
+                            )
+                        }
                       </td>
                       <td>{a.assignDate}</td>
                       <td>{a.visitDate}</td>

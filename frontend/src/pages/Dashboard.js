@@ -230,8 +230,8 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
                     {recentOrders.map((o, i) => (
                       <tr key={i}>
                         <td><code>{o.id}</code></td>
-                        <td><strong>{o.customer}</strong></td>
-                        <td>{o.amount}</td>
+                        <td><strong>{o.customer && typeof o.customer === 'object' ? o.customer.name || '-' : o.customer || '-'}</strong></td>
+                        <td>{o.amount && typeof o.amount === 'object' ? JSON.stringify(o.amount) : o.amount}</td>
                         <td>{o.date}</td>
                         <td>{statusBadge(o.status)}</td>
                       </tr>
@@ -263,8 +263,8 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
                     {pendingPO.map((p, i) => (
                       <tr key={i}>
                         <td><code>{p.id}</code></td>
-                        <td><strong>{p.supplier}</strong></td>
-                        <td>{p.amount}</td>
+                        <td><strong>{p.supplier && typeof p.supplier === 'object' ? p.supplier.name || '-' : p.supplier || '-'}</strong></td>
+                        <td>{p.amount && typeof p.amount === 'object' ? '-' : p.amount}</td>
                         <td>{p.delivery}</td>
                         <td>{statusBadge(p.status)}</td>
                       </tr>
@@ -299,9 +299,9 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
                     {recentTickets.map((t, i) => (
                       <tr key={i}>
                         <td><code>{t.id}</code></td>
-                        <td><strong>{t.customer}</strong></td>
-                        <td>{t.machine}</td>
-                        <td>{t.engineer}</td>
+                        <td><strong>{t.customer && typeof t.customer === 'object' ? t.customer.name || '-' : t.customer || '-'}</strong></td>
+                        <td>{t.machine && typeof t.machine === 'object' ? t.machine.name || '-' : t.machine || '-'}</td>
+                        <td>{t.engineer && typeof t.engineer === 'object' ? t.engineer.name || '-' : t.engineer || '-'}</td>
                         <td>{statusBadge(t.status)}</td>
                       </tr>
                     ))}
