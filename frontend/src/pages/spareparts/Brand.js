@@ -42,12 +42,12 @@ export default function Brand() {
               <tbody>
                 {brands.map(b => (
                   <tr key={b.id}>
-                    <td>{b.id}</td>
-                    <td><strong>{b.name}</strong></td>
-                    <td>{b.country}</td>
-                    <td>{b.contact}</td>
-                    <td><span className="d_badge d_primary">{b.parts}</span></td>
-                    <td><span className={`d_badge ${b.status === 'Active' ? 'd_success' : 'd_danger'}`}>{b.status}</span></td>
+                    <td>{String(b.id)}</td>
+                    <td><strong>{String(b.name)}</strong></td>
+                    <td>{String(b.country)}</td>
+                    <td>{String(b.contact)}</td>
+                    <td><span className="d_badge d_primary">{String(b.parts)}</span></td>
+                    <td><span className={`d_badge ${b.status === 'Active' ? 'd_success' : 'd_danger'}`}>{String(b.status)}</span></td>
                     <td>
                       <div className="d_action_btns">
                         <button className="d_icon_btn d_edit"><MdEdit /></button>

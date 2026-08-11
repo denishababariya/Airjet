@@ -234,7 +234,7 @@ export default function PurchaseOrders() {
             <select className="d_form_control" {...f('supplier')}>
               <option value="">Select Supplier</option>
               {suppliers.map(s => (
-                <option key={s._id} value={s.name}>{s.name}</option>
+                <option key={s._id} value={s.name}>{String(s.name)}</option>
               ))}
             </select>
             {errors.supplier && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.supplier}</span>}

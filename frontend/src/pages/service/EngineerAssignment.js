@@ -138,24 +138,24 @@ export default function EngineerAssignment() {
                   {data.length === 0 && <tr className="d_empty"><td colSpan={7}>No assignments found.</td></tr>}
                   {data.map(a => (
                     <tr key={a._id}>
-                      <td><strong>{a.ticketNo}</strong></td>
+                      <td><strong>{String(a.ticketNo)}</strong></td>
                       <td>
                         {Array.isArray(a.engineers)
                           ? a.engineers.map((e, i) => (
                               <div key={i} style={{ fontSize: '0.85rem' }}>
-                                {e.name} <code style={{ fontSize: '0.75rem' }}>({e.empId})</code>
+                                {String(e.name)} <code style={{ fontSize: '0.75rem' }}>({String(e.empId)})</code>
                               </div>
                             ))
                           : (a.engineers && typeof a.engineers === 'object'
-                              ? (a.engineers.name || '-')
-                              : (a.engineers || '-')
+                              ? (String(a.engineers.name) || '-')
+                              : (String(a.engineers) || '-')
                             )
                         }
                       </td>
-                      <td>{a.assignDate}</td>
-                      <td>{a.visitDate}</td>
-                      <td>{a.eta}</td>
-                      <td><span className={`d_badge ${statusBadge(a.status)}`}>{a.status}</span></td>
+                      <td>{String(a.assignDate)}</td>
+                      <td>{String(a.visitDate)}</td>
+                      <td>{String(a.eta)}</td>
+                      <td><span className={`d_badge ${statusBadge(a.status)}`}>{String(a.status)}</span></td>
                       <td>
                         <div className="d_action_btns">
                           <button className="d_icon_btn d_view"><MdVisibility /></button>

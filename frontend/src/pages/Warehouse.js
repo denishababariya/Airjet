@@ -169,9 +169,9 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
                 {warehouses.length === 0 && <tr className="d_empty"><td colSpan={8}>No stock items found.</td></tr>}
                 {warehouses.map(w => (
                   <tr key={w._id}>
-                    <td><code>{w.id}</code></td><td><strong>{w.itemName}</strong></td><td>{w.location||'-'}</td>
-                    <td>{w.quantity}</td><td>₹{(w.unitPrice||0).toLocaleString('en-IN')}</td><td>{w.supplier||'-'}</td>
-                    <td><span className={`d_badge ${statusClass[w.status]||'d_info'}`}>{w.status}</span></td>
+                    <td><code>{String(w.id)}</code></td><td><strong>{String(w.itemName)}</strong></td><td>{String(w.location||'-')}</td>
+                    <td>{String(w.quantity)}</td><td>₹{(w.unitPrice||0).toLocaleString('en-IN')}</td><td>{String(w.supplier||'-')}</td>
+                    <td><span className={`d_badge ${statusClass[w.status]||'d_info'}`}>{String(w.status)}</span></td>
                     <td><div className="d_action_btns">
                       <button className="d_icon_btn d_edit" onClick={() => openEdit(w)}><MdEdit /></button>
                       <button className="d_icon_btn d_del"  onClick={() => handleDelete(w._id, `item "${w.itemName}"`)}><MdDelete /></button>
@@ -195,9 +195,9 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
                 {transfers.length === 0 && <tr className="d_empty"><td colSpan={8}>No transfers found.</td></tr>}
                 {transfers.map(t => (
                   <tr key={t._id}>
-                    <td><code>{t.id}</code></td><td>{t.from}</td><td>{t.to}</td><td><strong>{t.part}</strong></td>
-                    <td>{t.qty}</td><td>{t.date}</td>
-                    <td><span className={`d_badge ${statusClass[t.status]||'d_info'}`}>{t.status}</span></td>
+                    <td><code>{String(t.id)}</code></td><td>{String(t.from)}</td><td>{String(t.to)}</td><td><strong>{String(t.part)}</strong></td>
+                    <td>{String(t.qty)}</td><td>{String(t.date)}</td>
+                    <td><span className={`d_badge ${statusClass[t.status]||'d_info'}`}>{String(t.status)}</span></td>
                     <td><div className="d_action_btns">
                       <button className="d_icon_btn d_edit" onClick={() => openEdit(t)}><MdEdit /></button>
                       <button className="d_icon_btn d_del"  onClick={() => handleDelete(t._id, `transfer "${t.id}"`)}><MdDelete /></button>
@@ -225,9 +225,9 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
                 <tbody>
                   {audits.map(a => (
                     <tr key={a._id}>
-                      <td><code>{a.id}</code></td><td>{a.location}</td><td>{a.date}</td><td>{a.items}</td>
-                      <td><span className={`d_badge ${statusClass[a.status]||'d_info'}`}>{a.status}</span></td>
-                      <td>{a.notes}</td>
+                      <td><code>{String(a.id)}</code></td><td>{String(a.location)}</td><td>{String(a.date)}</td><td>{String(a.items)}</td>
+                      <td><span className={`d_badge ${statusClass[a.status]||'d_info'}`}>{String(a.status)}</span></td>
+                      <td>{String(a.notes)}</td>
                       <td><div className="d_action_btns">
                         <button className="d_icon_btn d_edit" onClick={() => openEdit(a)}><MdEdit /></button>
                         <button className="d_icon_btn d_del"  onClick={() => handleDelete(a._id, `audit "${a.id}"`)}><MdDelete /></button>

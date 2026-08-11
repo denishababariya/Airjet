@@ -48,18 +48,18 @@ export default function StockAudits() {
               <tbody>
                 {audits.map(a => (
                   <tr key={a.id}>
-                    <td><strong>{a.id}</strong></td>
-                    <td>{a.warehouse}</td>
-                    <td>{a.date}</td>
-                    <td>{a.auditor}</td>
-                    <td>{a.total || '—'}</td>
-                    <td>{a.matched || '—'}</td>
+                    <td><strong>{String(a.id)}</strong></td>
+                    <td>{String(a.warehouse)}</td>
+                    <td>{String(a.date)}</td>
+                    <td>{String(a.auditor)}</td>
+                    <td>{String(a.total || '—')}</td>
+                    <td>{String(a.matched || '—')}</td>
                     <td>
                       {a.status === 'Scheduled' ? '—' : a.discrepancy > 0
-                        ? <span className="d_badge d_danger">{a.discrepancy}</span>
+                        ? <span className="d_badge d_danger">{String(a.discrepancy)}</span>
                         : <span className="d_badge d_success">0</span>}
                     </td>
-                    <td><span className={`d_badge ${statusBadge(a.status)}`}>{a.status}</span></td>
+                    <td><span className={`d_badge ${statusBadge(a.status)}`}>{String(a.status)}</span></td>
                     <td>
                       <div className="d_action_btns">
                         <button className="d_icon_btn d_view"><MdVisibility /></button>

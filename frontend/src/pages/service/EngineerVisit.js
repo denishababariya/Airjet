@@ -117,17 +117,17 @@ export default function EngineerVisit() {
                   {data.length === 0 && <tr className="d_empty"><td colSpan={8}>No visit records found.</td></tr>}
                   {data.map(v => (
                     <tr key={v._id}>
-                      <td><strong>{v.ticketNo}</strong></td>
-                      <td>{v.engineer}</td>
-                      <td>{v.visitDate}</td>
-                      <td>{v.arrivalTime}</td>
-                      <td><span className="d_badge d_info">{v.serviceType}</span></td>
+                      <td><strong>{String(v.ticketNo)}</strong></td>
+                      <td>{String(v.engineer)}</td>
+                      <td>{String(v.visitDate)}</td>
+                      <td>{String(v.arrivalTime)}</td>
+                      <td><span className="d_badge d_info">{String(v.serviceType)}</span></td>
                       <td>
                         <span className={`d_badge ${v.machineRunning === 'Running' ? 'd_success' : v.machineRunning === 'Not Running' ? 'd_danger' : 'd_warning'}`}>
-                          {v.machineRunning}
+                          {String(v.machineRunning)}
                         </span>
                       </td>
-                      <td style={{ fontSize: '0.85rem', maxWidth: 200 }}>{v.inspectionNotes}</td>
+                      <td style={{ fontSize: '0.85rem', maxWidth: 200 }}>{String(v.inspectionNotes)}</td>
                       <td>
                         <div className="d_action_btns">
                           <button className="d_icon_btn d_view"><MdVisibility /></button>

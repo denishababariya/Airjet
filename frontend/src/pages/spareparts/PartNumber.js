@@ -56,14 +56,14 @@ export default function PartNumber() {
               <tbody>
                 {filtered.map(p => (
                   <tr key={p.no}>
-                    <td><strong>{p.no}</strong></td>
-                    <td>{p.name}</td>
-                    <td><span className="d_badge d_info">{p.category}</span></td>
-                    <td>{p.brand}</td>
-                    <td>{p.uom}</td>
+                    <td><strong>{String(p.no)}</strong></td>
+                    <td>{String(p.name)}</td>
+                    <td><span className="d_badge d_info">{String(p.category)}</span></td>
+                    <td>{String(p.brand)}</td>
+                    <td>{String(p.uom)}</td>
                     <td>₹{p.price.toLocaleString('en-IN')}</td>
-                    <td><code>{p.hsn}</code></td>
-                    <td><span className={`d_badge ${p.status === 'Active' ? 'd_success' : 'd_danger'}`}>{p.status}</span></td>
+                    <td><code>{String(p.hsn)}</code></td>
+                    <td><span className={`d_badge ${p.status === 'Active' ? 'd_success' : 'd_danger'}`}>{String(p.status)}</span></td>
                     <td>
                       <div className="d_action_btns">
                         <button className="d_icon_btn d_view"><MdVisibility /></button>

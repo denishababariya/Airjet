@@ -170,12 +170,12 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
                 {filtered.length === 0 && <tr className="d_empty"><td colSpan={10}>No parts found.</td></tr>}
                 {filtered.map(p => (
                   <tr key={p._id}>
-                    <td><code>{p.partNumber}</code></td><td><strong>{p.partName}</strong></td>
-                    <td>{p.category}</td><td>{p.brand}</td>
+                    <td><code>{String(p.partNumber)}</code></td><td><strong>{String(p.partName)}</strong></td>
+                    <td>{String(p.category)}</td><td>{String(p.brand)}</td>
                     <td style={{ maxWidth:140, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{(p.compatibility||[]).join(', ')}</td>
-                    <td><strong>{p.quantity}</strong></td><td>{p.minimumStock}</td>
+                    <td><strong>{String(p.quantity)}</strong></td><td>{String(p.minimumStock)}</td>
                     <td>₹{(p.unitPrice||0).toLocaleString('en-IN')}</td>
-                    <td><span className={`d_badge ${statusClass[p.status]||'d_info'}`}>{p.status}</span></td>
+                    <td><span className={`d_badge ${statusClass[p.status]||'d_info'}`}>{String(p.status)}</span></td>
                     <td><div className="d_action_btns">
                       <button className="d_icon_btn d_edit" onClick={() => openEdit(p)}><MdEdit /></button>
                       <button className="d_icon_btn d_del"  onClick={() => handleDelete(p._id, p.partName)}><MdDelete /></button>
@@ -196,7 +196,7 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
             <thead><tr><th>Cat ID</th><th>Category Name</th><th>No. of Parts</th><th>Status</th></tr></thead>
             <tbody>
               {derivedCategories.length === 0 && <tr className="d_empty"><td colSpan={4}>No categories yet.</td></tr>}
-              {derivedCategories.map(c => <tr key={c.id}><td><code>{c.id}</code></td><td><strong>{c.name}</strong></td><td><span className="d_badge d_info">{c.parts}</span></td><td><span className="d_badge d_success">{c.status}</span></td></tr>)}
+              {derivedCategories.map(c => <tr key={c.id}><td><code>{String(c.id)}</code></td><td><strong>{String(c.name)}</strong></td><td><span className="d_badge d_info">{String(c.parts)}</span></td><td><span className="d_badge d_success">{String(c.status)}</span></td></tr>)}
             </tbody>
           </table></div></div>
         </div>
@@ -209,7 +209,7 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
             <thead><tr><th>Brand ID</th><th>Brand Name</th><th>Parts</th><th>Status</th></tr></thead>
             <tbody>
               {derivedBrands.length === 0 && <tr className="d_empty"><td colSpan={4}>No brands yet.</td></tr>}
-              {derivedBrands.map(b => <tr key={b.id}><td><code>{b.id}</code></td><td><strong>{b.name}</strong></td><td><span className="d_badge d_info">{b.parts}</span></td><td><span className="d_badge d_success">{b.status}</span></td></tr>)}
+              {derivedBrands.map(b => <tr key={b.id}><td><code>{String(b.id)}</code></td><td><strong>{String(b.name)}</strong></td><td><span className="d_badge d_info">{String(b.parts)}</span></td><td><span className="d_badge d_success">{String(b.status)}</span></td></tr>)}
             </tbody>
           </table></div></div>
         </div>
@@ -222,7 +222,7 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
             <thead><tr><th>Model ID</th><th>Model</th><th>Brand</th><th>Type</th><th>Parts</th><th>Status</th></tr></thead>
             <tbody>
               {derivedModels.length === 0 && <tr className="d_empty"><td colSpan={6}>No models yet.</td></tr>}
-              {derivedModels.map(m => <tr key={m.id}><td><code>{m.id}</code></td><td><strong>{m.model}</strong></td><td>{m.brand}</td><td>{m.type}</td><td><span className="d_badge d_info">{m.parts}</span></td><td><span className="d_badge d_success">{m.status}</span></td></tr>)}
+              {derivedModels.map(m => <tr key={m.id}><td><code>{String(m.id)}</code></td><td><strong>{String(m.model)}</strong></td><td>{String(m.brand)}</td><td>{String(m.type)}</td><td><span className="d_badge d_info">{String(m.parts)}</span></td><td><span className="d_badge d_success">{String(m.status)}</span></td></tr>)}
             </tbody>
           </table></div></div>
         </div>

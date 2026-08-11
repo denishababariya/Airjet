@@ -136,14 +136,14 @@ export default function ServiceReports() {
                   {data.length === 0 && <tr className="d_empty"><td colSpan={9}>No service reports found.</td></tr>}
                   {data.map(r => (
                     <tr key={r._id}>
-                      <td><strong>{r.ticketNo}</strong></td>
-                      <td>{r.engineer}</td>
-                      <td style={{ fontSize: '0.85rem', maxWidth: 150 }}>{r.workDone}</td>
-                      <td style={{ fontSize: '0.85rem', maxWidth: 100 }}>{r.partsUsed}</td>
-                      <td><span className={`d_badge ${workingBadge(r.workingStatus)}`}>{r.workingStatus}</span></td>
-                      <td>{r.serviceTime}</td>
-                      <td>{r.completedDate}</td>
-                      <td><span className={`d_badge ${statusBadge(r.status)}`}>{r.status}</span></td>
+                      <td><strong>{String(r.ticketNo)}</strong></td>
+                      <td>{String(r.engineer)}</td>
+                      <td style={{ fontSize: '0.85rem', maxWidth: 150 }}>{String(r.workDone)}</td>
+                      <td style={{ fontSize: '0.85rem', maxWidth: 100 }}>{String(r.partsUsed)}</td>
+                      <td><span className={`d_badge ${workingBadge(r.workingStatus)}`}>{String(r.workingStatus)}</span></td>
+                      <td>{String(r.serviceTime)}</td>
+                      <td>{String(r.completedDate)}</td>
+                      <td><span className={`d_badge ${statusBadge(r.status)}`}>{String(r.status)}</span></td>
                       <td>
                         <div className="d_action_btns">
                           <button className="d_icon_btn d_view"><MdVisibility /></button>

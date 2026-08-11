@@ -186,11 +186,11 @@ const Sales = ({ defaultTab = 'customers' }) => {
                 {customers.length === 0 && <tr className="d_empty"><td colSpan={9}>No customers found.</td></tr>}
                 {customers.map(c => (
                   <tr key={c._id}>
-                    <td><code>{c.id}</code></td><td><strong>{c.name}</strong></td>
-                    <td>{c.contactPerson || c.contact || '-'}</td><td>{c.phone || '-'}</td>
-                    <td>{c.city || '-'}</td><td><code>{c.gstNumber || c.gst || '-'}</code></td>
+                    <td><code>{String(c.id)}</code></td><td><strong>{String(c.name)}</strong></td>
+                    <td>{String(c.contactPerson || c.contact || '-')}</td><td>{String(c.phone || '-')}</td>
+                    <td>{String(c.city || '-')}</td><td><code>{String(c.gstNumber || c.gst || '-')}</code></td>
                     <td><strong>₹{(c.currentBalance||0).toLocaleString('en-IN')}</strong></td>
-                    <td><span className={`d_badge ${statusClass[c.status]||'d_info'}`}>{c.status}</span></td>
+                    <td><span className={`d_badge ${statusClass[c.status]||'d_info'}`}>{String(c.status)}</span></td>
                     <td><div className="d_action_btns">
                       <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(c)}><MdEdit /></button>
                       <button className="d_icon_btn d_del"  title="Delete" onClick={() => handleDelete(c._id, `customer "${c.name}"`)}><MdDelete /></button>
@@ -214,9 +214,9 @@ const Sales = ({ defaultTab = 'customers' }) => {
                 {salesDocs.length === 0 && <tr className="d_empty"><td colSpan={8}>No invoices found.</td></tr>}
                 {salesDocs.map(i => (
                   <tr key={i._id}>
-                    <td><code>{i.id}</code></td><td><strong>{strField(i.customer)}</strong></td><td>{i.date}</td>
-                    <td>{itemsCount(i.items)}</td><td><strong>₹{(i.amount||0).toLocaleString('en-IN')}</strong></td><td>{i.due||'-'}</td>
-                    <td><span className={`d_badge ${statusClass[i.status]||'d_info'}`}>{i.status}</span></td>
+                    <td><code>{String(i.id)}</code></td><td><strong>{strField(i.customer)}</strong></td><td>{String(i.date)}</td>
+                    <td>{itemsCount(i.items)}</td><td><strong>₹{(i.amount||0).toLocaleString('en-IN')}</strong></td><td>{String(i.due||'-')}</td>
+                    <td><span className={`d_badge ${statusClass[i.status]||'d_info'}`}>{String(i.status)}</span></td>
                     <td><div className="d_action_btns">
                       <button className="d_icon_btn d_edit" onClick={() => openEdit(i)}><MdEdit /></button>
                       <button className="d_icon_btn d_del"  onClick={() => handleDelete(i._id, `invoice "${i.id}"`)}><MdDelete /></button>
@@ -239,9 +239,9 @@ const Sales = ({ defaultTab = 'customers' }) => {
                 {salesDocs.length === 0 && <tr className="d_empty"><td colSpan={8}>No quotations found.</td></tr>}
                 {salesDocs.map(q => (
                   <tr key={q._id}>
-                    <td><code>{q.id}</code></td><td><strong>{strField(q.customer)}</strong></td><td>{q.date}</td>
-                    <td>{itemsCount(q.items)}</td><td><strong>₹{(q.amount||0).toLocaleString('en-IN')}</strong></td><td>{q.validTill||'-'}</td>
-                    <td><span className={`d_badge ${statusClass[q.status]||'d_info'}`}>{q.status}</span></td>
+                    <td><code>{String(q.id)}</code></td><td><strong>{strField(q.customer)}</strong></td><td>{String(q.date)}</td>
+                    <td>{itemsCount(q.items)}</td><td><strong>₹{(q.amount||0).toLocaleString('en-IN')}</strong></td><td>{String(q.validTill||'-')}</td>
+                    <td><span className={`d_badge ${statusClass[q.status]||'d_info'}`}>{String(q.status)}</span></td>
                     <td><div className="d_action_btns">
                       <button className="d_icon_btn d_edit" onClick={() => openEdit(q)}><MdEdit /></button>
                       <button className="d_icon_btn d_del"  onClick={() => handleDelete(q._id, `quotation "${q.id}"`)}><MdDelete /></button>
@@ -341,7 +341,7 @@ const Sales = ({ defaultTab = 'customers' }) => {
             <label className="d_form_label">Customer <span className="d_req">*</span></label>
             <select className="d_form_control" value={form.customer} onChange={e => { setForm(p => ({ ...p, customer: e.target.value })); setErrors(p => ({ ...p, customer: '' })); }}>
               <option value="">Select Customer</option>
-              {customers.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+              {customers.map(c => <option key={c._id} value={c.name}>{String(c.name)}</option>)}
             </select>
             <Err field="customer" />
           </div>

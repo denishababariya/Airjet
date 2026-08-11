@@ -258,7 +258,7 @@ const Attendance = ({ defaultTab = 'records' }) => {
             <label className="d_form_label">Select Employee</label>
             <select className="d_form_control" onChange={e => onEmpSelect(e.target.value)}>
               <option value="">Select employee</option>
-              {employees.map(e => <option key={e._id} value={e._id}>{e.name} ({e.id})</option>)}
+              {employees.map(e => <option key={e._id} value={e._id}>{String(e.name)} ({String(e.id)})</option>)}
             </select>
           </div>
           <div className="d_form_group">

@@ -340,13 +340,13 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
                   {suppliers.length === 0 && <tr className="d_empty"><td colSpan={8}>No suppliers found.</td></tr>}
                   {suppliers.map(s => (
                     <tr key={s._id}>
-                      <td><code>{s.id || s._id}</code></td>
-                      <td><strong>{s.name}</strong></td>
-                      <td>{s.contact || '-'}</td>
-                      <td>{s.phone || '-'}</td>
-                      <td>{s.city || '-'}</td>
-                      <td><code>{s.gst || '-'}</code></td>
-                      <td><span className={`d_badge ${statusClass[s.status] || 'd_info'}`}>{s.status}</span></td>
+                      <td><code>{String(s.id || s._id)}</code></td>
+                      <td><strong>{String(s.name)}</strong></td>
+                      <td>{String(s.contact || '-')}</td>
+                      <td>{String(s.phone || '-')}</td>
+                      <td>{String(s.city || '-')}</td>
+                      <td><code>{String(s.gst || '-')}</code></td>
+                      <td><span className={`d_badge ${statusClass[s.status] || 'd_info'}`}>{String(s.status)}</span></td>
                       <td><div className="d_action_btns">
                         <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(s)}><MdEdit /></button>
                         <button className="d_icon_btn d_del"  title="Delete" onClick={() => handleDelete(s._id, `supplier "${s.name}"`)}><MdDelete /></button>
@@ -379,13 +379,13 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
                   {orders.length === 0 && <tr className="d_empty"><td colSpan={8}>No purchase orders found.</td></tr>}
                   {orders.map(o => (
                     <tr key={o._id}>
-                      <td><code>{o.id}</code></td>
+                      <td><code>{String(o.id)}</code></td>
                       <td><strong>{strField(o.supplier) || '-'}</strong></td>
-                      <td>{o.date || '-'}</td>
+                      <td>{String(o.date || '-')}</td>
                       <td>{itemsCount(o.items) || '-'}</td>
                       <td><strong>₹{(o.amount || o.totalAmount || 0).toLocaleString('en-IN')}</strong></td>
-                      <td>{o.delivery || '-'}</td>
-                      <td><span className={`d_badge ${statusClass[o.status] || 'd_info'}`}>{o.status}</span></td>
+                      <td>{String(o.delivery || '-')}</td>
+                      <td><span className={`d_badge ${statusClass[o.status] || 'd_info'}`}>{String(o.status)}</span></td>
                       <td><div className="d_action_btns">
                         <button className="d_icon_btn d_view" title="View"><MdVisibility /></button>
                         <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(o)}><MdEdit /></button>
@@ -419,14 +419,14 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
                   {grnList.length === 0 && <tr className="d_empty"><td colSpan={9}>No GRN records found.</td></tr>}
                   {grnList.map(g => (
                     <tr key={g._id}>
-                      <td><code>{g.id}</code></td>
-                      <td><code>{g.po || '-'}</code></td>
+                      <td><code>{String(g.id)}</code></td>
+                      <td><code>{String(g.po || '-')}</code></td>
                       <td><strong>{strField(g.supplier) || '-'}</strong></td>
-                      <td>{g.date || '-'}</td>
+                      <td>{String(g.date || '-')}</td>
                       <td>{itemsCount(g.items) || '-'}</td>
                       <td><strong>₹{(g.amount || 0).toLocaleString('en-IN')}</strong></td>
-                      <td>{g.receivedBy || '-'}</td>
-                      <td><span className={`d_badge ${statusClass[g.status] || 'd_info'}`}>{g.status}</span></td>
+                      <td>{String(g.receivedBy || '-')}</td>
+                      <td><span className={`d_badge ${statusClass[g.status] || 'd_info'}`}>{String(g.status)}</span></td>
                       <td><div className="d_action_btns">
                         <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(g)}><MdEdit /></button>
                         <button className="d_icon_btn d_del"  title="Delete" onClick={() => handleDelete(g._id, `GRN "${g.id}"`)}><MdDelete /></button>
@@ -459,14 +459,14 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
                   {returns.length === 0 && <tr className="d_empty"><td colSpan={9}>No returns found.</td></tr>}
                   {returns.map(r => (
                     <tr key={r._id}>
-                      <td><code>{r.id}</code></td>
+                      <td><code>{String(r.id)}</code></td>
                       <td><strong>{strField(r.supplier) || '-'}</strong></td>
                       <td>{strField(r.part) || '-'}</td>
-                      <td>{r.qty || '-'}</td>
-                      <td>{r.date || '-'}</td>
-                      <td>{r.reason || '-'}</td>
+                      <td>{String(r.qty || '-')}</td>
+                      <td>{String(r.date || '-')}</td>
+                      <td>{String(r.reason || '-')}</td>
                       <td><strong>₹{(r.amount || 0).toLocaleString('en-IN')}</strong></td>
-                      <td><span className={`d_badge ${statusClass[r.status] || 'd_warning'}`}>{r.status}</span></td>
+                      <td><span className={`d_badge ${statusClass[r.status] || 'd_warning'}`}>{String(r.status)}</span></td>
                       <td><div className="d_action_btns">
                         <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(r)}><MdEdit /></button>
                         <button className="d_icon_btn d_del"  title="Delete" onClick={() => handleDelete(r._id, `return "${r.id}"`)}><MdDelete /></button>
@@ -551,7 +551,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
               <label className="d_form_label">Supplier <span className="d_req">*</span></label>
               <select className="d_form_control" {...f('supplier')}>
                 <option value="">Select Supplier</option>
-                {suppliers.map(s => <option key={s._id} value={s.name}>{s.name}</option>)}
+                {suppliers.map(s => <option key={s._id} value={s.name}>{String(s.name)}</option>)}
               </select>
               <Err field="supplier" />
             </div>
@@ -613,7 +613,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
               <label className="d_form_label">Supplier <span className="d_req">*</span></label>
               <select className="d_form_control" {...f('supplier')}>
                 <option value="">Select Supplier</option>
-                {suppliers.map(s => <option key={s._id} value={s.name}>{s.name}</option>)}
+                {suppliers.map(s => <option key={s._id} value={s.name}>{String(s.name)}</option>)}
               </select>
               <Err field="supplier" />
             </div>
@@ -670,7 +670,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
               <label className="d_form_label">Supplier <span className="d_req">*</span></label>
               <select className="d_form_control" {...f('supplier')}>
                 <option value="">Select Supplier</option>
-                {suppliers.map(s => <option key={s._id} value={s.name}>{s.name}</option>)}
+                {suppliers.map(s => <option key={s._id} value={s.name}>{String(s.name)}</option>)}
               </select>
               <Err field="supplier" />
             </div>

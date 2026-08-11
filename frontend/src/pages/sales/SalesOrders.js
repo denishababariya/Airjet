@@ -348,7 +348,7 @@ export default function SalesOrders() {
                         onChange={(e) => updateItem(index, 'itemCode', e.target.value)}
                       >
                         {stockItems.map(s => (
-                          <option key={s._id} value={s.itemCode}>{s.itemCode} - {s.itemName} (Stock: {s.quantity})</option>
+                          <option key={s._id} value={s.itemCode}>{String(s.itemCode)} - {String(s.itemName)} (Stock: {String(s.quantity)})</option>
                         ))}
                       </select>
                     </td>

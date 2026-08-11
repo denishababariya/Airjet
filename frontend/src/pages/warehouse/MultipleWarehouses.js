@@ -61,9 +61,9 @@ export default function MultipleWarehouses() {
                   const util = Math.round((w.used / w.capacity) * 100);
                   return (
                     <tr key={w.id}>
-                      <td>{w.id}</td>
-                      <td><strong>{w.name}</strong></td>
-                      <td style={{ fontSize: '0.85rem' }}>{w.location}</td>
+                      <td>{String(w.id)}</td>
+                      <td><strong>{String(w.name)}</strong></td>
+                      <td style={{ fontSize: '0.85rem' }}>{String(w.location)}</td>
                       <td>{w.capacity.toLocaleString('en-IN')}</td>
                       <td>{w.used.toLocaleString('en-IN')}</td>
                       <td>{avail.toLocaleString('en-IN')}</td>
@@ -72,8 +72,8 @@ export default function MultipleWarehouses() {
                           {util}%
                         </span>
                       </td>
-                      <td>{w.manager}</td>
-                      <td><span className="d_badge d_success">{w.status}</span></td>
+                      <td>{String(w.manager)}</td>
+                      <td><span className="d_badge d_success">{String(w.status)}</span></td>
                       <td>
                         <div className="d_action_btns">
                           <button className="d_icon_btn d_view"><MdVisibility /></button>

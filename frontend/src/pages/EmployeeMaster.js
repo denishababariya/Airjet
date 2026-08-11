@@ -432,7 +432,7 @@ const EmployeeMaster = ({ currentUser }) => {
             <select className="d_form_control" {...f('department')}>
               <option value="">Select Department</option>
               {departments.map(d => (
-                <option key={d._id || d.id} value={d._id || d.id}>{d.title}</option>
+                <option key={d._id || d.id} value={d._id || d.id}>{String(d.title)}</option>
               ))}
             </select>
             {errors.department && <span className="d_field_error">{errors.department}</span>}
@@ -442,7 +442,7 @@ const EmployeeMaster = ({ currentUser }) => {
             <select className="d_form_control" {...f('designation')}>
               <option value="">Select Designation</option>
               {filteredDesigs.map(d => (
-                <option key={d._id || d.id} value={d._id || d.id}>{d.title}</option>
+                <option key={d._id || d.id} value={d._id || d.id}>{String(d.title)}</option>
               ))}
             </select>
             {errors.designation && <span className="d_field_error">{errors.designation}</span>}

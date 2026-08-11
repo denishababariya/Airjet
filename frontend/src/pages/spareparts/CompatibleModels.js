@@ -43,13 +43,13 @@ export default function CompatibleModels() {
               <tbody>
                 {models.map(m => (
                   <tr key={m.id}>
-                    <td>{m.id}</td>
-                    <td><strong>{m.model}</strong></td>
-                    <td>{m.manufacturer}</td>
-                    <td>{m.yearFrom}</td>
-                    <td>{m.yearTo}</td>
-                    <td><span className="d_badge d_accent">{m.parts}</span></td>
-                    <td><span className={`d_badge ${m.status === 'Active' ? 'd_success' : 'd_danger'}`}>{m.status}</span></td>
+                    <td>{String(m.id)}</td>
+                    <td><strong>{String(m.model)}</strong></td>
+                    <td>{String(m.manufacturer)}</td>
+                    <td>{String(m.yearFrom)}</td>
+                    <td>{String(m.yearTo)}</td>
+                    <td><span className="d_badge d_accent">{String(m.parts)}</span></td>
+                    <td><span className={`d_badge ${m.status === 'Active' ? 'd_success' : 'd_danger'}`}>{String(m.status)}</span></td>
                     <td>
                       <div className="d_action_btns">
                         <button className="d_icon_btn d_edit"><MdEdit /></button>

@@ -50,15 +50,15 @@ export default function StockTransfers() {
               <tbody>
                 {transfers.map(t => (
                   <tr key={t.id}>
-                    <td><strong>{t.id}</strong></td>
-                    <td style={{ fontSize: '0.88rem' }}>{t.from}</td>
-                    <td style={{ fontSize: '0.88rem' }}>{t.to}</td>
-                    <td>{t.part}</td>
-                    <td><code>{t.partNo}</code></td>
-                    <td>{t.qty}</td>
-                    <td>{t.date}</td>
-                    <td>{t.by}</td>
-                    <td><span className={`d_badge ${statusBadge(t.status)}`}>{t.status}</span></td>
+                    <td><strong>{String(t.id)}</strong></td>
+                    <td style={{ fontSize: '0.88rem' }}>{String(t.from)}</td>
+                    <td style={{ fontSize: '0.88rem' }}>{String(t.to)}</td>
+                    <td>{String(t.part)}</td>
+                    <td><code>{String(t.partNo)}</code></td>
+                    <td>{String(t.qty)}</td>
+                    <td>{String(t.date)}</td>
+                    <td>{String(t.by)}</td>
+                    <td><span className={`d_badge ${statusBadge(t.status)}`}>{String(t.status)}</span></td>
                     <td>
                       <div className="d_action_btns">
                         <button className="d_icon_btn d_view"><MdVisibility /></button>

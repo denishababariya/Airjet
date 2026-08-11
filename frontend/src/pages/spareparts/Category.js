@@ -41,11 +41,11 @@ export default function Category() {
               <tbody>
                 {categories.map(c => (
                   <tr key={c.id}>
-                    <td>{c.id}</td>
-                    <td><strong>{c.name}</strong></td>
-                    <td style={{ maxWidth: 300, fontSize: '0.88rem', color: 'var(--d-text-muted)' }}>{c.desc}</td>
-                    <td><span className="d_badge d_primary">{c.parts}</span></td>
-                    <td><span className={`d_badge ${c.status === 'Active' ? 'd_success' : 'd_danger'}`}>{c.status}</span></td>
+                    <td>{String(c.id)}</td>
+                    <td><strong>{String(c.name)}</strong></td>
+                    <td style={{ maxWidth: 300, fontSize: '0.88rem', color: 'var(--d-text-muted)' }}>{String(c.desc)}</td>
+                    <td><span className="d_badge d_primary">{String(c.parts)}</span></td>
+                    <td><span className={`d_badge ${c.status === 'Active' ? 'd_success' : 'd_danger'}`}>{String(c.status)}</span></td>
                     <td>
                       <div className="d_action_btns">
                         <button className="d_icon_btn d_edit"><MdEdit /></button>

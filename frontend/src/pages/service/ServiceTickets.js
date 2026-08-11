@@ -219,20 +219,20 @@ export default function ServiceTickets() {
                   {data.length === 0 && <tr className="d_empty"><td colSpan={11}>No service tickets found.</td></tr>}
                   {data.map(t => (
                     <tr key={t._id}>
-                      <td><strong>{t.ticketNo}</strong></td>
-                      <td><code>{t.salesOrderNo || '-'}</code></td>
-                      <td>{t.customer}</td>
-                      <td>{t.machine}</td>
-                      <td><code>{t.machineSerialNo || '-'}</code></td>
-                      <td style={{ fontSize: '0.85rem', maxWidth: 150 }}>{t.complaint}</td>
-                      <td><span className={`d_badge ${priorityBadge(t.priority)}`}>{t.priority}</span></td>
-                      <td><span className={`d_badge ${statusBadge(t.status)}`}>{t.status}</span></td>
+                      <td><strong>{String(t.ticketNo)}</strong></td>
+                      <td><code>{String(t.salesOrderNo || '-')}</code></td>
+                      <td>{String(t.customer)}</td>
+                      <td>{String(t.machine)}</td>
+                      <td><code>{String(t.machineSerialNo || '-')}</code></td>
+                      <td style={{ fontSize: '0.85rem', maxWidth: 150 }}>{String(t.complaint)}</td>
+                      <td><span className={`d_badge ${priorityBadge(t.priority)}`}>{String(t.priority)}</span></td>
+                      <td><span className={`d_badge ${statusBadge(t.status)}`}>{String(t.status)}</span></td>
                       <td>
                         <span className={`d_badge ${t.warranty === 'Yes' ? 'd_success' : 'd_info'}`}>
-                          {t.warranty} {t.warrantyStatus !== 'N/A' && `(${t.warrantyStatus})`}
+                          {String(t.warranty)} {t.warrantyStatus !== 'N/A' && `(${String(t.warrantyStatus)})`}
                         </span>
                       </td>
-                      <td>{t.warrantyExpiryDate || '-'}</td>
+                      <td>{String(t.warrantyExpiryDate || '-')}</td>
                       <td>
                         <div className="d_action_btns">
                           <button className="d_icon_btn d_view"><MdVisibility /></button>
@@ -259,7 +259,7 @@ export default function ServiceTickets() {
             <select className="d_form_control" value={form.salesOrderNo} onChange={(e) => handleSalesOrderChange(e.target.value)}>
               <option value="">Select Sales Order</option>
               {salesOrders.map(o => (
-                <option key={o._id} value={o.so}>{o.so} - {o.customer}</option>
+                <option key={o._id} value={o.so}>{String(o.so)} - {String(o.customer)}</option>
               ))}
             </select>
           </div>

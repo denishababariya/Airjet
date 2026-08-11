@@ -172,7 +172,7 @@ const Department = () => {
             <label className="d_form_label">Department Head</label>
             <select className="d_form_control" {...f('head')}>
               <option value="">Select Employee</option>
-              {filteredEmployees.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
+              {filteredEmployees.map(e => <option key={e._id} value={e._id}>{String(e.name)}</option>)}
             </select>
           </div>
         </div>

@@ -118,7 +118,7 @@ export default function LeaveTracking() {
               <label className="d_form_label">Employee <span className="d_req">*</span></label>
               <select className="d_form_control" value={form.employeeId} onChange={e => setF('employeeId', e.target.value)}>
                 <option value="">Select Employee</option>
-                {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.name} ({emp.id})</option>)}
+                {employees.map(emp => <option key={emp._id} value={emp._id}>{String(emp.name)} ({String(emp.id)})</option>)}
               </select>
               <Err field="employeeId" />
             </div>

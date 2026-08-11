@@ -132,7 +132,7 @@ const Designation = () => {
             <label className="d_form_label">Department <span className="d_req">*</span></label>
             <select className="d_form_control" {...f('dept')}>
               <option value="">Select Department</option>
-              {departments.map(d => <option key={d._id} value={d._id}>{d.title}</option>)}
+              {departments.map(d => <option key={d._id} value={d._id}>{String(d.title)}</option>)}
             </select>
             <Err field="dept" />
           </div>

@@ -226,7 +226,7 @@ const Payroll = ({ defaultTab = 'salary' }) => {
           <label className="d_form_label">Select Employee</label>
           <select className="d_form_control" onChange={e => onEmpSelect(e.target.value)} defaultValue="">
             <option value="">— Select to auto-fill —</option>
-            {employees.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
+            {employees.map(e => <option key={e._id} value={e._id}>{String(e.name)}</option>)}
           </select>
         </div>
         <div className="d_form_row cols-2">
