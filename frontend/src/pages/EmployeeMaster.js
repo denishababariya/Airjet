@@ -30,20 +30,20 @@ const calcAge = (bod) => {
 };
 
 const EmployeeMaster = ({ currentUser }) => {
-  const [data, setData]                 = useState([]);
-  const [departments, setDepartments]   = useState([]);
+  const [data, setData] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState('');
-  const [search, setSearch]             = useState('');
-  const [modal, setModal]               = useState(false);
-  const [form, setForm]                 = useState(blank);
-  const [editId, setEditId]             = useState(null);
-  const [errors, setErrors]             = useState({});
-  const [showPwd, setShowPwd]           = useState(false);
-  const [showConfPwd, setShowConfPwd]   = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState(blank);
+  const [editId, setEditId] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfPwd, setShowConfPwd] = useState(false);
   // login-account status fetched when editing
-  const [userStatus, setUserStatus]             = useState(null); // null | { hasUser, role, status }
+  const [userStatus, setUserStatus] = useState(null); // null | { hasUser, role, status }
   const [userStatusLoading, setUserStatusLoading] = useState(false);
 
   const canManage = ['Admin', 'HR', 'Manager'].includes(currentUser?.role);
@@ -100,7 +100,7 @@ const EmployeeMaster = ({ currentUser }) => {
   // Table search
   const filtered = data.filter(e =>
     (e.name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (e.id   || '').toLowerCase().includes(search.toLowerCase()) ||
+    (e.id || '').toLowerCase().includes(search.toLowerCase()) ||
     (e.department?.title || '').toLowerCase().includes(search.toLowerCase())
   );
 
@@ -118,21 +118,21 @@ const EmployeeMaster = ({ currentUser }) => {
   // ── Open Edit modal ─────────────────────────────────────────
   const openEdit = async (emp) => {
     setForm({
-      name:        emp.name        || '',
-      email:       emp.email       || '',
-      phone:       String(emp.phoneNo || ''),
-      address:     emp.address     || '',
-      gender:      emp.gender      || '',
-      salary:      emp.salary      || '',
-      workShift:   emp.workShift   || 'Day',
-      cast:        emp.cast        || '',
-      bod:         emp.bod         ? emp.bod.split('T')[0] : '',
-      age:         emp.age         || '',
+      name: emp.name || '',
+      email: emp.email || '',
+      phone: String(emp.phoneNo || ''),
+      address: emp.address || '',
+      gender: emp.gender || '',
+      salary: emp.salary || '',
+      workShift: emp.workShift || 'Day',
+      cast: emp.cast || '',
+      bod: emp.bod ? emp.bod.split('T')[0] : '',
+      age: emp.age || '',
       joiningDate: emp.joiningDate ? emp.joiningDate.split('T')[0] : '',
-      department:  emp.department?._id  || emp.department?.id  || emp.department  || '',
+      department: emp.department?._id || emp.department?.id || emp.department || '',
       designation: emp.designation?._id || emp.designation?.id || emp.designation || '',
-      status:      emp.status || 'Active',
-      password:    '',
+      status: emp.status || 'Active',
+      password: '',
       confirmPassword: '',
     });
     setEditId(emp._id || emp.id);
@@ -159,9 +159,9 @@ const EmployeeMaster = ({ currentUser }) => {
   // ── Validate ────────────────────────────────────────────────
   const validate = () => {
     const e = {};
-    if (!form.name.trim())  e.name        = 'Employee name is required';
-    if (!form.department)   e.department  = 'Department is required';
-    if (!form.designation)  e.designation = 'Designation is required';
+    if (!form.name.trim()) e.name = 'Employee name is required';
+    if (!form.department) e.department = 'Department is required';
+    if (!form.designation) e.designation = 'Designation is required';
 
     if (!form.phone.trim()) {
       e.phone = 'Phone number is required';
@@ -184,12 +184,12 @@ const EmployeeMaster = ({ currentUser }) => {
       const pwd = form.password.trim();
       if (!editId) {
         // Add mode: password required
-        if (!pwd)                e.password        = 'Password is required for this role';
-        else if (pwd.length < 6) e.password        = 'Password must be at least 6 characters';
+        if (!pwd) e.password = 'Password is required for this role';
+        else if (pwd.length < 6) e.password = 'Password must be at least 6 characters';
         else if (pwd !== form.confirmPassword.trim()) e.confirmPassword = 'Passwords do not match';
       } else if (pwd) {
         // Edit mode: password optional but if given must be valid
-        if (pwd.length < 6)      e.password        = 'Password must be at least 6 characters';
+        if (pwd.length < 6) e.password = 'Password must be at least 6 characters';
         else if (pwd !== form.confirmPassword.trim()) e.confirmPassword = 'Passwords do not match';
       }
     }
@@ -203,20 +203,20 @@ const EmployeeMaster = ({ currentUser }) => {
 
     try {
       const payload = {
-        name:        form.name,
-        email:       form.email.trim().toLowerCase(),
-        phoneNo:     form.phone,
-        address:     form.address,
-        gender:      form.gender,
-        salary:      form.salary      ? Number(form.salary) : undefined,
-        workShift:   form.workShift,
-        cast:        form.cast,
-        bod:         form.bod         || undefined,
-        age:         form.age         ? Number(form.age)    : undefined,
+        name: form.name,
+        email: form.email.trim().toLowerCase(),
+        phoneNo: form.phone,
+        address: form.address,
+        gender: form.gender,
+        salary: form.salary ? Number(form.salary) : undefined,
+        workShift: form.workShift,
+        cast: form.cast,
+        bod: form.bod || undefined,
+        age: form.age ? Number(form.age) : undefined,
         joiningDate: form.joiningDate || undefined,
-        department:  form.department,
+        department: form.department,
         designation: form.designation,
-        status:      form.status,
+        status: form.status,
       };
 
       if (editId) {
@@ -225,8 +225,8 @@ const EmployeeMaster = ({ currentUser }) => {
         // Update login account password if provided
         if (
           (isAdminDesignation(form.designation) ||
-           isHRDepartment(form.department) ||
-           isHRManagerDesignation(form.designation)) &&
+            isHRDepartment(form.department) ||
+            isHRManagerDesignation(form.designation)) &&
           form.password.trim()
         ) {
           const designation = designations.find(d => (d._id || d.id) === form.designation);
@@ -240,8 +240,8 @@ const EmployeeMaster = ({ currentUser }) => {
         // Create login account for qualifying designations/departments
         if (
           (isAdminDesignation(form.designation) ||
-           isHRDepartment(form.department) ||
-           isHRManagerDesignation(form.designation)) &&
+            isHRDepartment(form.department) ||
+            isHRManagerDesignation(form.designation)) &&
           form.password.trim()
         ) {
           const designation = designations.find(d => (d._id || d.id) === form.designation);

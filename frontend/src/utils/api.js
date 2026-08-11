@@ -209,6 +209,9 @@ export const erpApi = {
 export const suppliersApi = {
   getAll: () => api.get('/suppliers'),
   getModuleData: (id) => api.get(`/suppliers/${id}/modules`),
+  getProducts: (id) => api.get(`/suppliers/${id}/products`),
+  addProduct: (id, data) => api.post(`/suppliers/${id}/products`, data),
+  removeProduct: (id, productId, data = {}) => api.delete(`/suppliers/${id}/products/${productId}`, { data }),
   create: (data) => api.post('/suppliers', data),
   update: (id, data) => api.put(`/suppliers/${id}`, data),
   remove: (id) => api.delete(`/suppliers/${id}`),
@@ -219,6 +222,26 @@ export const reportsApi = {
   purchase: () => api.get('/reports/purchase'),
   inventory: () => api.get('/reports/inventory'),
   payroll: () => api.get('/reports/payroll'),
+};
+
+export const purchaseOrdersApi = {
+  getAll: (params = {}) => api.get('/purchase/orders', { params }),
+  getById: (id) => api.get(`/purchase/orders/${id}`),
+  create: (data) => api.post('/purchase/orders', data),
+  update: (id, data) => api.put(`/purchase/orders/${id}`, data),
+  remove: (id) => api.delete(`/purchase/orders/${id}`),
+};
+
+export const purchaseReturnsApi = {
+  getAll: (params = {}) => api.get('/purchase/returns', { params }),
+  create: (data) => api.post('/purchase/returns', data),
+  update: (id, data) => api.put(`/purchase/returns/${id}`, data),
+  remove: (id) => api.delete(`/purchase/returns/${id}`),
+};
+
+export const grnApi = {
+  create: (data) => api.post('/purchase/grn', data),
+  update: (id, data) => api.put(`/purchase/grn/${id}`, data),
 };
 
 export const dashboardApi = {

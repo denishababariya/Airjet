@@ -14,4 +14,5 @@ module.exports = {
   ...require("./reports.controller.js"),
   ...require("./dashboard.controller.js"),
   ...require("./role.controller.js"),
+  ...require("./purchase.controller.js"),
 };
