@@ -1,6 +1,7 @@
 const Supplier = require('../model/Supplier.model');
 const Stock = require('../model/Stock.model');
 const SpareParts = require('../model/SpareParts.model');
+const RawMaterial = require('../model/RawMaterial.model');
 const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModules } = require('../services/universalDataSync.service');
 
 const generateId = async () => {
@@ -28,6 +29,15 @@ const syncSupplierProducts = async (supplier) => {
         if (part) {
           part.supplier = supplier.name;
           await part.save();
+        }
+      } catch (_) { /* skip */ }
+    } else if (product.productType === 'rawMaterial') {
+      try {
+        const material = await RawMaterial.findById(product.productId);
+        if (material) {
+          material.supplierName = supplier.name;
+          material.supplier = supplier._id;
+          await material.save();
         }
       } catch (_) { /* skip */ }
     }

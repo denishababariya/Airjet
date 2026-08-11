@@ -3,6 +3,7 @@ const PurchaseOrder = require('../model/PurchaseOrder.model');
 const PurchaseReturn = require('../model/PurchaseReturn.model');
 const Stock = require('../model/Stock.model');
 const SpareParts = require('../model/SpareParts.model');
+const RawMaterial = require('../model/RawMaterial.model');
 const Supplier = require('../model/Supplier.model');
 const ErpRecord = require('../model/ErpRecord.model');
 
@@ -261,6 +262,8 @@ const getSupplierProducts = async (req, res) => {
         details = await Stock.findById(prod.productId);
       } else if (prod.productType === 'sparePart') {
         details = await SpareParts.findById(prod.productId);
+      } else if (prod.productType === 'rawMaterial') {
+        details = await RawMaterial.findById(prod.productId);
       }
       return {
         ...prod.toObject(),
@@ -278,6 +281,7 @@ const getSupplierProducts = async (req, res) => {
       products,
       stockItems: products.filter(p => p.productType === 'stock'),
       spareParts: products.filter(p => p.productType === 'sparePart'),
+      rawMaterials: products.filter(p => p.productType === 'rawMaterial'),
       totalProducts: products.length
     });
   } catch (error) {
@@ -310,6 +314,13 @@ const addSupplierProduct = async (req, res) => {
       product = await SpareParts.findById(productId);
       if (product) {
         product.supplier = supplier.name;
+        await product.save();
+      }
+    } else if (productType === 'rawMaterial') {
+      product = await RawMaterial.findById(productId);
+      if (product) {
+        product.supplierName = supplier.name;
+        product.supplier = supplier._id;
         await product.save();
       }
     }
@@ -361,8 +372,15 @@ const removeSupplierProduct = async (req, res) => {
         product.supplier = '';
         await product.save();
       }
+    } else if (productType === 'rawMaterial') {
+      const product = await RawMaterial.findById(productId);
+      if (product && product.supplierName === supplier.name) {
+        product.supplierName = '';
+        product.supplier = null;
+        await product.save();
+      }
     } else {
-      // Try both if type not specified
+      // Try all if type not specified
       const stockProduct = await Stock.findById(productId);
       if (stockProduct && stockProduct.supplier === supplier.name) {
         stockProduct.supplier = '';
@@ -372,6 +390,12 @@ const removeSupplierProduct = async (req, res) => {
       if (spareProduct && spareProduct.supplier === supplier.name) {
         spareProduct.supplier = '';
         await spareProduct.save();
+      }
+      const rawProduct = await RawMaterial.findById(productId);
+      if (rawProduct && rawProduct.supplierName === supplier.name) {
+        rawProduct.supplierName = '';
+        rawProduct.supplier = null;
+        await rawProduct.save();
       }
     }
 

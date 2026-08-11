@@ -11,8 +11,9 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -217,6 +218,28 @@ export const suppliersApi = {
   remove: (id) => api.delete(`/suppliers/${id}`),
 };
 
+export const rawMaterialsApi = {
+  getAll: (params = {}) => api.get('/raw-materials', { params }),
+  getLowStock: () => api.get('/raw-materials/low-stock'),
+  getById: (id) => api.get(`/raw-materials/${id}`),
+  create: (data) => api.post('/raw-materials', data),
+  update: (id, data) => api.put(`/raw-materials/${id}`, data),
+  remove: (id) => api.delete(`/raw-materials/${id}`),
+  deductStock: (data) => api.post('/raw-materials/deduct-stock', data),
+  addStock: (data) => api.post('/raw-materials/add-stock', data),
+  getBySupplier: (supplierId) => api.get(`/suppliers/${supplierId}/raw-materials`),
+};
+
+export const rawMaterialPurchasesApi = {
+  getAll: (params = {}) => api.get('/raw-material-purchases', { params }),
+  getById: (id) => api.get(`/raw-material-purchases/${id}`),
+  create: (data) => api.post('/raw-material-purchases', data),
+  update: (id, data) => api.put(`/raw-material-purchases/${id}`, data),
+  remove: (id) => api.delete(`/raw-material-purchases/${id}`),
+  updateQualityCheck: (purchaseId, itemId, data) =>
+    api.patch(`/raw-material-purchases/${purchaseId}/items/${itemId}/quality-check`, data),
+};
+
 export const reportsApi = {
   sales: () => api.get('/reports/sales'),
   purchase: () => api.get('/reports/purchase'),
@@ -312,3 +335,7 @@ export const profitLossApi = {
 };
 
 export default api;
+
+
+
+
