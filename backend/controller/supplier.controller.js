@@ -1,9 +1,37 @@
 const Supplier = require('../model/Supplier.model');
+const Stock = require('../model/Stock.model');
+const SpareParts = require('../model/SpareParts.model');
 const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModules } = require('../services/universalDataSync.service');
 
 const generateId = async () => {
   const count = await Supplier.countDocuments();
   return `SUP${String(count + 1).padStart(3, '0')}`;
+};
+
+const syncSupplierProducts = async (supplier) => {
+  if (!supplier.products || !Array.isArray(supplier.products)) return;
+  
+  for (const product of supplier.products) {
+    if (!product.productId) continue;
+    
+    if (product.productType === 'stock') {
+      try {
+        const stock = await Stock.findById(product.productId);
+        if (stock) {
+          stock.supplier = supplier.name;
+          await stock.save();
+        }
+      } catch (_) { /* skip */ }
+    } else if (product.productType === 'sparePart') {
+      try {
+        const part = await SpareParts.findById(product.productId);
+        if (part) {
+          part.supplier = supplier.name;
+          await part.save();
+        }
+      } catch (_) { /* skip */ }
+    }
+  }
 };
 
 const createSupplier = async (req, res) => {
@@ -12,6 +40,9 @@ const createSupplier = async (req, res) => {
       ...req.body,
       id: req.body.id || await generateId(),
     });
+    
+    // Sync products to Stock/SpareParts
+    await syncSupplierProducts(supplier);
     
     // Sync supplier data across relevant modules
     await syncEntityAcrossModules(supplier, 'supplier', 'create');
@@ -35,6 +66,9 @@ const updateSupplier = async (req, res) => {
   try {
     const supplier = await Supplier.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!supplier) return res.status(404).json({ error: 'Supplier not found' });
+    
+    // Sync products to Stock/SpareParts
+    await syncSupplierProducts(supplier);
     
     // Sync updated supplier data across relevant modules
     await syncEntityAcrossModules(supplier, 'supplier', 'update');

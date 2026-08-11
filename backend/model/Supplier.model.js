@@ -10,6 +10,14 @@ const supplierSchema = new mongoose.Schema({
   email: { type: String },
   address: { type: String },
   status: { type: String, default: 'Active', enum: ['Active', 'Inactive'] },
+  products: [{
+    productType: { type: String, enum: ['stock', 'sparePart'], required: true },
+    productId: { type: mongoose.Schema.Types.ObjectId, refPath: 'supplierProducts.ref', required: true },
+    itemName: String,
+    itemCode: String,
+    category: String,
+    unitPrice: { type: Number, default: 0 },
+  }],
 }, { timestamps: true });
 
 module.exports = mongoose.model('supplier', supplierSchema);

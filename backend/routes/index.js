@@ -128,6 +128,36 @@ router.put('/suppliers/:id', authenticate, authorizeByLevel(2), controller.updat
 router.delete('/suppliers/:id', authenticate, authorize('Admin'), controller.deleteSupplier);
 
 // ──────────────────────────────────────────────────────────────
+// Supplier Products
+// ──────────────────────────────────────────────────────────────
+router.get('/suppliers/:supplierId/products', authenticate, controller.getSupplierProducts);
+router.post('/suppliers/:supplierId/products', authenticate, authorizeByLevel(2), controller.addSupplierProduct);
+router.delete('/suppliers/:supplierId/products/:productId', authenticate, authorizeByLevel(2), controller.removeSupplierProduct);
+
+// ──────────────────────────────────────────────────────────────
+// Purchase Orders
+// ──────────────────────────────────────────────────────────────
+router.post('/purchase/orders', authenticate, authorizeByLevel(2), controller.createPurchaseOrder);
+router.get('/purchase/orders', authenticate, controller.getAllPurchaseOrders);
+router.get('/purchase/orders/:id', authenticate, controller.getPurchaseOrderById);
+router.put('/purchase/orders/:id', authenticate, authorizeByLevel(2), controller.updatePurchaseOrder);
+router.delete('/purchase/orders/:id', authenticate, authorize('Admin'), controller.deletePurchaseOrder);
+
+// ──────────────────────────────────────────────────────────────
+// Purchase Returns
+// ──────────────────────────────────────────────────────────────
+router.post('/purchase/returns', authenticate, authorizeByLevel(2), controller.createPurchaseReturn);
+router.get('/purchase/returns', authenticate, controller.getAllPurchaseReturns);
+router.put('/purchase/returns/:id', authenticate, authorizeByLevel(2), controller.updatePurchaseReturn);
+router.delete('/purchase/returns/:id', authenticate, authorize('Admin'), controller.deletePurchaseReturn);
+
+// ──────────────────────────────────────────────────────────────
+// GRN (Goods Receipt Notes)
+// ──────────────────────────────────────────────────────────────
+router.post('/purchase/grn', authenticate, authorizeByLevel(2), controller.createGRN);
+router.put('/purchase/grn/:id', authenticate, authorizeByLevel(2), controller.updateGRN);
+
+// ──────────────────────────────────────────────────────────────
 // Reports
 // ──────────────────────────────────────────────────────────────
 router.get('/reports/sales', authenticate, controller.getSalesReport);
