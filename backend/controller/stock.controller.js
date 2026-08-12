@@ -1,9 +1,24 @@
 const Stock = require('../model/Stock.model');
 const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModules } = require('../services/universalDataSync.service');
 
+const processImages = (req) => {
+    const images = [];
+    if (req.files && Array.isArray(req.files)) {
+        images.push(...req.files.map(file => `/uploads/${file.filename}`));
+    }
+    if (req.body.images && Array.isArray(req.body.images)) {
+        images.push(...req.body.images);
+    }
+    return images;
+};
+
 const createStock = async (req, res) => {
     try {
-        const stock = await Stock.create(req.body);
+        const body = { ...req.body };
+        if (req.files && req.files.length > 0) {
+            body.images = req.files.map(file => `/uploads/${file.filename}`);
+        }
+        const stock = await Stock.create(body);
         
         // Sync stock data across relevant modules
         await syncEntityAcrossModules(stock, 'stock', 'create');
@@ -37,7 +52,11 @@ const getStockById = async (req, res) => {
 
 const updateStock = async (req, res) => {
     try {
-        const stock = await Stock.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const body = { ...req.body };
+        if (req.files && req.files.length > 0) {
+            body.images = req.files.map(file => `/uploads/${file.filename}`);
+        }
+        const stock = await Stock.findByIdAndUpdate(req.params.id, body, { new: true });
         if (!stock) {
             return res.status(404).json({ error: 'Stock item not found' });
         }

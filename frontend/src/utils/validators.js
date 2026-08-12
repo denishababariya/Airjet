@@ -10,8 +10,10 @@
    Each returns either '' (valid) or an error string.
 ─────────────────────────────────────────────────────────────── */
 
-const ONLY_LETTERS  = /^[A-Za-z\s\-'.]+$/;
+// Supports names in Indian and other languages while rejecting all digits/symbols.
+const ONLY_LETTERS  = /^[\p{L}\p{M}\s\-'.]+$/u;
 const ONLY_ALPHA_NUM = /^[A-Za-z0-9\s\-_./]+$/;
+const AMOUNT_RE     = /^\d+(?:\.\d{1,2})?$/;
 const EMAIL_RE      = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE      = /^\d{10}$/;
 const GST_RE        = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
@@ -28,7 +30,7 @@ export const V = {
 
   /* Names: letters, spaces, hyphens, apostrophes, dots only */
   name: (val, label = 'Name', opts = {}) => {
-    const s = String(val || '').trim();
+    const s = String(val ?? '').trim();
     if (!s) return `${label} is required`;
     if (s.length < (opts.min ?? 2)) return `${label} must be at least ${opts.min ?? 2} characters`;
     if (s.length > (opts.max ?? 80)) return `${label} must not exceed ${opts.max ?? 80} characters`;
@@ -90,7 +92,7 @@ export const V = {
 
   /* Non-negative integer (0 allowed) */
   nonNegInt: (val, label = 'Value') => {
-    const s = String(val || '').trim();
+    const s = String(val ?? '').trim();
     if (s === '') return `${label} is required`;
     if (!/^\d+$/.test(s)) return `${label} must be a whole number (no decimals)`;
     return '';
@@ -98,9 +100,9 @@ export const V = {
 
   /* Positive amount / decimal */
   amount: (val, label = 'Amount', required = true) => {
-    const s = String(val || '').replace(/[₹,\s]/g, '').trim();
+    const s = String(val ?? '').replace(/[₹,\s]/g, '').trim();
     if (!s) return required ? `${label} is required` : '';
-    if (isNaN(Number(s)) || Number(s) < 0) return `${label} must be a valid positive number`;
+    if (!AMOUNT_RE.test(s)) return `${label} must contain only numbers and up to 2 decimal places`;
     return '';
   },
 

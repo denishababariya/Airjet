@@ -1,15 +1,28 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
-  MdSearch, MdFullscreen, MdSettings,
-  MdPerson, MdLogout, MdKeyboardArrowDown,
-} from 'react-icons/md';
-import { useSearch } from '../context/SearchContext';
+  MdSearch,
+  MdFullscreen,
+  MdSettings,
+  MdPerson,
+  MdLogout,
+  MdKeyboardArrowDown,
+} from "react-icons/md";
+import { useSearch } from "../context/SearchContext";
 
-const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu, setActiveMenu, currentUser, onLogout }) => {
+const Navbar = ({
+  collapsed,
+  setCollapsed,
+  mobileOpen,
+  setMobileOpen,
+  activeMenu,
+  setActiveMenu,
+  currentUser,
+  onLogout,
+}) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef(null);
   const { setSearchQuery: setGlobalSearchQuery } = useSearch();
 
@@ -20,11 +33,11 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
         setProfileOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('touchstart', handler);
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
     return () => {
-      document.removeEventListener('mousedown', handler);
-      document.removeEventListener('touchstart', handler);
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
     };
   }, []);
 
@@ -38,36 +51,36 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
   // Close search on Escape key
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape' && searchOpen) {
+      if (e.key === "Escape" && searchOpen) {
         setSearchOpen(false);
       }
     };
-    document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
   }, [searchOpen]);
 
   const isDesktop = window.innerWidth >= 992;
 
   const handleHamburger = () => {
     if (isDesktop) {
-      setCollapsed(prev => !prev);
+      setCollapsed((prev) => !prev);
     } else {
-      setMobileOpen(prev => !prev);
+      setMobileOpen((prev) => !prev);
     }
   };
 
   const pageLabel = activeMenu
-    ? activeMenu.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-    : 'Dashboard';
+    ? activeMenu.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : "Dashboard";
 
-  const userName = currentUser?.employee?.name || 'User';
-  const userRole = currentUser?.role || 'User';
+  const userName = currentUser?.employee?.name || "User";
+  const userRole = currentUser?.role || "User";
 
   return (
     <header className="d_navbar">
       {/* Hamburger */}
       <button
-        className={`d_hamburger ${mobileOpen ? 'd_ham_open' : ''}`}
+        className={`d_hamburger ${mobileOpen ? "d_ham_open" : ""}`}
         onClick={handleHamburger}
         aria-label="Toggle sidebar"
       >
@@ -75,16 +88,30 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
         <span className="d_ham_bar" />
         <span className="d_ham_bar" />
       </button>
-
       {/* Page title / breadcrumb */}
       <div>
         <div className="d_navbar_title">{pageLabel}</div>
+
         <div className="d_navbar_breadcrumb">
-          Home <MdKeyboardArrowDown style={{ rotate: '-90deg' }} />
-          <span>{pageLabel}</span>
+          <span
+            className="d_breadcrumb_home"
+            onClick={() => setActiveMenu("dashboard")}
+            style={{ cursor: "pointer" }}
+          >
+            Dashboard
+          </span>
+
+          {activeMenu !== "dashboard" && (
+            <>
+              <MdKeyboardArrowDown
+                style={{ rotate: "-90deg", margin: "0 4px" }}
+              />
+
+              <span className="d_breadcrumb_current text-dark">{pageLabel}</span>
+            </>
+          )}
         </div>
       </div>
-
       {/* Right actions */}
       <div className="d_navbar_actions">
         {/* Search */}
@@ -99,9 +126,9 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && searchQuery.trim()) {
+                if (e.key === "Enter" && searchQuery.trim()) {
                   setGlobalSearchQuery(searchQuery.trim());
-                  setActiveMenu('Search');
+                  setActiveMenu("Search");
                   setSearchOpen(false);
                 }
               }}
@@ -114,7 +141,11 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
             />
           </div>
         ) : (
-          <button className="d_nav_action_btn" aria-label="Search" onClick={() => setSearchOpen(true)}>
+          <button
+            className="d_nav_action_btn"
+            aria-label="Search"
+            onClick={() => setSearchOpen(true)}
+          >
             <MdSearch />
           </button>
         )}
@@ -124,7 +155,8 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
           className="d_nav_action_btn d-none d-md-flex"
           aria-label="Fullscreen"
           onClick={() => {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            if (!document.fullscreenElement)
+              document.documentElement.requestFullscreen();
             else document.exitFullscreen();
           }}
         >
@@ -135,15 +167,19 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
         <div className="d_profile_wrap" ref={profileRef}>
           <button
             className="d_profile_btn"
-            onClick={() => setProfileOpen(prev => !prev)}
+            onClick={() => setProfileOpen((prev) => !prev)}
             aria-label="Profile menu"
           >
-            <div className="d_profile_avatar">{userName.charAt(0).toUpperCase()}</div>
+            <div className="d_profile_avatar">
+              {userName.charAt(0).toUpperCase()}
+            </div>
             <div>
               <div className="d_profile_name">{userName}</div>
               <div className="d_profile_role">{userRole}</div>
             </div>
-            <MdKeyboardArrowDown style={{ color: 'var(--d-text-muted)', fontSize: 16 }} />
+            <MdKeyboardArrowDown
+              style={{ color: "var(--d-text-muted)", fontSize: 16 }}
+            />
           </button>
 
           {profileOpen && (
@@ -151,20 +187,20 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
               <div
                 className="d_dropdown_item"
                 onClick={() => {
-                  setActiveMenu('My Profile');
+                  setActiveMenu("My Profile");
                   setProfileOpen(false);
                 }}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: "pointer" }}
               >
                 <MdPerson /> My Profile
               </div>
               <div
                 className="d_dropdown_item"
                 onClick={() => {
-                  setActiveMenu('Settings');
+                  setActiveMenu("Settings");
                   setProfileOpen(false);
                 }}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: "pointer" }}
               >
                 <MdSettings /> Settings
               </div>
@@ -172,12 +208,12 @@ const Navbar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen, activeMenu
               <div
                 className="d_dropdown_item d_logout"
                 onClick={() => {
-                  if (window.confirm('Are you sure you want to logout?')) {
+                  if (window.confirm("Are you sure you want to logout?")) {
                     onLogout();
                     setProfileOpen(false);
                   }
                 }}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: "pointer" }}
               >
                 <MdLogout /> Logout
               </div>

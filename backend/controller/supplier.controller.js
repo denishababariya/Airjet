@@ -36,9 +36,13 @@ const syncSupplierProducts = async (supplier) => {
 
 const createSupplier = async (req, res) => {
   try {
+    const body = { ...req.body };
+    if (req.file) {
+      body.image = `/uploads/${req.file.filename}`;
+    }
     const supplier = await Supplier.create({
-      ...req.body,
-      id: req.body.id || await generateId(),
+      ...body,
+      id: body.id || await generateId(),
     });
     
     // Sync products to Stock/SpareParts
@@ -64,7 +68,11 @@ const getAllSuppliers = async (req, res) => {
 
 const updateSupplier = async (req, res) => {
   try {
-    const supplier = await Supplier.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const body = { ...req.body };
+    if (req.file) {
+      body.image = `/uploads/${req.file.filename}`;
+    }
+    const supplier = await Supplier.findByIdAndUpdate(req.params.id, body, { new: true });
     if (!supplier) return res.status(404).json({ error: 'Supplier not found' });
     
     // Sync products to Stock/SpareParts

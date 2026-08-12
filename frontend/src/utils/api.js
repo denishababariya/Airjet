@@ -34,7 +34,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       const errorMsg = error.response?.data?.error?.toLowerCase() || '';
       if (
-        errorMsg.includes('invalid token') || 
+        errorMsg.includes('invalid token') ||
         errorMsg.includes('authentication required') ||
         errorMsg.includes('user not found')
       ) {
@@ -45,6 +45,31 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Helper to create FormData for file uploads
+export const createFormData = (data, files = {}) => {
+  const formData = new FormData();
+  
+  // Append text fields
+  Object.keys(data).forEach(key => {
+    if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+      if (Array.isArray(data[key])) {
+        data[key].forEach(item => formData.append(key, item));
+      } else {
+        formData.append(key, data[key]);
+      }
+    }
+  });
+  
+  // Append files
+  Object.keys(files).forEach(key => {
+    if (files[key]) {
+      formData.append(key, files[key]);
+    }
+  });
+  
+  return formData;
+};
 
 export const API_BASE_URL = BASE_URL;
 
@@ -94,8 +119,24 @@ export const employeesApi = {
   getAll: () => api.get('/employees'),
   getById: (id) => api.get(`/employees/${id}`),
   getModuleData: (id) => api.get(`/employees/${id}/modules`),
-  create: (data) => api.post('/employees', data),
-  update: (id, data) => api.put(`/employees/${id}`, data),
+  create: (data, imageFile, docImageFile) => {
+    const files = {};
+    if (imageFile) files.image = imageFile;
+    if (docImageFile) files.docImage = docImageFile;
+    const formData = createFormData(data, files);
+    return api.post('/employees', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  update: (id, data, imageFile, docImageFile) => {
+    const files = {};
+    if (imageFile) files.image = imageFile;
+    if (docImageFile) files.docImage = docImageFile;
+    const formData = createFormData(data, files);
+    return api.put(`/employees/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
   remove: (id) => api.delete(`/employees/${id}`),
 };
 
@@ -149,8 +190,20 @@ export const stockApi = {
   getLowStock: () => api.get('/stock/low-stock'),
   getById: (id) => api.get(`/stock/${id}`),
   getModuleData: (id) => api.get(`/stock/${id}/modules`),
-  create: (data) => api.post('/stock', data),
-  update: (id, data) => api.put(`/stock/${id}`, data),
+  create: (data, images = []) => {
+    const formData = createFormData(data);
+    images.forEach(img => formData.append('images', img));
+    return api.post('/stock', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  update: (id, data, images = []) => {
+    const formData = createFormData(data);
+    images.forEach(img => formData.append('images', img));
+    return api.put(`/stock/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
   remove: (id) => api.delete(`/stock/${id}`),
   updateQuantity: (id, quantity, operation) =>
     api.patch(`/stock/${id}/quantity`, { quantity, operation }),
@@ -172,8 +225,20 @@ export const sparePartsApi = {
   search: (query) => api.get('/spare-parts/search', { params: { query } }),
   getById: (id) => api.get(`/spare-parts/${id}`),
   getModuleData: (id) => api.get(`/spare-parts/${id}/modules`),
-  create: (data) => api.post('/spare-parts', data),
-  update: (id, data) => api.put(`/spare-parts/${id}`, data),
+  create: (data, images = []) => {
+    const formData = createFormData(data);
+    images.forEach(img => formData.append('images', img));
+    return api.post('/spare-parts', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  update: (id, data, images = []) => {
+    const formData = createFormData(data);
+    images.forEach(img => formData.append('images', img));
+    return api.put(`/spare-parts/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
   remove: (id) => api.delete(`/spare-parts/${id}`),
   updateQuantity: (id, quantity, operation) =>
     api.patch(`/spare-parts/${id}/quantity`, { quantity, operation }),
@@ -184,8 +249,18 @@ export const customersApi = {
   search: (query) => api.get('/customers/search', { params: { query } }),
   getById: (id) => api.get(`/customers/${id}`),
   getModuleData: (id) => api.get(`/customers/${id}/modules`),
-  create: (data) => api.post('/customers', data),
-  update: (id, data) => api.put(`/customers/${id}`, data),
+  create: (data, imageFile) => {
+    const formData = createFormData(data, imageFile ? { image: imageFile } : {});
+    return api.post('/customers', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  update: (id, data, imageFile) => {
+    const formData = createFormData(data, imageFile ? { image: imageFile } : {});
+    return api.put(`/customers/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
   remove: (id) => api.delete(`/customers/${id}`),
   updatePurchase: (id, amount, purchaseCount = 1) =>
     api.patch(`/customers/${id}/purchase`, { amount, purchaseCount }),
@@ -212,8 +287,18 @@ export const suppliersApi = {
   getProducts: (id) => api.get(`/suppliers/${id}/products`),
   addProduct: (id, data) => api.post(`/suppliers/${id}/products`, data),
   removeProduct: (id, productId, data = {}) => api.delete(`/suppliers/${id}/products/${productId}`, { data }),
-  create: (data) => api.post('/suppliers', data),
-  update: (id, data) => api.put(`/suppliers/${id}`, data),
+  create: (data, imageFile) => {
+    const formData = createFormData(data, imageFile ? { image: imageFile } : {});
+    return api.post('/suppliers', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  update: (id, data, imageFile) => {
+    const formData = createFormData(data, imageFile ? { image: imageFile } : {});
+    return api.put(`/suppliers/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
   remove: (id) => api.delete(`/suppliers/${id}`),
 };
 

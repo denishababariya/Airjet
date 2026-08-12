@@ -56,7 +56,7 @@ export default function ServiceTickets() {
   useEffect(() => {
     const fetchSalesOrders = async () => {
       try {
-        const response = await api.get('/erp/sales/order');
+        const response = await api.get('/erp', { params: { module: 'sales', recordType: 'order' } });
         setSalesOrders(response.data || []);
       } catch (err) {
         console.error('Failed to fetch sales orders:', err);

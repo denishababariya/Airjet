@@ -18,6 +18,9 @@ const supplierSchema = new mongoose.Schema({
     category: String,
     unitPrice: { type: Number, default: 0 },
   }],
+  image: {
+    type: String
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('supplier', supplierSchema);

@@ -4,13 +4,20 @@ import {
   MdVisibility, MdVisibilityOff, MdLockPerson,
 } from 'react-icons/md';
 import Modal from '../components/Modal';
+import ConfirmDialog from '../components/ConfirmDialog';
+import ToastContainer from '../components/Toast';
+import useToast from '../hooks/useToast';
 import { employeesApi, departmentsApi, designationsApi, hrApi } from '../utils/api';
+import { V, validate as validateFields } from '../utils/validators';
 
 const blank = {
   name: '', email: '', phone: '', address: '', gender: '', salary: '',
   workShift: 'Day', cast: '', bod: '', age: '', joiningDate: '',
   department: '', designation: '', status: 'Active',
+  image: '', docImage: '',
   password: '', confirmPassword: '',
+  imageFile: null,
+  docImageFile: null,
 };
 
 // Designations that get a login account
@@ -45,6 +52,10 @@ const EmployeeMaster = ({ currentUser }) => {
   // login-account status fetched when editing
   const [userStatus, setUserStatus] = useState(null); // null | { hasUser, role, status }
   const [userStatusLoading, setUserStatusLoading] = useState(false);
+  // confirm dialog state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null); // () => Promise<void>
+  const { toasts, toast, removeToast } = useToast();
 
   const canManage = ['Admin', 'HR', 'Manager'].includes(currentUser?.role);
 
@@ -106,7 +117,7 @@ const EmployeeMaster = ({ currentUser }) => {
 
   // ── Open Add modal ──────────────────────────────────────────
   const openAdd = () => {
-    setForm(blank);
+    setForm({ ...blank, imageFile: null, docImageFile: null });
     setEditId(null);
     setErrors({});
     setShowPwd(false);
@@ -132,8 +143,12 @@ const EmployeeMaster = ({ currentUser }) => {
       department: emp.department?._id || emp.department?.id || emp.department || '',
       designation: emp.designation?._id || emp.designation?.id || emp.designation || '',
       status: emp.status || 'Active',
+      image: emp.image || '',
+      docImage: emp.docImage || '',
       password: '',
       confirmPassword: '',
+      imageFile: null,
+      docImageFile: null,
     });
     setEditId(emp._id || emp.id);
     setErrors({});
@@ -158,26 +173,14 @@ const EmployeeMaster = ({ currentUser }) => {
 
   // ── Validate ────────────────────────────────────────────────
   const validate = () => {
-    const e = {};
-    if (!form.name.trim()) e.name = 'Employee name is required';
+    const e = validateFields({
+      name: V.name(form.name, 'Employee name'),
+      phone: V.phone(form.phone),
+      email: V.email(form.email),
+      salary: form.salary !== '' ? V.optionalAmount(form.salary, 'Salary') : '',
+    });
     if (!form.department) e.department = 'Department is required';
     if (!form.designation) e.designation = 'Designation is required';
-
-    if (!form.phone.trim()) {
-      e.phone = 'Phone number is required';
-    } else if (!/^\d{10}$/.test(form.phone.trim())) {
-      e.phone = 'Phone must be exactly 10 digits';
-    }
-
-    if (!form.email.trim()) {
-      e.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(form.email)) {
-      e.email = 'Invalid email format';
-    }
-
-    if (form.salary && isNaN(Number(form.salary))) {
-      e.salary = 'Salary must be a number';
-    }
 
     // Password rules for login-account designations
     if (needsLoginAccount()) {
@@ -217,10 +220,12 @@ const EmployeeMaster = ({ currentUser }) => {
         department: form.department,
         designation: form.designation,
         status: form.status,
+        image: form.image || undefined,
+        docImage: form.docImage || undefined,
       };
 
       if (editId) {
-        await employeesApi.update(editId, payload);
+        await employeesApi.update(editId, payload, form.imageFile, form.docImageFile);
 
         // Update login account password if provided
         if (
@@ -234,7 +239,7 @@ const EmployeeMaster = ({ currentUser }) => {
           await hrApi.createUserWithRole(editId, role, form.password.trim());
         }
       } else {
-        const employee = await employeesApi.create(payload);
+        const employee = await employeesApi.create(payload, form.imageFile, form.docImageFile);
         const newId = employee.data._id || employee.data.id;
 
         // Create login account for qualifying designations/departments
@@ -252,20 +257,39 @@ const EmployeeMaster = ({ currentUser }) => {
 
       setModal(false);
       fetchAll();
+      toast.success(editId ? 'Employee updated successfully' : 'Employee added successfully');
     } catch (err) {
       setError(err.displayMessage || err.response?.data?.error || 'Failed to save employee');
+      toast.error(err.displayMessage || err.response?.data?.error || 'Failed to save employee');
     }
   };
 
   // ── Delete ──────────────────────────────────────────────────
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this employee and their login account?')) return;
-    try {
-      await employeesApi.remove(id);
-      fetchAll();
-    } catch (err) {
-      setError(err.displayMessage || 'Failed to delete employee');
+    setConfirmAction(async () => {
+      try {
+        await employeesApi.remove(id);
+        fetchAll();
+        toast.success('Employee deleted successfully');
+      } catch (err) {
+        setError(err.displayMessage || 'Failed to delete employee');
+        toast.error(err.displayMessage || 'Failed to delete employee');
+      }
+    });
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    setConfirmOpen(false);
+    if (confirmAction) {
+      await confirmAction();
+      setConfirmAction(null);
     }
+  };
+
+  const handleConfirmCancel = () => {
+    setConfirmOpen(false);
+    setConfirmAction(null);
   };
 
   // ── Field helper ────────────────────────────────────────────
@@ -297,6 +321,8 @@ const EmployeeMaster = ({ currentUser }) => {
           </button>
         )}
       </div>
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       <div className="d_card">
         <div className="d_card_header flex-wrap gap-2">
@@ -332,13 +358,15 @@ const EmployeeMaster = ({ currentUser }) => {
                     <th>Salary</th>
                     <th>Shift</th>
                     <th>Status</th>
+                    <th>Profile</th>
+                    <th>Doc Image</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.length === 0 && (
                     <tr className="d_empty">
-                      <td colSpan={10}>No employees found.</td>
+                      <td colSpan={12}>No employees found.</td>
                     </tr>
                   )}
                   {filtered.map(e => (
@@ -355,6 +383,30 @@ const EmployeeMaster = ({ currentUser }) => {
                         <span className={`d_badge ${statusClass[e.status] || 'd_info'}`}>
                           {e.status}
                         </span>
+                      </td>
+                      <td>
+                        {e.image ? (
+                          <img
+                            src={`http://localhost:5000${e.image}`}
+                            alt={e.name}
+                            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                            onClick={() => window.open(`http://localhost:5000${e.image}`, '_blank')}
+                          />
+                        ) : (
+                          <span style={{ color: '#999', fontSize: 12 }}>No image</span>
+                        )}
+                      </td>
+                      <td>
+                        {e.docImage ? (
+                          <img
+                            src={`http://localhost:5000${e.docImage}`}
+                            alt="Document"
+                            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                            onClick={() => window.open(`http://localhost:5000${e.docImage}`, '_blank')}
+                          />
+                        ) : (
+                          <span style={{ color: '#999', fontSize: 12 }}>No doc</span>
+                        )}
                       </td>
                       <td>
                         <div className="d_action_btns">
@@ -458,6 +510,7 @@ const EmployeeMaster = ({ currentUser }) => {
               placeholder="10-digit mobile"
               maxLength={10}
               inputMode="numeric"
+              pattern="[0-9]{10}"
               {...f('phone')}
             />
             {errors.phone && <span className="d_field_error">{errors.phone}</span>}
@@ -536,7 +589,61 @@ const EmployeeMaster = ({ currentUser }) => {
           </div>
         </div>
 
-        {/* Row 8 — Password (only for admin/HR designations) */}
+        {/* Row 8 — Profile Image & Document Image */}
+        <div className="d_form_row cols-2">
+          <div className="d_form_group">
+            <label className="d_form_label">Profile Image</label>
+            <input
+              type="file"
+              className="d_form_control"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  setForm(p => ({ ...p, imageFile: file, image: URL.createObjectURL(file) }));
+                }
+              }}
+            />
+            {form.image && !form.imageFile && (
+              <div style={{ marginTop: 8 }}>
+                <img src={form.image} alt="Profile" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }} />
+              </div>
+            )}
+            {form.imageFile && (
+              <div style={{ marginTop: 8 }}>
+                <img src={form.image} alt="Preview" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }} />
+                <span style={{ fontSize: 12, color: '#666', marginLeft: 8 }}>{form.imageFile.name}</span>
+              </div>
+            )}
+          </div>
+          <div className="d_form_group">
+            <label className="d_form_label">Document Image</label>
+            <input
+              type="file"
+              className="d_form_control"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  setForm(p => ({ ...p, docImageFile: file, docImage: URL.createObjectURL(file) }));
+                }
+              }}
+            />
+            {form.docImage && !form.docImageFile && (
+              <div style={{ marginTop: 8 }}>
+                <img src={form.docImage} alt="Document" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }} />
+              </div>
+            )}
+            {form.docImageFile && (
+              <div style={{ marginTop: 8 }}>
+                <img src={form.docImage} alt="Preview" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }} />
+                <span style={{ fontSize: 12, color: '#666', marginLeft: 8 }}>{form.docImageFile.name}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Row 9 — Password (only for admin/HR designations) */}
         {needsLoginAccount() && (
           <div className="d_form_row cols-2">
             <div className="d_form_group">
@@ -604,6 +711,18 @@ const EmployeeMaster = ({ currentUser }) => {
           </button>
         </div>
       </Modal>
+
+      {/* ── Confirm Dialog ── */}
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete Employee"
+        message="Are you sure you want to delete this employee and their login account? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleConfirm}
+        onCancel={handleConfirmCancel}
+      />
     </div>
   );
 };

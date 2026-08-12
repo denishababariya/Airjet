@@ -80,7 +80,10 @@ const customerSchema = new mongoose.Schema({
     },
     machines: [{
         type: String
-    }]
+    }],
+    image: {
+        type: String
+    }
 }, {
     timestamps: true
 });

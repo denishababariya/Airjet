@@ -16,6 +16,8 @@ const ID_PREFIX = {
   'warehouse:audit': 'AUD',
   'service:ticket': 'SRV',
   'service:assignment': 'ASG',
+  'service:visit': 'VIS',
+  'service:parts': 'SPR',
   'service:report': 'SR',
   'accounts:receivable': 'RCV',
   'accounts:payable': 'PAYB',
@@ -56,6 +58,13 @@ const createRecord = async (req, res) => {
       ...req.body,
       id: req.body.id || await generateId(module, recordType),
     };
+
+    // The generated ERP id is the canonical sales-order number.  Service
+    // tickets use this value to look up the warranty for an order.
+    if (module === 'sales' && recordType === 'order') {
+      payload.so = payload.so || payload.id;
+      payload.salesOrderNo = payload.salesOrderNo || payload.so;
+    }
 
     // Calculate warranty expiry for sales orders
     if (module === 'sales' && recordType === 'order' && payload.delivery && payload.warrantyMonths) {

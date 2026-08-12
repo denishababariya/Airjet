@@ -33,6 +33,8 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
   const [editId, setEditId]       = useState(null);
   const [errors, setErrors]       = useState({});
   const [saving, setSaving]       = useState(false);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   const { toasts, toast, removeToast }         = useToast();
   const { confirmState, confirm, closeConfirm } = useConfirm();
@@ -49,13 +51,24 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
 
   const openAdd = () => {
     setForm(isWH ? blankWH : isAUD ? blankAUD : blankTRF);
-    setEditId(null); setErrors({}); setModal(true);
+    setEditId(null); setErrors({}); setImageFiles([]); setImagePreviews([]); setModal(true);
   };
   const openEdit = (row) => {
-    if (isWH)       setForm({ name: row.itemName||'', location: row.location||'', capacity: String(row.quantity??''), unitPrice: String(row.unitPrice??''), manager: row.supplier||'', status: 'Active' });
-    else if (isAUD) setForm({ location: row.location||'', date: toISODate(row.date), items: String(row.items??''), status: row.status||'Pending', notes: row.notes||'' });
-    else            setForm({ from: row.from||'', to: row.to||'', part: row.part||'', qty: String(row.qty??''), date: toISODate(row.date), status: row.status||'Pending' });
-    setEditId(row._id || row.id); setErrors({}); setModal(true);
+    if (isWH) {
+      setForm({
+        name: row.itemName||'', location: row.location||'', capacity: String(row.quantity??''),
+        unitPrice: String(row.unitPrice??''), manager: row.supplier||'', status: 'Active',
+        images: row.images || []
+      });
+      setImagePreviews(row.images || []);
+    } else if (isAUD) {
+      setForm({ location: row.location||'', date: toISODate(row.date), items: String(row.items??''), status: row.status||'Pending', notes: row.notes||'' });
+      setImagePreviews([]);
+    } else {
+      setForm({ from: row.from||'', to: row.to||'', part: row.part||'', qty: String(row.qty??''), date: toISODate(row.date), status: row.status||'Pending' });
+      setImagePreviews([]);
+    }
+    setEditId(row._id || row.id); setErrors({}); setImageFiles([]); setModal(true);
   };
 
   const f = (field) => ({
@@ -102,7 +115,7 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
           location: form.location.trim(), supplier: form.manager.trim(),
           minimumStock: 0, description: '',
         };
-        if (editId) await stockApi.update(editId, payload); else await stockApi.create(payload);
+        if (editId) await stockApi.update(editId, payload, imageFiles); else await stockApi.create(payload, imageFiles);
         toast.success(editId ? 'Stock item updated!' : 'Stock item added!');
         fetchStock();
       } else if (isTRF) {
@@ -164,14 +177,26 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
           <div className="d_card_body p-0">
             {loading ? <div className="text-center py-4">Loading…</div> : (
             <div className="d_table_wrap"><table className="d_table">
-              <thead><tr><th>Stock ID</th><th>Item Name</th><th>Location</th><th>Quantity</th><th>Unit Price</th><th>Supplier</th><th>Status</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Stock ID</th><th>Item Name</th><th>Location</th><th>Quantity</th><th>Unit Price</th><th>Supplier</th><th>Status</th><th>Image</th><th>Actions</th></tr></thead>
               <tbody>
-                {warehouses.length === 0 && <tr className="d_empty"><td colSpan={8}>No stock items found.</td></tr>}
+                {warehouses.length === 0 && <tr className="d_empty"><td colSpan={9}>No stock items found.</td></tr>}
                 {warehouses.map(w => (
                   <tr key={w._id}>
                     <td><code>{String(w.id)}</code></td><td><strong>{String(w.itemName)}</strong></td><td>{String(w.location||'-')}</td>
                     <td>{String(w.quantity)}</td><td>₹{(w.unitPrice||0).toLocaleString('en-IN')}</td><td>{String(w.supplier||'-')}</td>
                     <td><span className={`d_badge ${statusClass[w.status]||'d_info'}`}>{String(w.status)}</span></td>
+                    <td>
+                      {w.images && w.images.length > 0 ? (
+                        <img
+                          src={`http://localhost:5000${w.images[0]}`}
+                          alt={w.itemName}
+                          style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                          onClick={() => window.open(`http://localhost:5000${w.images[0]}`, '_blank')}
+                        />
+                      ) : (
+                        <span style={{ color: '#999', fontSize: 12 }}>No image</span>
+                      )}
+                    </td>
                     <td><div className="d_action_btns">
                       <button className="d_icon_btn d_edit" onClick={() => openEdit(w)}><MdEdit /></button>
                       <button className="d_icon_btn d_del"  onClick={() => handleDelete(w._id, `item "${w.itemName}"`)}><MdDelete /></button>
@@ -254,6 +279,35 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
           </div>
           <div className="d_form_row cols-1">
             <div className="d_form_group"><label className="d_form_label">Supplier / Manager <span className="d_req">*</span></label><input className="d_form_control" placeholder="Supplier name or manager" {...f('manager')} /><Err field="manager" /></div>
+          </div>
+          <div className="d_form_row cols-1">
+            <div className="d_form_group">
+              <label className="d_form_label">Images</label>
+              <input
+                type="file"
+                className="d_form_control"
+                accept="image/*"
+                multiple
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  setImageFiles(files);
+                  const previews = files.map(file => URL.createObjectURL(file));
+                  setImagePreviews(previews);
+                }}
+              />
+              {(imagePreviews.length > 0 || form.images?.length > 0) && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                  {(imagePreviews.length > 0 ? imagePreviews : form.images).map((src, idx) => (
+                    <img
+                      key={idx}
+                      src={src.startsWith('http') || src.startsWith('/uploads') ? `http://localhost:5000${src}` : src}
+                      alt={`Preview ${idx + 1}`}
+                      style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="d_form_actions">
             <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>

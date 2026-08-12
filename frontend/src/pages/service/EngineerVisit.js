@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MdAdd, MdEdit, MdVisibility, MdAssignmentTurnedIn, MdCameraAlt } from 'react-icons/md';
 import Modal from '../../components/Modal';
 import { useErpRecords } from '../../utils/useErpRecords';
+import { V, validate as validateFields } from '../../utils/validators';
 
 const SERVICE_TYPES = ['Repair', 'Maintenance', 'Installation', 'Inspection', 'Replacement'];
 const MACHINE_STATUS = ['Running', 'Not Running', 'Partially Running'];
@@ -50,9 +51,8 @@ export default function EngineerVisit() {
   };
 
   const validate = () => {
-    const e = {};
+    const e = validateFields({ engineer: V.name(form.engineer, 'Engineer name') });
     if (!form.ticketNo.trim()) e.ticketNo = 'Ticket No is required';
-    if (!form.engineer.trim()) e.engineer = 'Engineer name is required';
     if (!form.arrivalTime) e.arrivalTime = 'Arrival time is required';
     if (!form.inspectionNotes.trim()) e.inspectionNotes = 'Inspection notes are required';
     return e;

@@ -7,6 +7,7 @@ import {
 } from "react-icons/md";
 import Modal from "../components/Modal";
 import { accountsApi, erpApi } from "../utils/api";
+import { V, validate as validateFields } from '../utils/validators';
 
 const statusClass = {
   Pending: "d_warning",
@@ -40,7 +41,7 @@ const blankLedger = {
   type: "Sales Invoice",
   debit: "",
   credit: "",
-  narration: "",
+  notes: "",
 };
 
 const blankGst = {
@@ -49,16 +50,17 @@ const blankGst = {
   cgst: "",
   sgst: "",
   igst: "",
-  total: "",
+  gstAmount: "",
   status: "Pending",
 };
 
 const blankPL = {
-  category: "Revenue",
-  item: "",
-  jun: "",
-  may: "",
-  apr: "",
+  period: "",
+  entityType: "Revenue",
+  notes: "",
+  revenue: "",
+  expenses: "",
+  profit: "",
 };
 
 const Accounts = ({ defaultTab = "receivables" }) => {
@@ -165,7 +167,7 @@ const Accounts = ({ defaultTab = "receivables" }) => {
         type: row.type || "Sales Invoice",
         debit: row.debit || "",
         credit: row.credit || "",
-        narration: row.narration || "",
+        notes: row.notes || "",
       });
     } else if (tab === "gst") {
       setForm({
@@ -174,16 +176,17 @@ const Accounts = ({ defaultTab = "receivables" }) => {
         cgst: row.cgst || "",
         sgst: row.sgst || "",
         igst: row.igst || "",
-        total: row.total || "",
+        gstAmount: row.gstAmount || "",
         status: row.status || "Pending",
       });
     } else {
       setForm({
-        category: row.category || "Revenue",
-        item: row.item || "",
-        jun: row.jun || "",
-        may: row.may || "",
-        apr: row.apr || "",
+        period: row.period || "",
+        entityType: row.entityType || "Revenue",
+        notes: row.notes || "",
+        revenue: row.revenue || "",
+        expenses: row.expenses || "",
+        profit: row.profit || "",
       });
     }
     setEditId(row._id);
@@ -192,11 +195,24 @@ const Accounts = ({ defaultTab = "receivables" }) => {
   };
 
   const validate = () => {
-    const e = {};
-    if (!form.party?.trim()) e.party = "Party name is required";
-    if (!form.amount && form.amount !== 0) e.amount = "Amount is required";
-    if (!form.dueDate?.trim()) e.dueDate = "Due date is required";
-    return e;
+    if (isRcv || isPay) return validateFields({
+      party: V.required(form.party, 'Party name'),
+      amount: V.amount(form.amount, 'Amount'),
+      dueDate: V.date(form.dueDate, 'Due date'),
+    });
+    if (tab === 'ledger') return validateFields({
+      date: V.date(form.date, 'Date'),
+      party: V.required(form.party, 'Party'),
+      debit: form.debit !== '' ? V.optionalAmount(form.debit, 'Debit') : '',
+      credit: form.credit !== '' ? V.optionalAmount(form.credit, 'Credit') : '',
+    });
+    if (tab === 'gst') return validateFields({
+      month: V.required(form.month, 'Month'),
+      taxable: V.amount(form.taxable, 'Taxable amount'),
+      cgst: V.amount(form.cgst, 'CGST'), sgst: V.amount(form.sgst, 'SGST'),
+      igst: V.amount(form.igst, 'IGST'), gstAmount: V.amount(form.gstAmount, 'Total tax'),
+    });
+    return validateFields({ period: V.required(form.period, 'Period') });
   };
 
   const handleSave = async () => {
@@ -218,15 +234,18 @@ const Accounts = ({ defaultTab = "receivables" }) => {
         else await erpApi.create(payload);
         fetchPayables();
       } else if (tab === "ledger") {
+        const debit = parseFloat(String(form.debit).replace(/[^\d.]/g, "")) || 0;
+        const credit = parseFloat(String(form.credit).replace(/[^\d.]/g, "")) || 0;
         const payload = {
           module: "accounts",
           recordType: "ledger",
           date: form.date,
           party: form.party,
           type: form.type,
-          debit: parseFloat(String(form.debit).replace(/[^\d.]/g, "")) || 0,
-          credit: parseFloat(String(form.credit).replace(/[^\d.]/g, "")) || 0,
-          narration: form.narration,
+          debit,
+          credit,
+          balance: credit - debit,
+          notes: form.notes,
         };
         if (editId) await erpApi.update(editId, payload);
         else await erpApi.create(payload);
@@ -240,7 +259,7 @@ const Accounts = ({ defaultTab = "receivables" }) => {
           cgst: form.cgst,
           sgst: form.sgst,
           igst: form.igst,
-          total: form.total,
+          gstAmount: form.gstAmount,
           status: form.status,
         };
         if (editId) await erpApi.update(editId, payload);
@@ -250,11 +269,12 @@ const Accounts = ({ defaultTab = "receivables" }) => {
         const payload = {
           module: "accounts",
           recordType: "pl",
-          category: form.category,
-          item: form.item,
-          jun: form.jun,
-          may: form.may,
-          apr: form.apr,
+          period: form.period,
+          entityType: form.entityType,
+          notes: form.notes,
+          revenue: Number(form.revenue) || 0,
+          expenses: Number(form.expenses) || 0,
+          profit: Number(form.profit) || 0,
         };
         if (editId) await erpApi.update(editId, payload);
         else await erpApi.create(payload);
@@ -581,7 +601,7 @@ const Accounts = ({ defaultTab = "receivables" }) => {
                           {Math.abs(l.balance || 0).toLocaleString()}
                         </strong>
                       </td>
-                      <td>{l.narration}</td>
+                      <td>{l.notes || '-'}</td>
                       <td>
                         <div className="d_action_btns">
                           <button
@@ -652,7 +672,7 @@ const Accounts = ({ defaultTab = "receivables" }) => {
                       <td>{g.sgst}</td>
                       <td>{g.igst}</td>
                       <td>
-                        <strong>{g.total}</strong>
+                        <strong>{g.gstAmount ?? 0}</strong>
                       </td>
                       <td>
                         <span
@@ -703,18 +723,19 @@ const Accounts = ({ defaultTab = "receivables" }) => {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Category</th>
-                    <th>Item</th>
-                    <th>Jun 2026</th>
-                    <th>May 2026</th>
-                    <th>Apr 2026</th>
+                    <th>Period</th>
+                    <th>Type</th>
+                    <th>Notes</th>
+                    <th>Revenue</th>
+                    <th>Expenses</th>
+                    <th>Profit</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pl.length === 0 && (
                     <tr className="d_empty">
-                      <td colSpan={7} className="text-center py-4">
+                      <td colSpan={8} className="text-center py-4">
                         No profit & loss entries found.
                       </td>
                     </tr>
@@ -723,7 +744,7 @@ const Accounts = ({ defaultTab = "receivables" }) => {
                     <tr
                       key={p._id}
                       style={
-                        p.category === "Profit"
+                        p.entityType === "Profit"
                           ? { fontWeight: 700, background: "#f0f9ff" }
                           : {}
                       }
@@ -731,19 +752,20 @@ const Accounts = ({ defaultTab = "receivables" }) => {
                       <td>
                         <code>{p.id}</code>
                       </td>
+                      <td>{p.period || '-'}</td>
                       <td>
                         <span
-                          className={`d_badge ${p.category === "Revenue" ? "d_success" : p.category === "Profit" ? "d_info" : "d_danger"}`}
+                          className={`d_badge ${p.entityType === "Revenue" ? "d_success" : p.entityType === "Profit" ? "d_info" : "d_danger"}`}
                         >
-                          {p.category}
+                          {p.entityType}
                         </span>
                       </td>
                       <td>
-                        <strong>{p.item}</strong>
+                        <strong>{p.notes || '-'}</strong>
                       </td>
-                      <td>{p.jun}</td>
-                      <td>{p.may}</td>
-                      <td>{p.apr}</td>
+                      <td>{p.revenue ?? 0}</td>
+                      <td>{p.expenses ?? 0}</td>
+                      <td>{p.profit ?? 0}</td>
                       <td>
                         <div className="d_action_btns">
                           <button
@@ -880,7 +902,7 @@ const Accounts = ({ defaultTab = "receivables" }) => {
               </div>
               <div className="d_form_group">
                 <label className="d_form_label">Narration</label>
-                <input className="d_form_control" {...f("narration")} />
+                <input className="d_form_control" {...f("notes")} />
               </div>
             </div>
             <div className="d_form_row cols-2">
@@ -923,7 +945,7 @@ const Accounts = ({ defaultTab = "receivables" }) => {
               </div>
               <div className="d_form_group">
                 <label className="d_form_label">Total Tax</label>
-                <input className="d_form_control" {...f("total")} />
+                <input className="d_form_control" {...f("gstAmount")} />
               </div>
             </div>
             <div className="d_form_group">
@@ -938,30 +960,34 @@ const Accounts = ({ defaultTab = "receivables" }) => {
           <>
             <div className="d_form_row cols-2">
               <div className="d_form_group">
-                <label className="d_form_label">Category</label>
-                <select className="d_form_control" {...f("category")}>
+                <label className="d_form_label">Type</label>
+                <select className="d_form_control" {...f("entityType")}>
                   <option>Revenue</option>
                   <option>Expense</option>
                   <option>Profit</option>
                 </select>
               </div>
               <div className="d_form_group">
-                <label className="d_form_label">Item</label>
-                <input className="d_form_control" {...f("item")} />
+                <label className="d_form_label">Period</label>
+                <input className="d_form_control" placeholder="e.g. Jun 2026" {...f("period")} />
               </div>
+            </div>
+            <div className="d_form_group mb-3">
+              <label className="d_form_label">Notes</label>
+              <input className="d_form_control" placeholder="Optional entry details" {...f("notes")} />
             </div>
             <div className="d_form_row cols-3">
               <div className="d_form_group">
-                <label className="d_form_label">Jun 2026</label>
-                <input className="d_form_control" {...f("jun")} />
+                <label className="d_form_label">Revenue</label>
+                <input type="number" className="d_form_control" {...f("revenue")} />
               </div>
               <div className="d_form_group">
-                <label className="d_form_label">May 2026</label>
-                <input className="d_form_control" {...f("may")} />
+                <label className="d_form_label">Expenses</label>
+                <input type="number" className="d_form_control" {...f("expenses")} />
               </div>
               <div className="d_form_group">
-                <label className="d_form_label">Apr 2026</label>
-                <input className="d_form_control" {...f("apr")} />
+                <label className="d_form_label">Profit</label>
+                <input type="number" className="d_form_control" {...f("profit")} />
               </div>
             </div>
           </>

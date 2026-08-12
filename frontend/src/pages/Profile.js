@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   MdPerson, MdEmail, MdLocationOn, MdWork,
-  MdEdit, MdCalendarToday, MdSecurity, MdSave,
+  MdEdit, MdCalendarToday, MdSecurity, MdSave, MdCameraAlt,
 } from 'react-icons/md';
 import { usersApi, employeesApi } from '../utils/api';
+import { V, validate } from '../utils/validators';
 
 const formatDate = (d) => {
   if (!d) return '-';
@@ -16,6 +17,7 @@ const Profile = ({ currentUser }) => {
   const [error, setError] = useState('');
   const [profile, setProfile] = useState(null);
   const [formData, setFormData] = useState({});
+  const [imageFile, setImageFile] = useState(null);
 
   const loadProfile = async () => {
     setLoading(true);
@@ -37,6 +39,7 @@ const Profile = ({ currentUser }) => {
         gender: emp.gender || '',
         workShift: emp.workShift || '',
       });
+      setImageFile(null);
     } catch (err) {
       if (currentUser?.employee) {
         const emp = currentUser.employee;
@@ -55,6 +58,7 @@ const Profile = ({ currentUser }) => {
           gender: emp.gender || '',
           workShift: emp.workShift || '',
         });
+        setImageFile(null);
       } else {
         setError(err.displayMessage || 'Failed to load profile');
       }
@@ -70,6 +74,16 @@ const Profile = ({ currentUser }) => {
   };
 
   const handleSave = async () => {
+    const validationErrors = validate({
+      firstName: V.name(formData.firstName, 'First name'),
+      lastName: V.name(formData.lastName, 'Last name'),
+      email: V.email(formData.email),
+      phone: V.phone(formData.phone),
+    });
+    if (Object.keys(validationErrors).length) {
+      setError(Object.values(validationErrors)[0]);
+      return;
+    }
     try {
       const empId = profile?.employee?._id;
       if (empId) {
@@ -78,12 +92,19 @@ const Profile = ({ currentUser }) => {
           email: formData.email,
           phoneNo: formData.phone,
           address: formData.address,
-        });
+        }, imageFile);
         await loadProfile();
       }
       setIsEditing(false);
     } catch (err) {
       setError(err.displayMessage || 'Failed to save profile');
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
     }
   };
 
@@ -95,6 +116,8 @@ const Profile = ({ currentUser }) => {
     { label: 'Role', value: profile?.role || 'User', icon: <MdSecurity />, color: 'var(--d-warning)' },
     { label: 'Department', value: formData.department || '-', icon: <MdWork />, color: 'var(--d-info)' },
   ];
+
+  const profileImage = profile?.employee?.image || currentUser?.employee?.image || '';
 
   return (
     <div>
@@ -135,6 +158,47 @@ const Profile = ({ currentUser }) => {
       </div>
 
       <div className="row g-4">
+        <div className="col-12 col-lg-4">
+          <div className="d_card">
+            <div className="d_card_header">
+              <h2 className="d_card_title"><MdCameraAlt className="d_card_icon" /> Profile Photo</h2>
+            </div>
+            <div className="d_card_body d-flex flex-column align-items-center">
+              {profileImage ? (
+                <img
+                  src={`http://localhost:5000${profileImage}`}
+                  alt="Profile"
+                  style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 10, border: '3px solid var(--d-primary)' }}
+                />
+              ) : (
+                <div style={{
+                  width: 120, height: 120, borderRadius: 10, border: '3px solid var(--d-primary)',
+                  background: 'var(--d-primary)18', color: 'var(--d-primary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48
+                }}>
+                  <MdPerson />
+                </div>
+              )}
+              {isEditing && (
+                <div style={{ marginTop: 12 }}>
+                  <input
+                    type="file"
+                    className="d_form_control"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    style={{ fontSize: 13 }}
+                  />
+                  {imageFile && (
+                    <span style={{ fontSize: 12, color: '#666', marginTop: 4, display: 'block' }}>
+                      {imageFile.name}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="col-12 col-lg-8">
           <div className="d_card">
             <div className="d_card_header">
@@ -145,7 +209,7 @@ const Profile = ({ currentUser }) => {
                 <div className="d_form_group">
                   <label className="d_form_label">First Name</label>
                   {isEditing ? (
-                    <input type="text" className="d_form_control" name="firstName" value={formData.firstName} onChange={handleChange} />
+                    <input type="text" className="d_form_control" name="firstName" value={formData.firstName} onChange={handleChange} pattern="[A-Za-z .'-]+" />
                   ) : (
                     <div className="d_form_value">{formData.firstName}</div>
                   )}
@@ -153,7 +217,7 @@ const Profile = ({ currentUser }) => {
                 <div className="d_form_group">
                   <label className="d_form_label">Last Name</label>
                   {isEditing ? (
-                    <input type="text" className="d_form_control" name="lastName" value={formData.lastName} onChange={handleChange} />
+                    <input type="text" className="d_form_control" name="lastName" value={formData.lastName} onChange={handleChange} pattern="[A-Za-z .'-]+" />
                   ) : (
                     <div className="d_form_value">{formData.lastName}</div>
                   )}
@@ -204,7 +268,7 @@ const Profile = ({ currentUser }) => {
               <div className="d_contact_item mb-3">
                 <div className="d_contact_label">Phone</div>
                 {isEditing ? (
-                  <input type="text" className="d_form_control" name="phone" value={formData.phone} onChange={handleChange} />
+                  <input type="text" className="d_form_control" name="phone" value={formData.phone} onChange={handleChange} inputMode="numeric" maxLength={10} />
                 ) : (
                   <div className="d_contact_value">{formData.phone || '-'}</div>
                 )}

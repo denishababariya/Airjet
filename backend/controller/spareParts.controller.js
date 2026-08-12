@@ -3,7 +3,11 @@ const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModule
 
 const createSparePart = async (req, res) => {
     try {
-        const sparePart = await SpareParts.create(req.body);
+        const body = { ...req.body };
+        if (req.files && req.files.length > 0) {
+            body.images = req.files.map(file => `/uploads/${file.filename}`);
+        }
+        const sparePart = await SpareParts.create(body);
         
         // Sync spare part data across relevant modules
         await syncEntityAcrossModules(sparePart, 'spareparts', 'create');
@@ -44,7 +48,11 @@ const getSparePartById = async (req, res) => {
 
 const updateSparePart = async (req, res) => {
     try {
-        const sparePart = await SpareParts.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const body = { ...req.body };
+        if (req.files && req.files.length > 0) {
+            body.images = req.files.map(file => `/uploads/${file.filename}`);
+        }
+        const sparePart = await SpareParts.findByIdAndUpdate(req.params.id, body, { new: true });
         if (!sparePart) {
             return res.status(404).json({ error: 'Spare part not found' });
         }

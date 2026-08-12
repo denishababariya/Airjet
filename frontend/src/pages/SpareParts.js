@@ -9,7 +9,7 @@ import { sparePartsApi } from '../utils/api';
 import { V, validate } from '../utils/validators';
 
 const statusClass = { 'In Stock': 'd_success', 'Low Stock': 'd_warning', 'Out of Stock': 'd_danger' };
-const blank = { name: '', cat: '', brand: '', model: '', stock: '', minStock: '', price: '', status: 'In Stock' };
+const blank = { name: '', cat: '', brand: '', model: '', stock: '', minStock: '', price: '', status: 'In Stock', images: [] };
 
 const SpareParts = ({ defaultTab = 'parts' }) => {
   const [tab, setTab]     = useState(defaultTab);
@@ -21,6 +21,8 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
   const [editId, setEditId]   = useState(null);
   const [errors, setErrors]   = useState({});
   const [saving, setSaving]   = useState(false);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   const { toasts, toast, removeToast }         = useToast();
   const { confirmState, confirm, closeConfirm } = useConfirm();
@@ -74,15 +76,27 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
     (p.category||'').toLowerCase().includes(search.toLowerCase())
   );
 
-  const openAdd  = () => { setForm(blank); setEditId(null); setErrors({}); setModal(true); };
+  const openAdd  = () => {
+    setForm(blank);
+    setEditId(null);
+    setErrors({});
+    setImageFiles([]);
+    setImagePreviews([]);
+    setModal(true);
+  };
   const openEdit = (part) => {
     setForm({
       name: part.partName || '', cat: part.category || '', brand: part.brand || '',
       model: (part.compatibility || []).join(', '),
       stock: String(part.quantity ?? ''), minStock: String(part.minimumStock ?? ''),
       price: String(part.unitPrice ?? ''), status: part.status || 'In Stock',
+      images: part.images || [],
     });
-    setEditId(part._id); setErrors({}); setModal(true);
+    setEditId(part._id);
+    setErrors({});
+    setImageFiles([]);
+    setImagePreviews(part.images || []);
+    setModal(true);
   };
 
   const f = (field) => ({
@@ -113,10 +127,10 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
         unitPrice: parseFloat(form.price) || 0, sellingPrice: parseFloat(form.price) || 0,
       };
       if (editId) {
-        await sparePartsApi.update(editId, payload);
+        await sparePartsApi.update(editId, payload, imageFiles);
       } else {
         payload.partNumber = `AJ-${form.cat.toUpperCase().slice(0,3)}-${String(data.length+1).padStart(3,'0')}`;
-        await sparePartsApi.create(payload);
+        await sparePartsApi.create(payload, imageFiles);
       }
       setModal(false);
       toast.success(editId ? 'Spare part updated!' : 'Spare part added!');
@@ -165,9 +179,9 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
           <div className="d_card_body p-0">
             {loading ? <div className="text-center py-4">Loading…</div> : (
             <div className="d_table_wrap"><table className="d_table">
-              <thead><tr><th>Part No.</th><th>Part Name</th><th>Category</th><th>Brand</th><th>Models</th><th>Stock</th><th>Min</th><th>Price (₹)</th><th>Status</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Part No.</th><th>Part Name</th><th>Category</th><th>Brand</th><th>Models</th><th>Stock</th><th>Min</th><th>Price (₹)</th><th>Status</th><th>Image</th><th>Actions</th></tr></thead>
               <tbody>
-                {filtered.length === 0 && <tr className="d_empty"><td colSpan={10}>No parts found.</td></tr>}
+                {filtered.length === 0 && <tr className="d_empty"><td colSpan={11}>No parts found.</td></tr>}
                 {filtered.map(p => (
                   <tr key={p._id}>
                     <td><code>{String(p.partNumber)}</code></td><td><strong>{String(p.partName)}</strong></td>
@@ -176,6 +190,18 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
                     <td><strong>{String(p.quantity)}</strong></td><td>{String(p.minimumStock)}</td>
                     <td>₹{(p.unitPrice||0).toLocaleString('en-IN')}</td>
                     <td><span className={`d_badge ${statusClass[p.status]||'d_info'}`}>{String(p.status)}</span></td>
+                    <td>
+                      {p.images && p.images.length > 0 ? (
+                        <img
+                          src={`http://localhost:5000${p.images[0]}`}
+                          alt={p.partName}
+                          style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                          onClick={() => window.open(`http://localhost:5000${p.images[0]}`, '_blank')}
+                        />
+                      ) : (
+                        <span style={{ color: '#999', fontSize: 12 }}>No image</span>
+                      )}
+                    </td>
                     <td><div className="d_action_btns">
                       <button className="d_icon_btn d_edit" onClick={() => openEdit(p)}><MdEdit /></button>
                       <button className="d_icon_btn d_del"  onClick={() => handleDelete(p._id, p.partName)}><MdDelete /></button>
@@ -267,6 +293,35 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
             <label className="d_form_label">Unit Price (₹) <span className="d_req">*</span></label>
             <input type="number" className="d_form_control" placeholder="e.g. 500" min={0} {...f('price')} />
             <Err field="price" />
+          </div>
+        </div>
+        <div className="d_form_row cols-1">
+          <div className="d_form_group">
+            <label className="d_form_label">Images</label>
+            <input
+              type="file"
+              className="d_form_control"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                setImageFiles(files);
+                const previews = files.map(file => URL.createObjectURL(file));
+                setImagePreviews(previews);
+              }}
+            />
+            {(imagePreviews.length > 0 || form.images?.length > 0) && (
+              <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                {(imagePreviews.length > 0 ? imagePreviews : form.images).map((src, idx) => (
+                  <img
+                    key={idx}
+                    src={src.startsWith('http') || src.startsWith('/uploads') ? `http://localhost:5000${src}` : src}
+                    alt={`Preview ${idx + 1}`}
+                    style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <div className="d_form_actions">

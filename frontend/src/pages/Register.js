@@ -12,6 +12,7 @@ import {
   MdPeople,
   MdBuild,
 } from "react-icons/md";
+import { V, validate as validateFields } from '../utils/validators';
 
 const Register = ({ onRegister, setActiveMenu }) => {
   const [formData, setFormData] = useState({
@@ -41,13 +42,12 @@ const Register = ({ onRegister, setActiveMenu }) => {
   };
 
   const validate = () => {
-    const e = {};
-    if (!formData.firstName.trim()) e.firstName = "First name is required";
-    if (!formData.lastName.trim()) e.lastName = "Last name is required";
-    if (!formData.email.trim()) e.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.email))
-      e.email = "Invalid email format";
-    if (!formData.phone.trim()) e.phone = "Phone number is required";
+    const e = validateFields({
+      firstName: V.name(formData.firstName, 'First name'),
+      lastName: V.name(formData.lastName, 'Last name'),
+      email: V.email(formData.email),
+      phone: V.phone(formData.phone),
+    });
     if (!formData.password) e.password = "Password is required";
     if (formData.password.length < 6)
       e.password = "Password must be at least 6 characters";

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controller');
 const { authenticate, authorize, authorizeHR, authorizeByLevel } = require('../middleware/auth');
+const { uploadSingle, uploadMultiple, uploadFields } = require('../middleware/upload');
 
 // Health Check Route
 router.get('/health', (req, res) => {
@@ -27,11 +28,11 @@ router.delete('/designations/:id', authenticate, authorize('Admin'), controller.
 // ──────────────────────────────────────────────────────────────
 // Employee Routes
 // ──────────────────────────────────────────────────────────────
-router.post('/employees', authenticate, authorize('Admin', 'HR'), controller.createEmployee);
+router.post('/employees', authenticate, authorize('Admin', 'HR'), uploadFields([{ name: 'image', maxCount: 1 }, { name: 'docImage', maxCount: 1 }]), controller.createEmployee);
 router.get('/employees', authenticate, controller.getAllEmployees);
 router.get('/employees/:id', authenticate, controller.getEmployeeById);
 router.get('/employees/:id/modules', authenticate, controller.getEmployeeModuleData);
-router.put('/employees/:id', authenticate, authorize('Admin', 'HR'), controller.updateEmployee);
+router.put('/employees/:id', authenticate, authorize('Admin', 'HR'), uploadFields([{ name: 'image', maxCount: 1 }, { name: 'docImage', maxCount: 1 }]), controller.updateEmployee);
 router.delete('/employees/:id', authenticate, authorize('Admin'), controller.deleteEmployee);
 
 // ──────────────────────────────────────────────────────────────
@@ -121,10 +122,10 @@ router.get('/erp/warranty/check/:salesOrderNo', authenticate, async (req, res) =
 // ──────────────────────────────────────────────────────────────
 // Suppliers
 // ──────────────────────────────────────────────────────────────
-router.post('/suppliers', authenticate, authorizeByLevel(2), controller.createSupplier);
+router.post('/suppliers', authenticate, authorizeByLevel(2), uploadSingle('image'), controller.createSupplier);
 router.get('/suppliers', authenticate, controller.getAllSuppliers);
 router.get('/suppliers/:id/modules', authenticate, controller.getSupplierModuleData);
-router.put('/suppliers/:id', authenticate, authorizeByLevel(2), controller.updateSupplier);
+router.put('/suppliers/:id', authenticate, authorizeByLevel(2), uploadSingle('image'), controller.updateSupplier);
 router.delete('/suppliers/:id', authenticate, authorize('Admin'), controller.deleteSupplier);
 
 // ──────────────────────────────────────────────────────────────
@@ -168,12 +169,12 @@ router.get('/reports/payroll', authenticate, controller.getPayrollReport);
 // ──────────────────────────────────────────────────────────────
 // Stock Routes
 // ──────────────────────────────────────────────────────────────
-router.post('/stock', authenticate, authorizeByLevel(2), controller.createStock);
+router.post('/stock', authenticate, authorizeByLevel(2), uploadMultiple('images', 5), controller.createStock);
 router.get('/stock', authenticate, controller.getAllStock);
 router.get('/stock/low-stock', authenticate, controller.getLowStockItems);
 router.get('/stock/:id', authenticate, controller.getStockById);
 router.get('/stock/:id/modules', authenticate, controller.getStockModuleData);
-router.put('/stock/:id', authenticate, authorizeByLevel(2), controller.updateStock);
+router.put('/stock/:id', authenticate, authorizeByLevel(2), uploadMultiple('images', 5), controller.updateStock);
 router.delete('/stock/:id', authenticate, authorize('Admin'), controller.deleteStock);
 router.patch('/stock/:id/quantity', authenticate, authorizeByLevel(2), controller.updateStockQuantity);
 
@@ -191,25 +192,25 @@ router.delete('/income/:id', authenticate, authorize('Admin'), controller.delete
 // ──────────────────────────────────────────────────────────────
 // Spare Parts Routes
 // ──────────────────────────────────────────────────────────────
-router.post('/spare-parts', authenticate, authorizeByLevel(2), controller.createSparePart);
+router.post('/spare-parts', authenticate, authorizeByLevel(2), uploadMultiple('images', 5), controller.createSparePart);
 router.get('/spare-parts', authenticate, controller.getAllSpareParts);
 router.get('/spare-parts/search', authenticate, controller.searchSpareParts);
 router.get('/spare-parts/low-stock', authenticate, controller.getLowStockSpareParts);
 router.get('/spare-parts/:id', authenticate, controller.getSparePartById);
 router.get('/spare-parts/:id/modules', authenticate, controller.getSparePartModuleData);
-router.put('/spare-parts/:id', authenticate, authorizeByLevel(2), controller.updateSparePart);
+router.put('/spare-parts/:id', authenticate, authorizeByLevel(2), uploadMultiple('images', 5), controller.updateSparePart);
 router.delete('/spare-parts/:id', authenticate, authorize('Admin'), controller.deleteSparePart);
 router.patch('/spare-parts/:id/quantity', authenticate, authorizeByLevel(2), controller.updateSparePartQuantity);
 
 // ──────────────────────────────────────────────────────────────
 // Customer Routes
 // ──────────────────────────────────────────────────────────────
-router.post('/customers', authenticate, authorizeByLevel(2), controller.createCustomer);
+router.post('/customers', authenticate, authorizeByLevel(2), uploadSingle('image'), controller.createCustomer);
 router.get('/customers', authenticate, controller.getAllCustomers);
 router.get('/customers/search', authenticate, controller.searchCustomers);
 router.get('/customers/:id', authenticate, controller.getCustomerById);
 router.get('/customers/:id/modules', authenticate, controller.getCustomerModuleData);
-router.put('/customers/:id', authenticate, authorizeByLevel(2), controller.updateCustomer);
+router.put('/customers/:id', authenticate, authorizeByLevel(2), uploadSingle('image'), controller.updateCustomer);
 router.delete('/customers/:id', authenticate, authorize('Admin'), controller.deleteCustomer);
 router.patch('/customers/:id/purchase', authenticate, controller.updateCustomerPurchase);
 

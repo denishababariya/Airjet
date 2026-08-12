@@ -29,6 +29,12 @@ const createEmployee = async (req, res) => {
       phoneNo: req.body.phoneNo ? Number(req.body.phoneNo) : req.body.phoneNo,
       age: calculateAge(req.body.bod),
     };
+    if (req.files?.image?.[0]) {
+      payload.image = `/uploads/${req.files.image[0].filename}`;
+    }
+    if (req.files?.docImage?.[0]) {
+      payload.docImage = `/uploads/${req.files.docImage[0].filename}`;
+    }
     const savedEmployee = await emp.create(payload);
     
     // Sync employee data across all modules
@@ -76,6 +82,12 @@ const updateEmployee = async (req, res) => {
     const payload = { ...req.body };
     if (payload.phoneNo) payload.phoneNo = Number(payload.phoneNo);
     if (payload.bod) payload.age = calculateAge(payload.bod);
+    if (req.files?.image?.[0]) {
+      payload.image = `/uploads/${req.files.image[0].filename}`;
+    }
+    if (req.files?.docImage?.[0]) {
+      payload.docImage = `/uploads/${req.files.docImage[0].filename}`;
+    }
     const employee = await emp.findByIdAndUpdate(id, payload, { new: true })
       .populate('department')
       .populate('designation');

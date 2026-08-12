@@ -6,6 +6,7 @@ import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
 import useConfirm from '../hooks/useConfirm';
 import { suppliersApi, erpApi } from '../utils/api';
+import { V, validate as validateFields } from '../utils/validators';
 
 /* ─── Status colour map ────────────────────────────────────── */
 const statusClass = {
@@ -15,7 +16,7 @@ const statusClass = {
 };
 
 /* ─── Blank form state per tab ─────────────────────────────── */
-const blankSup = { name: '', contact: '', phone: '', email: '', city: '', gst: '', status: 'Active' };
+const blankSup = { name: '', contact: '', phone: '', email: '', city: '', gst: '', status: 'Active', imageFile: null };
 const blankPO  = { supplier: '', date: '', items: '', amount: '', delivery: '', status: 'Pending' };
 const blankGRN = { po: '', supplier: '', date: '', items: '', amount: '', receivedBy: '', status: 'Pending' };
 const blankRet = { supplier: '', part: '', qty: '', date: '', reason: '', amount: '', status: 'Pending' };
@@ -47,6 +48,8 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
   const [editId, setEditId]       = useState(null);
   const [errors, setErrors]       = useState({});
   const [saving, setSaving]       = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
 
   const isSup = tab === 'suppliers';
   const isGRN = tab === 'grn';
@@ -90,7 +93,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
   /* ── Open modals ─────────────────────────────────────────── */
   const openAdd = () => {
     const blank = isSup ? blankSup : isGRN ? blankGRN : isRet ? blankRet : blankPO;
-    setForm(blank); setEditId(null); setErrors({}); setModal(true);
+    setForm(blank); setEditId(null); setErrors({}); setImageFile(null); setImagePreview(''); setModal(true);
   };
 
   const openEdit = (row) => {
@@ -99,7 +102,9 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
         name: row.name || '', contact: row.contact || '',
         phone: row.phone || '', email: row.email || '',
         city: row.city || '', gst: row.gst || '', status: row.status || 'Active',
+        image: row.image || '',
       });
+      setImagePreview(row.image || '');
     } else if (isGRN) {
       setForm({
         po: row.po || '', supplier: strField(row.supplier),
@@ -136,16 +141,11 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
       else if (form.name.trim().length < 3)
         e.name = 'Supplier name must be at least 3 characters';
 
-      if (!form.contact?.trim())
-        e.contact = 'Contact person name is required';
-
-      if (!form.phone?.trim())
-        e.phone = 'Phone number is required';
-      else if (!/^\d{10}$/.test(form.phone.trim()))
-        e.phone = 'Phone must be exactly 10 digits';
-
-      if (form.email?.trim() && !/\S+@\S+\.\S+/.test(form.email.trim()))
-        e.email = 'Invalid email format';
+      Object.assign(e, validateFields({
+        contact: V.name(form.contact, 'Contact person name'),
+        phone: V.phone(form.phone),
+        email: V.email(form.email, 'Email', false),
+      }));
 
       if (form.gst?.trim() && !GST_RE.test(form.gst.trim().toUpperCase()))
         e.gst = 'Invalid GST number format (e.g. 24ABCDE1234F1Z5)';
@@ -154,36 +154,31 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
       /* GRN */
       if (!form.supplier?.trim()) e.supplier = 'Supplier name is required';
       if (!form.date?.trim())     e.date     = 'Date is required';
-      if (!form.items)            e.items    = 'Number of items is required';
-      else if (isNaN(Number(form.items)) || Number(form.items) <= 0)
-        e.items = 'Items must be a positive number';
-      if (!form.receivedBy?.trim()) e.receivedBy = 'Received by is required';
-      if (form.amount && isNaN(Number(String(form.amount).replace(/[^\d.]/g, ''))))
-        e.amount = 'Amount must be a valid number';
+      Object.assign(e, validateFields({
+        items: V.positiveInt(form.items, 'Items count'),
+        receivedBy: V.name(form.receivedBy, 'Received by'),
+        amount: V.optionalAmount(form.amount, 'Amount'),
+      }));
 
     } else if (isRet) {
       /* Return */
       if (!form.supplier?.trim()) e.supplier = 'Supplier name is required';
       if (!form.part?.trim())     e.part     = 'Part name is required';
       if (!form.qty)              e.qty      = 'Quantity is required';
-      else if (isNaN(Number(form.qty)) || Number(form.qty) <= 0)
-        e.qty = 'Quantity must be a positive number';
+      else if (V.positiveInt(form.qty, 'Quantity')) e.qty = 'Quantity must be a positive whole number';
       if (!form.date?.trim())     e.date     = 'Return date is required';
       if (!form.reason?.trim())   e.reason   = 'Reason is required';
-      if (form.amount && isNaN(Number(String(form.amount).replace(/[^\d.]/g, ''))))
-        e.amount = 'Amount must be a valid number';
+      if (form.amount && V.optionalAmount(form.amount, 'Amount')) e.amount = V.optionalAmount(form.amount, 'Amount');
 
     } else {
       /* Purchase Order */
       if (!form.supplier?.trim()) e.supplier = 'Supplier is required';
       if (!form.date?.trim())     e.date     = 'Order date is required';
       if (!form.items)            e.items    = 'Number of items is required';
-      else if (isNaN(Number(form.items)) || Number(form.items) <= 0)
-        e.items = 'Items must be a positive number';
+      else if (V.positiveInt(form.items, 'Items count')) e.items = 'Items count must be a positive whole number';
       if (form.delivery && form.date && form.delivery < form.date)
         e.delivery = 'Expected delivery cannot be before order date';
-      if (form.amount && isNaN(Number(String(form.amount).replace(/[^\d.]/g, ''))))
-        e.amount = 'Amount must be a valid number';
+      if (form.amount && V.optionalAmount(form.amount, 'Amount')) e.amount = V.optionalAmount(form.amount, 'Amount');
     }
 
     return e;
@@ -202,18 +197,21 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
           city: form.city?.trim() || '', gst: form.gst?.trim().toUpperCase() || '',
           status: form.status,
         };
-        if (editId) await suppliersApi.update(editId, payload);
-        else await suppliersApi.create(payload);
+        if (editId) await suppliersApi.update(editId, payload, imageFile);
+        else await suppliersApi.create(payload, imageFile);
         toast.success(editId ? 'Supplier updated successfully!' : 'Supplier added successfully!');
         fetchSuppliers();
 
       } else if (isGRN) {
+        const itemCount = Number(form.items) || 0;
+        const amount = Number(String(form.amount).replace(/[^\d.]/g, '')) || 0;
         const payload = {
           module: 'purchase', recordType: 'grn',
           po: form.po?.trim() || '', supplier: form.supplier.trim(),
           date: form.date, receivedBy: form.receivedBy.trim(), status: form.status,
-          items: Number(form.items) || 0,
-          amount: Number(String(form.amount).replace(/[^\d.]/g, '')) || 0,
+          // ErpRecord.items is an array of line items.
+          items: itemCount ? [{ itemCode: 'MANUAL', itemName: 'Manual GRN item', quantity: itemCount, unitPrice: amount / itemCount, totalPrice: amount }] : [],
+          amount,
           id: editId ? undefined : `GRN-${String(Date.now()).slice(-6)}`,
         };
         if (editId) await erpApi.update(editId, payload);
@@ -222,12 +220,15 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
         fetchGrn();
 
       } else if (isRet) {
+        const quantity = Number(form.qty) || 0;
+        const amount = Number(String(form.amount).replace(/[^\d.]/g, '')) || 0;
         const payload = {
           module: 'purchase', recordType: 'return',
           supplier: form.supplier.trim(), part: form.part.trim(),
-          qty: Number(form.qty) || 0, date: form.date,
+          qty: quantity, date: form.date,
           reason: form.reason.trim(), status: form.status,
-          amount: Number(String(form.amount).replace(/[^\d.]/g, '')) || 0,
+          items: [{ itemCode: 'MANUAL', itemName: form.part.trim(), quantity, unitPrice: quantity ? amount / quantity : 0, totalPrice: amount }],
+          amount,
           id: editId ? undefined : `RET-${String(Date.now()).slice(-6)}`,
         };
         if (editId) await erpApi.update(editId, payload);
@@ -236,12 +237,14 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
         fetchReturns();
 
       } else {
+        const itemCount = Number(form.items) || 0;
+        const amount = parseFloat(String(form.amount).replace(/[^\d.]/g, '')) || 0;
         const payload = {
           module: 'purchase', recordType: 'order',
           supplier: form.supplier.trim(), date: form.date,
           delivery: form.delivery || '', status: form.status || 'Pending',
-          items: Number(form.items) || 0,
-          amount: parseFloat(String(form.amount).replace(/[^\d.]/g, '')) || 0,
+          items: itemCount ? [{ itemCode: 'MANUAL', itemName: 'Manual purchase item', quantity: itemCount, unitPrice: amount / itemCount, totalPrice: amount }] : [],
+          amount,
           id: editId ? undefined : `PO-${String(Date.now()).slice(-6)}`,
         };
         if (editId) await erpApi.update(editId, payload);
@@ -334,10 +337,10 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
               <table className="d_table">
                 <thead><tr>
                   <th>ID</th><th>Supplier Name</th><th>Contact Person</th>
-                  <th>Phone</th><th>City</th><th>GST No.</th><th>Status</th><th>Actions</th>
+                  <th>Phone</th><th>City</th><th>GST No.</th><th>Status</th><th>Image</th><th>Actions</th>
                 </tr></thead>
                 <tbody>
-                  {suppliers.length === 0 && <tr className="d_empty"><td colSpan={8}>No suppliers found.</td></tr>}
+                  {suppliers.length === 0 && <tr className="d_empty"><td colSpan={9}>No suppliers found.</td></tr>}
                   {suppliers.map(s => (
                     <tr key={s._id}>
                       <td><code>{String(s.id || s._id)}</code></td>
@@ -347,6 +350,18 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
                       <td>{String(s.city || '-')}</td>
                       <td><code>{String(s.gst || '-')}</code></td>
                       <td><span className={`d_badge ${statusClass[s.status] || 'd_info'}`}>{String(s.status)}</span></td>
+                      <td>
+                        {s.image ? (
+                          <img
+                            src={`http://localhost:5000${s.image}`}
+                            alt={s.name}
+                            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                            onClick={() => window.open(`http://localhost:5000${s.image}`, '_blank')}
+                          />
+                        ) : (
+                          <span style={{ color: '#999', fontSize: 12 }}>No image</span>
+                        )}
+                      </td>
                       <td><div className="d_action_btns">
                         <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(s)}><MdEdit /></button>
                         <button className="d_icon_btn d_del"  title="Delete" onClick={() => handleDelete(s._id, `supplier "${s.name}"`)}><MdDelete /></button>
@@ -529,6 +544,32 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
               <select className="d_form_control" {...f('status')}>
                 <option>Active</option><option>Inactive</option>
               </select>
+            </div>
+          </div>
+          <div className="d_form_row cols-1">
+            <div className="d_form_group">
+              <label className="d_form_label">Supplier Image</label>
+              <input
+                type="file"
+                className="d_form_control"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setImageFile(file);
+                    setImagePreview(URL.createObjectURL(file));
+                  }
+                }}
+              />
+              {(imagePreview || form.image) && (
+                <div style={{ marginTop: 8 }}>
+                  <img
+                    src={imagePreview || `http://localhost:5000${form.image}`}
+                    alt="Supplier"
+                    style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }}
+                  />
+                </div>
+              )}
             </div>
           </div>
           <div className="d_form_actions">

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MdAdd, MdEdit, MdVisibility, MdAssessment, MdCameraAlt, MdDraw } from 'react-icons/md';
 import Modal from '../../components/Modal';
 import { useErpRecords } from '../../utils/useErpRecords';
+import { V, validate as validateFields } from '../../utils/validators';
 
 const WORKING_STATUS = ['Running', 'Not Running', 'Partially Running'];
 const REPORT_STATUS = ['Draft', 'Completed', 'Submitted'];
@@ -56,9 +57,8 @@ export default function ServiceReports() {
   };
 
   const validate = () => {
-    const e = {};
+    const e = validateFields({ engineer: V.name(form.engineer, 'Engineer name') });
     if (!form.ticketNo.trim()) e.ticketNo = 'Ticket No is required';
-    if (!form.engineer.trim()) e.engineer = 'Engineer name is required';
     if (!form.workDone.trim()) e.workDone = 'Work done description is required';
     if (!form.workingStatus) e.workingStatus = 'Working status is required';
     return e;

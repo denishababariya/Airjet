@@ -319,7 +319,7 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
               <h2 className="d_card_title">
                 <MdAccessTime className="d_card_icon" /> Recent Activity
               </h2>
-              <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('reports')}>View All</button>
+              {/* <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('reports')}>View All</button> */}
             </div>
             <div className="d_card_body" style={{ padding: '2px 16px', height:'300px',overflowY:'scroll' }}>
               {activityFeed.length === 0 && <p className="text-center text-muted py-3">No recent activity</p>}

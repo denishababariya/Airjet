@@ -13,7 +13,7 @@ const statusClass = {
   Overdue:'d_danger', Sent:'d_info', Accepted:'d_success', Expired:'d_danger',
   Confirmed:'d_info', Processing:'d_warning', Delivered:'d_success',
 };
-const blankCus = { name: '', contact: '', phone: '', email: '', city: '', gst: '', status: 'Active' };
+const blankCus = { name: '', contact: '', phone: '', email: '', city: '', gst: '', status: 'Active', imageFile: null };
 const blankDoc = { customer: '', date: '', items: '', amount: '', due: '', delivery: '', validTill: '', status: 'Unpaid' };
 const TAB_TYPE  = { quotations: 'quotation', orders: 'order', invoices: 'invoice' };
 
@@ -30,6 +30,8 @@ const Sales = ({ defaultTab = 'customers' }) => {
   const [editId, setEditId]       = useState(null);
   const [errors, setErrors]       = useState({});
   const [saving, setSaving]       = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
 
   const { toasts, toast, removeToast }         = useToast();
   const { confirmState, confirm, closeConfirm } = useConfirm();
@@ -62,21 +64,27 @@ const Sales = ({ defaultTab = 'customers' }) => {
 
   const openAdd = () => {
     setForm(isCus ? blankCus : blankDoc);
-    setEditId(null); setErrors({}); setModal(true);
+    setEditId(null); setErrors({}); setImageFile(null); setImagePreview(''); setModal(true);
   };
   const openEdit = (row) => {
-    if (isCus) setForm({
-      name: row.name || '', contact: row.contactPerson || row.contact || '',
-      phone: row.phone || '', email: row.email || '',
-      city: row.city || '', gst: row.gstNumber || row.gst || '', status: row.status || 'Active',
-    });
-    else setForm({
-      customer: strField(row.customer), date: row.date || '',
-      items: Array.isArray(row.items) ? row.items.length : (row.items || ''),
-      amount: row.amount || '', due: row.due || '',
-      delivery: row.delivery || '', validTill: row.validTill || '', status: row.status || 'Unpaid',
-    });
-    setEditId(row._id || row.id); setErrors({}); setModal(true);
+    if (isCus) {
+      setForm({
+        name: row.name || '', contact: row.contactPerson || row.contact || '',
+        phone: row.phone || '', email: row.email || '',
+        city: row.city || '', gst: row.gstNumber || row.gst || '', status: row.status || 'Active',
+        image: row.image || '',
+      });
+      setImagePreview(row.image || '');
+    } else {
+      setForm({
+        customer: strField(row.customer), date: row.date || '',
+        items: Array.isArray(row.items) ? row.items.length : (row.items || ''),
+        amount: row.amount || '', due: row.due || '',
+        delivery: row.delivery || '', validTill: row.validTill || '', status: row.status || 'Unpaid',
+      });
+      setImagePreview('');
+    }
+    setEditId(row._id || row.id); setErrors({}); setImageFile(null); setModal(true);
   };
 
   const f = (field) => ({
@@ -91,7 +99,8 @@ const Sales = ({ defaultTab = 'customers' }) => {
       name:    V.companyName(form.name, 'Customer name'),
       contact: V.name(form.contact, 'Contact person'),
       phone:   V.phone(form.phone),
-      email:   V.email(form.email, 'Email', false),
+      // Customer.email is required by the backend Customer schema.
+      email:   V.email(form.email, 'Email'),
       gst:     V.gst(form.gst),
     });
     return validate({
@@ -109,21 +118,28 @@ const Sales = ({ defaultTab = 'customers' }) => {
     try {
       if (isCus) {
         const payload = {
+          id: editId ? undefined : `CUS-${String(Date.now()).slice(-6)}`,
           name: form.name.trim(), contactPerson: form.contact.trim(),
           phone: form.phone.trim(), email: form.email?.trim() || '',
           city: form.city?.trim() || '', gstNumber: form.gst?.trim().toUpperCase() || '',
           status: form.status,
         };
-        if (editId) await customersApi.update(editId, payload);
-        else        await customersApi.create(payload);
+        if (editId) await customersApi.update(editId, payload, imageFile);
+        else        await customersApi.create(payload, imageFile);
         toast.success(editId ? 'Customer updated!' : 'Customer added!');
         fetchCustomers();
       } else {
+        const itemCount = Number(form.items) || 0;
+        const amount = Number(String(form.amount).replace(/[^\d.]/g, '')) || 0;
         const payload = {
           module: 'sales', recordType: TAB_TYPE[tab],
           customer: form.customer, date: form.date,
-          items: Number(form.items) || 0,
-          amount: Number(String(form.amount).replace(/[^\d.]/g, '')) || 0,
+          // ErpRecord.items is an array, not a numeric count.
+          items: itemCount ? [{
+            itemCode: 'MANUAL', itemName: 'Manual sales item', quantity: itemCount,
+            unitPrice: amount / itemCount, totalPrice: amount,
+          }] : [],
+          amount,
           due: form.due, delivery: form.delivery, validTill: form.validTill, status: form.status,
         };
         if (editId) await erpApi.update(editId, payload);
@@ -181,9 +197,9 @@ const Sales = ({ defaultTab = 'customers' }) => {
           <div className="d_card_body p-0">
             {loading ? <div className="text-center py-4">Loading customers…</div> : (
             <div className="d_table_wrap"><table className="d_table">
-              <thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Phone</th><th>City</th><th>GST No.</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
+              <thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Phone</th><th>City</th><th>GST No.</th><th>Balance</th><th>Status</th><th>Image</th><th>Actions</th></tr></thead>
               <tbody>
-                {customers.length === 0 && <tr className="d_empty"><td colSpan={9}>No customers found.</td></tr>}
+                {customers.length === 0 && <tr className="d_empty"><td colSpan={10}>No customers found.</td></tr>}
                 {customers.map(c => (
                   <tr key={c._id}>
                     <td><code>{String(c.id)}</code></td><td><strong>{String(c.name)}</strong></td>
@@ -191,6 +207,18 @@ const Sales = ({ defaultTab = 'customers' }) => {
                     <td>{String(c.city || '-')}</td><td><code>{String(c.gstNumber || c.gst || '-')}</code></td>
                     <td><strong>₹{(c.currentBalance||0).toLocaleString('en-IN')}</strong></td>
                     <td><span className={`d_badge ${statusClass[c.status]||'d_info'}`}>{String(c.status)}</span></td>
+                    <td>
+                      {c.image ? (
+                        <img
+                          src={`http://localhost:5000${c.image}`}
+                          alt={c.name}
+                          style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                          onClick={() => window.open(`http://localhost:5000${c.image}`, '_blank')}
+                        />
+                      ) : (
+                        <span style={{ color: '#999', fontSize: 12 }}>No image</span>
+                      )}
+                    </td>
                     <td><div className="d_action_btns">
                       <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(c)}><MdEdit /></button>
                       <button className="d_icon_btn d_del"  title="Delete" onClick={() => handleDelete(c._id, `customer "${c.name}"`)}><MdDelete /></button>
@@ -301,7 +329,7 @@ const Sales = ({ defaultTab = 'customers' }) => {
               <Err field="phone" />
             </div>
             <div className="d_form_group">
-              <label className="d_form_label">Email</label>
+              <label className="d_form_label">Email <span className="d_req">*</span></label>
               <input type="email" className="d_form_control" placeholder="customer@email.com" {...f('email')} />
               <Err field="email" />
             </div>
@@ -322,7 +350,33 @@ const Sales = ({ defaultTab = 'customers' }) => {
           <div className="d_form_row cols-1">
             <div className="d_form_group">
               <label className="d_form_label">Status</label>
-              <select className="d_form_control" {...f('status')}><option>Active</option><option>Inactive</option></select>
+              <select className="d_form_control" {...f('status')}><option>Active</option><option>Inactive</option><option>Blacklisted</option></select>
+            </div>
+          </div>
+          <div className="d_form_row cols-1">
+            <div className="d_form_group">
+              <label className="d_form_label">Customer Image</label>
+              <input
+                type="file"
+                className="d_form_control"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setImageFile(file);
+                    setImagePreview(URL.createObjectURL(file));
+                  }
+                }}
+              />
+              {(imagePreview || form.image) && (
+                <div style={{ marginTop: 8 }}>
+                  <img
+                    src={imagePreview || `http://localhost:5000${form.image}`}
+                    alt="Customer"
+                    style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }}
+                  />
+                </div>
+              )}
             </div>
           </div>
           <div className="d_form_actions">

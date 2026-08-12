@@ -28,6 +28,10 @@ const empoleeSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    docImage: {
+        type: String,
+        default: ""
+    },
     bod: {
         type: Date,
     },

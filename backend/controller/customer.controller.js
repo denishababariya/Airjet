@@ -1,9 +1,21 @@
 const Customer = require('../model/Customer.model');
 const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModules } = require('../services/universalDataSync.service');
 
+const generateCustomerId = async () => {
+    const count = await Customer.countDocuments();
+    return `CUS${String(count + 1).padStart(3, '0')}`;
+};
+
 const createCustomer = async (req, res) => {
     try {
-        const customer = await Customer.create(req.body);
+        const body = { ...req.body };
+        if (req.file) {
+            body.image = `/uploads/${req.file.filename}`;
+        }
+        const customer = await Customer.create({
+            ...body,
+            id: body.id || await generateCustomerId(),
+        });
         
         // Sync customer data across relevant modules
         await syncEntityAcrossModules(customer, 'customer', 'create');
@@ -44,7 +56,11 @@ const getCustomerById = async (req, res) => {
 
 const updateCustomer = async (req, res) => {
     try {
-        const customer = await Customer.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const body = { ...req.body };
+        if (req.file) {
+            body.image = `/uploads/${req.file.filename}`;
+        }
+        const customer = await Customer.findByIdAndUpdate(req.params.id, body, { new: true });
         if (!customer) {
             return res.status(404).json({ error: 'Customer not found' });
         }
