@@ -11,7 +11,7 @@ const supplierSchema = new mongoose.Schema({
   address: { type: String },
   status: { type: String, default: 'Active', enum: ['Active', 'Inactive'] },
   products: [{
-    productType: { type: String, enum: ['stock', 'sparePart'], required: true },
+    productType: { type: String, enum: ['stock', 'sparePart', 'rawMaterial'], required: true },
     productId: { type: mongoose.Schema.Types.ObjectId, refPath: 'supplierProducts.ref', required: true },
     itemName: String,
     itemCode: String,

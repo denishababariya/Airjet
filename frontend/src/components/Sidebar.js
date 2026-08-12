@@ -45,6 +45,10 @@ const menuConfig = [
         module: 'Purchase',
       },
       {
+        label: 'Raw Material Purchases', icon: <MdShoppingCart />, id: 'Raw Material Purchases',
+        module: 'Purchase',
+      },
+      {
         label: 'Sales', icon: <MdPointOfSale />, id: 'sales',
         children: ['Customers', 'Quotations', 'Sales Orders', 'Invoices'],
         module: 'Sales',
@@ -58,6 +62,10 @@ const menuConfig = [
         label: 'Spare Parts', icon: <MdInventory2 />, id: 'spareparts',
         children: ['Part Number', 'Category', 'Brand', 'Compatible Models'],
         module: 'Spare Parts',
+      },
+      {
+        label: 'Raw Materials', icon: <MdInventory2 />, id: 'Raw Materials',
+        module: 'Purchase',
       },
       {
         label: 'Warehouse', icon: <MdWarehouse />, id: 'warehouse',

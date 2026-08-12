@@ -26,6 +26,8 @@ import Sales            from './pages/Sales';
 import SpareParts       from './pages/SpareParts';
 import Warehouse        from './pages/Warehouse';
 import Service          from './pages/Service';
+import RawMaterials     from './pages/RawMaterials';
+import RawMaterialPurchases from './pages/RawMaterialPurchases';
 import Accounts         from './pages/Accounts';
 import Reports          from './pages/Reports';
 import Profile          from './pages/Profile';
@@ -81,6 +83,8 @@ const PAGE_MAP = {
   'Purchase Orders':   { component: Purchase, defaultTab: 'orders' },
   'GRN':               { component: Purchase, defaultTab: 'grn' },
   'Returns':           { component: Purchase, defaultTab: 'returns' },
+  'Raw Materials':     { component: RawMaterials },
+  'Raw Material Purchases': { component: RawMaterialPurchases },
 
   // ── Sales ──────────────────────────────────────────────────
   sales:               { component: Sales, defaultTab: 'customers' },

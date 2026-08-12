@@ -203,6 +203,27 @@ router.delete('/spare-parts/:id', authenticate, authorize('Admin'), controller.d
 router.patch('/spare-parts/:id/quantity', authenticate, authorizeByLevel(2), controller.updateSparePartQuantity);
 
 // ──────────────────────────────────────────────────────────────
+// Raw Material Routes
+// ──────────────────────────────────────────────────────────────
+router.post('/raw-materials', authenticate, authorizeByLevel(2), controller.createRawMaterial);
+router.get('/raw-materials', authenticate, controller.getAllRawMaterials);
+router.get('/raw-materials/low-stock', authenticate, controller.getLowStockMaterials);
+router.get('/raw-materials/:id', authenticate, controller.getRawMaterialById);
+router.put('/raw-materials/:id', authenticate, authorizeByLevel(2), controller.updateRawMaterial);
+router.delete('/raw-materials/:id', authenticate, authorize('Admin'), controller.deleteRawMaterial);
+router.post('/raw-materials/deduct-stock', authenticate, authorizeByLevel(2), controller.deductStock);
+router.post('/raw-materials/add-stock', authenticate, authorizeByLevel(2), controller.addStock);
+router.get('/suppliers/:supplierId/raw-materials', authenticate, controller.getSupplierRawMaterials);
+
+// Raw Material Purchases
+router.post('/raw-material-purchases', authenticate, authorizeByLevel(2), controller.createRawMaterialPurchase);
+router.get('/raw-material-purchases', authenticate, controller.getAllRawMaterialPurchases);
+router.get('/raw-material-purchases/:id', authenticate, controller.getRawMaterialPurchaseById);
+router.put('/raw-material-purchases/:id', authenticate, authorizeByLevel(2), controller.updateRawMaterialPurchase);
+router.delete('/raw-material-purchases/:id', authenticate, authorize('Admin'), controller.deleteRawMaterialPurchase);
+router.patch('/raw-material-purchases/:purchaseId/items/:itemId/quality-check', authenticate, authorizeByLevel(2), controller.updateQualityCheck);
+
+// ──────────────────────────────────────────────────────────────
 // Customer Routes
 // ──────────────────────────────────────────────────────────────
 router.post('/customers', authenticate, authorizeByLevel(2), uploadSingle('image'), controller.createCustomer);

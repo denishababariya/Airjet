@@ -5,8 +5,9 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
 import useConfirm from '../hooks/useConfirm';
-import { suppliersApi, erpApi } from '../utils/api';
+// import { suppliersApi, erpApi } from '../utils/api';
 import { V, validate as validateFields } from '../utils/validators';
+import { erpApi, suppliersApi, purchaseOrdersApi, purchaseReturnsApi, grnApi } from '../utils/api';
 
 /* ─── Status colour map ────────────────────────────────────── */
 const statusClass = {
@@ -16,10 +17,10 @@ const statusClass = {
 };
 
 /* ─── Blank form state per tab ─────────────────────────────── */
-const blankSup = { name: '', contact: '', phone: '', email: '', city: '', gst: '', status: 'Active', imageFile: null };
-const blankPO  = { supplier: '', date: '', items: '', amount: '', delivery: '', status: 'Pending' };
-const blankGRN = { po: '', supplier: '', date: '', items: '', amount: '', receivedBy: '', status: 'Pending' };
-const blankRet = { supplier: '', part: '', qty: '', date: '', reason: '', amount: '', status: 'Pending' };
+const blankSup = { name: '', contact: '', phone: '', email: '', city: '', gst: '', status: 'Active' };
+const blankPO  = { supplier: '', date: '', delivery: '', status: 'Pending', notes: '', items: [{ itemCode: '', itemName: '', quantity: '', unitPrice: '', totalPrice: '' }] };
+const blankGRN = { po: '', supplier: '', date: '', receivedBy: '', status: 'Pending', notes: '', items: [{ itemCode: '', itemName: '', quantity: '', unitPrice: '', totalPrice: '' }] };
+const blankRet = { po: '', supplier: '', part: '', qty: '', unitPrice: '', amount: '', date: '', reason: '', status: 'Pending', items: [{ itemCode: '', itemName: '', quantity: '', unitPrice: '', totalPrice: '' }] };
 
 /* ─── Date helper ──────────────────────────────────────────── */
 const toISODate = (d) => {
@@ -65,7 +66,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
     catch (err) { toast.error(err.displayMessage || 'Failed to load suppliers'); }
   };
   const fetchOrders = async () => {
-    try { const { data } = await erpApi.getAll('purchase', 'order'); setOrders(data); }
+    try { const { data } = await purchaseOrdersApi.getAll(); setOrders(data); }
     catch (err) { toast.error(err.displayMessage || 'Failed to load purchase orders'); }
   };
   const fetchGrn = async () => {
@@ -73,7 +74,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
     catch (err) { toast.error(err.displayMessage || 'Failed to load GRN'); }
   };
   const fetchReturns = async () => {
-    try { const { data } = await erpApi.getAll('purchase', 'return'); setReturns(data); }
+    try { const { data } = await purchaseReturnsApi.getAll(); setReturns(data); }
     catch (err) { toast.error(err.displayMessage || 'Failed to load returns'); }
   };
 
@@ -89,6 +90,64 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
   /* ── Safely extract primitives from possibly-populated fields ── */
   const strField   = (v) => (v && typeof v === 'object') ? (v.name || v.title || '') : (v || '');
   const itemsCount = (v) => Array.isArray(v) ? v.length : (v || '');
+
+  const normalizeItems = (items) => {
+    if (Array.isArray(items) && items.length > 0) {
+      return items.map((item) => ({
+        itemCode: item.itemCode || '',
+        itemName: item.itemName || '',
+        quantity: item.quantity != null ? String(item.quantity) : '',
+        unitPrice: item.unitPrice != null ? String(item.unitPrice) : '',
+        totalPrice: item.totalPrice != null ? Number(item.totalPrice) : 0,
+      }));
+    }
+    if (typeof items === 'number' || typeof items === 'string') {
+      const amount = Number(items);
+      return [{ itemCode: '', itemName: '', quantity: items ? String(items) : '', unitPrice: '', totalPrice: amount || '' }];
+    }
+    return [{ itemCode: '', itemName: '', quantity: '', unitPrice: '', totalPrice: '' }];
+  };
+
+  const computeLineTotal = (item) => {
+    const qty = Number(item.quantity) || 0;
+    const unitPrice = Number(item.unitPrice) || 0;
+    return qty * unitPrice;
+  };
+
+  const computeAmountFromItems = (items = []) => {
+    return items.reduce((sum, item) => sum + (Number(item.totalPrice) || computeLineTotal(item)), 0);
+  };
+
+  const updateItemField = (index, field, value) => {
+    setForm((prev) => {
+      const nextItems = [...(prev.items || [])];
+      nextItems[index] = { ...nextItems[index], [field]: value };
+      if (field === 'quantity' || field === 'unitPrice') {
+        nextItems[index].totalPrice = computeLineTotal(nextItems[index]);
+      }
+      return { ...prev, items: nextItems };
+    });
+    setErrors((p) => ({ ...p, items: '' }));
+  };
+
+  const addItemRow = () => {
+    setForm((prev) => ({
+      ...prev,
+      items: [
+        ...(prev.items || []),
+        { itemCode: '', itemName: '', quantity: '', unitPrice: '', totalPrice: '' },
+      ],
+    }));
+  };
+
+  const removeItemRow = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      items: (prev.items || []).filter((_, idx) => idx !== index),
+    }));
+  };
+
+  const findSupplierByName = (name) => suppliers.find((s) => String(s.name) === String(name));
 
   /* ── Open modals ─────────────────────────────────────────── */
   const openAdd = () => {
@@ -107,24 +166,38 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
       setImagePreview(row.image || '');
     } else if (isGRN) {
       setForm({
-        po: row.po || '', supplier: strField(row.supplier),
-        date: toISODate(row.date), items: itemsCount(row.items),
-        amount: row.amount || row.totalAmount || '',
-        receivedBy: row.receivedBy || '', status: row.status || 'Pending',
+        po: row.po || '',
+        poId: row.poId || '',
+        supplier: strField(row.supplier),
+        supplierId: row.supplierId || '',
+        date: toISODate(row.date),
+        receivedBy: row.receivedBy || '',
+        status: row.status || 'Pending',
+        items: normalizeItems(row.items),
+        notes: row.notes || '',
       });
     } else if (isRet) {
+      const items = normalizeItems(row.items);
       setForm({
-        supplier: strField(row.supplier), part: strField(row.part),
-        qty: row.qty || '', date: toISODate(row.date),
+        po: row.po || '',
+        poId: row.poId || '',
+        supplier: strField(row.supplier),
+        supplierId: row.supplierId || '',
+        date: toISODate(row.date),
         reason: row.reason || '',
-        amount: row.amount || row.totalAmount || '', status: row.status || 'Pending',
+        status: row.status || 'Pending',
+        items,
+        amount: row.amount || row.totalAmount || '',
       });
     } else {
       setForm({
-        supplier: strField(row.supplier), date: toISODate(row.date),
-        items: itemsCount(row.items),
-        amount: row.amount || row.totalAmount || row.grandTotal || '',
-        delivery: toISODate(row.delivery), status: row.status || 'Pending',
+        supplier: strField(row.supplier),
+        supplierId: row.supplierId || '',
+        date: toISODate(row.date),
+        delivery: toISODate(row.delivery),
+        status: row.status || 'Pending',
+        items: normalizeItems(row.items),
+        notes: row.notes || '',
       });
     }
     setEditId(row._id || row.id); setErrors({}); setModal(true);
@@ -154,31 +227,53 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
       /* GRN */
       if (!form.supplier?.trim()) e.supplier = 'Supplier name is required';
       if (!form.date?.trim())     e.date     = 'Date is required';
-      Object.assign(e, validateFields({
-        items: V.positiveInt(form.items, 'Items count'),
-        receivedBy: V.name(form.receivedBy, 'Received by'),
-        amount: V.optionalAmount(form.amount, 'Amount'),
-      }));
+      if (!Array.isArray(form.items) || form.items.length === 0)
+        e.items = 'At least one received item is required';
+      else {
+        form.items.forEach((item, index) => {
+          if (!item.itemName?.trim()) e[`items_${index}_itemName`] = 'Item name is required';
+          if (!item.quantity || isNaN(Number(item.quantity)) || Number(item.quantity) <= 0)
+            e[`items_${index}_quantity`] = 'Quantity must be a positive number';
+          if (item.unitPrice && isNaN(Number(String(item.unitPrice).replace(/[^\d.]/g, ''))))
+            e[`items_${index}_unitPrice`] = 'Unit price must be a valid number';
+        });
+      }
+      if (!form.receivedBy?.trim()) e.receivedBy = 'Received by is required';
 
     } else if (isRet) {
       /* Return */
       if (!form.supplier?.trim()) e.supplier = 'Supplier name is required';
-      if (!form.part?.trim())     e.part     = 'Part name is required';
-      if (!form.qty)              e.qty      = 'Quantity is required';
-      else if (V.positiveInt(form.qty, 'Quantity')) e.qty = 'Quantity must be a positive whole number';
       if (!form.date?.trim())     e.date     = 'Return date is required';
       if (!form.reason?.trim())   e.reason   = 'Reason is required';
-      if (form.amount && V.optionalAmount(form.amount, 'Amount')) e.amount = V.optionalAmount(form.amount, 'Amount');
+      if (!Array.isArray(form.items) || form.items.length === 0)
+        e.items = 'At least one returned item is required';
+      else {
+        form.items.forEach((item, index) => {
+          if (!item.itemName?.trim()) e[`items_${index}_itemName`] = 'Item name is required';
+          if (!item.quantity || isNaN(Number(item.quantity)) || Number(item.quantity) <= 0)
+            e[`items_${index}_quantity`] = 'Quantity must be a positive number';
+          if (item.unitPrice && isNaN(Number(String(item.unitPrice).replace(/[^\d.]/g, ''))))
+            e[`items_${index}_unitPrice`] = 'Unit price must be a valid number';
+        });
+      }
 
     } else {
       /* Purchase Order */
       if (!form.supplier?.trim()) e.supplier = 'Supplier is required';
       if (!form.date?.trim())     e.date     = 'Order date is required';
-      if (!form.items)            e.items    = 'Number of items is required';
-      else if (V.positiveInt(form.items, 'Items count')) e.items = 'Items count must be a positive whole number';
+      if (!Array.isArray(form.items) || form.items.length === 0)
+        e.items = 'At least one order item is required';
+      else {
+        form.items.forEach((item, index) => {
+          if (!item.itemName?.trim()) e[`items_${index}_itemName`] = 'Item name is required';
+          if (!item.quantity || isNaN(Number(item.quantity)) || Number(item.quantity) <= 0)
+            e[`items_${index}_quantity`] = 'Quantity must be a positive number';
+          if (item.unitPrice && isNaN(Number(String(item.unitPrice).replace(/[^\d.]/g, ''))))
+            e[`items_${index}_unitPrice`] = 'Unit price must be a valid number';
+        });
+      }
       if (form.delivery && form.date && form.delivery < form.date)
         e.delivery = 'Expected delivery cannot be before order date';
-      if (form.amount && V.optionalAmount(form.amount, 'Amount')) e.amount = V.optionalAmount(form.amount, 'Amount');
     }
 
     return e;
@@ -203,52 +298,91 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
         fetchSuppliers();
 
       } else if (isGRN) {
-        const itemCount = Number(form.items) || 0;
-        const amount = Number(String(form.amount).replace(/[^\d.]/g, '')) || 0;
+        const supplierData = findSupplierByName(form.supplier.trim());
+        const items = (form.items || []).map((item) => ({
+          itemCode: item.itemCode?.trim() || '',
+          itemName: item.itemName?.trim() || '',
+          category: item.category?.trim() || '',
+          quantity: Number(item.quantity) || 0,
+          unitPrice: Number(String(item.unitPrice).replace(/[^\d.]/g, '')) || 0,
+          totalPrice: Number(item.totalPrice) || computeLineTotal(item),
+          stockId: item.stockId || undefined,
+          sparePartId: item.sparePartId || undefined,
+        }));
         const payload = {
-          module: 'purchase', recordType: 'grn',
-          po: form.po?.trim() || '', supplier: form.supplier.trim(),
-          date: form.date, receivedBy: form.receivedBy.trim(), status: form.status,
-          // ErpRecord.items is an array of line items.
-          items: itemCount ? [{ itemCode: 'MANUAL', itemName: 'Manual GRN item', quantity: itemCount, unitPrice: amount / itemCount, totalPrice: amount }] : [],
-          amount,
-          id: editId ? undefined : `GRN-${String(Date.now()).slice(-6)}`,
+          po: form.po?.trim() || '',
+          poId: form.poId || null,
+          supplier: form.supplier.trim(),
+          supplierId: supplierData?._id || form.supplierId || null,
+          date: form.date,
+          receivedBy: form.receivedBy.trim(),
+          status: form.status,
+          items,
+          amount: computeAmountFromItems(items),
+          notes: form.notes?.trim() || '',
         };
-        if (editId) await erpApi.update(editId, payload);
-        else await erpApi.create(payload);
+        if (editId) await grnApi.update(editId, payload);
+        else await grnApi.create(payload);
         toast.success(editId ? 'GRN updated!' : 'GRN created!');
         fetchGrn();
 
       } else if (isRet) {
-        const quantity = Number(form.qty) || 0;
-        const amount = Number(String(form.amount).replace(/[^\d.]/g, '')) || 0;
+        const supplierData = findSupplierByName(form.supplier.trim());
+        const items = (form.items || []).map((item) => ({
+          itemCode: item.itemCode?.trim() || '',
+          itemName: item.itemName?.trim() || '',
+          category: item.category?.trim() || '',
+          quantity: Number(item.quantity) || 0,
+          unitPrice: Number(String(item.unitPrice).replace(/[^\d.]/g, '')) || 0,
+          totalPrice: Number(item.totalPrice) || computeLineTotal(item),
+          stockId: item.stockId || undefined,
+          sparePartId: item.sparePartId || undefined,
+        }));
+        const totalAmount = computeAmountFromItems(items);
         const payload = {
-          module: 'purchase', recordType: 'return',
-          supplier: form.supplier.trim(), part: form.part.trim(),
-          qty: quantity, date: form.date,
-          reason: form.reason.trim(), status: form.status,
-          items: [{ itemCode: 'MANUAL', itemName: form.part.trim(), quantity, unitPrice: quantity ? amount / quantity : 0, totalPrice: amount }],
-          amount,
-          id: editId ? undefined : `RET-${String(Date.now()).slice(-6)}`,
+          po: form.po?.trim() || '',
+          poId: form.poId || null,
+          supplier: form.supplier.trim(),
+          supplierId: supplierData?._id || form.supplierId || null,
+          date: form.date,
+          reason: form.reason.trim(),
+          status: form.status,
+          items,
+          amount: totalAmount,
+          totalAmount,
+          notes: form.notes?.trim() || '',
         };
-        if (editId) await erpApi.update(editId, payload);
-        else await erpApi.create(payload);
+        if (editId) await purchaseReturnsApi.update(editId, payload);
+        else await purchaseReturnsApi.create(payload);
         toast.success(editId ? 'Return updated!' : 'Return recorded!');
         fetchReturns();
 
       } else {
-        const itemCount = Number(form.items) || 0;
-        const amount = parseFloat(String(form.amount).replace(/[^\d.]/g, '')) || 0;
+        const supplierData = findSupplierByName(form.supplier.trim());
+        const items = (form.items || []).map((item) => ({
+          itemCode: item.itemCode?.trim() || '',
+          itemName: item.itemName?.trim() || '',
+          category: item.category?.trim() || '',
+          quantity: Number(item.quantity) || 0,
+          unitPrice: Number(String(item.unitPrice).replace(/[^\d.]/g, '')) || 0,
+          totalPrice: Number(item.totalPrice) || computeLineTotal(item),
+          stockId: item.stockId || undefined,
+          sparePartId: item.sparePartId || undefined,
+        }));
+        const totalAmount = computeAmountFromItems(items);
         const payload = {
-          module: 'purchase', recordType: 'order',
-          supplier: form.supplier.trim(), date: form.date,
-          delivery: form.delivery || '', status: form.status || 'Pending',
-          items: itemCount ? [{ itemCode: 'MANUAL', itemName: 'Manual purchase item', quantity: itemCount, unitPrice: amount / itemCount, totalPrice: amount }] : [],
-          amount,
-          id: editId ? undefined : `PO-${String(Date.now()).slice(-6)}`,
+          supplier: form.supplier.trim(),
+          supplierId: supplierData?._id || form.supplierId || null,
+          date: form.date,
+          delivery: form.delivery || '',
+          status: form.status || 'Pending',
+          items,
+          totalAmount,
+          grandTotal: Math.round(totalAmount * 1.18),
+          notes: form.notes?.trim() || '',
         };
-        if (editId) await erpApi.update(editId, payload);
-        else await erpApi.create(payload);
+        if (editId) await purchaseOrdersApi.update(editId, payload);
+        else await purchaseOrdersApi.create(payload);
         toast.success(editId ? 'Purchase order updated!' : 'Purchase order created!');
         fetchOrders();
       }
@@ -272,8 +406,8 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
         try {
           if (isSup)       { await suppliersApi.remove(id); fetchSuppliers(); }
           else if (isGRN)  { await erpApi.remove(id); fetchGrn(); }
-          else if (isRet)  { await erpApi.remove(id); fetchReturns(); }
-          else             { await erpApi.remove(id); fetchOrders(); }
+          else if (isRet)  { await purchaseReturnsApi.remove(id); fetchReturns(); }
+          else             { await purchaseOrdersApi.remove(id); fetchOrders(); }
           toast.success('Record deleted successfully.');
         } catch (err) {
           toast.error(err.displayMessage || 'Failed to delete.');
@@ -611,15 +745,47 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
           </div>
           <div className="d_form_row cols-2">
             <div className="d_form_group">
-              <label className="d_form_label">No. of Items <span className="d_req">*</span></label>
-              <input type="number" className="d_form_control" placeholder="e.g. 10" min={1} {...f('items')} />
+              <label className="d_form_label">Items</label>
+              <input className="d_form_control" value={itemsCount(form.items)} readOnly />
               <Err field="items" />
             </div>
             <div className="d_form_group">
               <label className="d_form_label">Total Amount (₹)</label>
-              <input type="number" className="d_form_control" placeholder="e.g. 50000" min={0} {...f('amount')} />
-              <Err field="amount" />
+              <input className="d_form_control" value={computeAmountFromItems(form.items).toFixed(2)} readOnly />
             </div>
+          </div>
+          <div className="d_table_wrap">
+            <table className="d_table">
+              <thead>
+                <tr>
+                  <th>Item Code</th><th>Item Name</th><th>Category</th>
+                  <th>Qty</th><th>Unit Price</th><th>Total</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {(form.items || []).map((item, index) => (
+                  <tr key={index}>
+                    <td><input className="d_form_control" value={item.itemCode || ''}
+                      onChange={(e) => updateItemField(index, 'itemCode', e.target.value)} /></td>
+                    <td><input className="d_form_control" value={item.itemName || ''}
+                      onChange={(e) => updateItemField(index, 'itemName', e.target.value)} />
+                      <Err field={`items_${index}_itemName`} /></td>
+                    <td><input className="d_form_control" value={item.category || ''}
+                      onChange={(e) => updateItemField(index, 'category', e.target.value)} /></td>
+                    <td><input type="number" className="d_form_control" min={1} value={item.quantity || ''}
+                      onChange={(e) => updateItemField(index, 'quantity', e.target.value)} />
+                      <Err field={`items_${index}_quantity`} /></td>
+                    <td><input type="number" className="d_form_control" min={0} step="0.01" value={item.unitPrice || ''}
+                      onChange={(e) => updateItemField(index, 'unitPrice', e.target.value)} />
+                      <Err field={`items_${index}_unitPrice`} /></td>
+                    <td><strong>{computeLineTotal(item).toLocaleString('en-IN')}</strong></td>
+                    <td><button type="button" className="d_icon_btn d_del" title="Remove item"
+                      onClick={() => removeItemRow(index)}><MdDelete /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button type="button" className="d_btn d_btn_secondary" onClick={addItemRow}>Add Item</button>
           </div>
           <div className="d_form_row cols-1">
             <div className="d_form_group">
@@ -673,15 +839,47 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
           </div>
           <div className="d_form_row cols-2">
             <div className="d_form_group">
-              <label className="d_form_label">No. of Items <span className="d_req">*</span></label>
-              <input type="number" className="d_form_control" placeholder="e.g. 5" min={1} {...f('items')} />
+              <label className="d_form_label">Items</label>
+              <input className="d_form_control" value={itemsCount(form.items)} readOnly />
               <Err field="items" />
             </div>
             <div className="d_form_group">
               <label className="d_form_label">Amount (₹)</label>
-              <input type="number" className="d_form_control" placeholder="e.g. 25000" min={0} {...f('amount')} />
-              <Err field="amount" />
+              <input className="d_form_control" value={computeAmountFromItems(form.items).toFixed(2)} readOnly />
             </div>
+          </div>
+          <div className="d_table_wrap">
+            <table className="d_table">
+              <thead>
+                <tr>
+                  <th>Item Code</th><th>Item Name</th><th>Category</th>
+                  <th>Qty</th><th>Unit Price</th><th>Total</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {(form.items || []).map((item, index) => (
+                  <tr key={index}>
+                    <td><input className="d_form_control" value={item.itemCode || ''}
+                      onChange={(e) => updateItemField(index, 'itemCode', e.target.value)} /></td>
+                    <td><input className="d_form_control" value={item.itemName || ''}
+                      onChange={(e) => updateItemField(index, 'itemName', e.target.value)} />
+                      <Err field={`items_${index}_itemName`} /></td>
+                    <td><input className="d_form_control" value={item.category || ''}
+                      onChange={(e) => updateItemField(index, 'category', e.target.value)} /></td>
+                    <td><input type="number" className="d_form_control" min={1} value={item.quantity || ''}
+                      onChange={(e) => updateItemField(index, 'quantity', e.target.value)} />
+                      <Err field={`items_${index}_quantity`} /></td>
+                    <td><input type="number" className="d_form_control" min={0} step="0.01" value={item.unitPrice || ''}
+                      onChange={(e) => updateItemField(index, 'unitPrice', e.target.value)} />
+                      <Err field={`items_${index}_unitPrice`} /></td>
+                    <td><strong>{computeLineTotal(item).toLocaleString('en-IN')}</strong></td>
+                    <td><button type="button" className="d_icon_btn d_del" title="Remove item"
+                      onClick={() => removeItemRow(index)}><MdDelete /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button type="button" className="d_btn d_btn_secondary" onClick={addItemRow}>Add Item</button>
           </div>
           <div className="d_form_row cols-1">
             <div className="d_form_group">
@@ -716,24 +914,16 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
               <Err field="supplier" />
             </div>
             <div className="d_form_group">
-              <label className="d_form_label">Part Name <span className="d_req">*</span></label>
-              <input className="d_form_control" placeholder="e.g. Motor Bearing" {...f('part')} />
-              <Err field="part" />
+              <label className="d_form_label">PO Reference</label>
+              <input className="d_form_control" placeholder="e.g. PO-123456" {...f('po')} />
             </div>
           </div>
           <div className="d_form_row cols-2">
-            <div className="d_form_group">
-              <label className="d_form_label">Quantity <span className="d_req">*</span></label>
-              <input type="number" className="d_form_control" placeholder="e.g. 3" min={1} {...f('qty')} />
-              <Err field="qty" />
-            </div>
             <div className="d_form_group">
               <label className="d_form_label">Return Date <span className="d_req">*</span></label>
               <input type="date" className="d_form_control" {...f('date')} />
               <Err field="date" />
             </div>
-          </div>
-          <div className="d_form_row cols-1">
             <div className="d_form_group">
               <label className="d_form_label">Reason <span className="d_req">*</span></label>
               <input className="d_form_control" placeholder="e.g. Defective part, wrong item…" {...f('reason')} />
@@ -742,10 +932,49 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
           </div>
           <div className="d_form_row cols-2">
             <div className="d_form_group">
-              <label className="d_form_label">Amount (₹)</label>
-              <input type="number" className="d_form_control" placeholder="e.g. 1500" min={0} {...f('amount')} />
-              <Err field="amount" />
+              <label className="d_form_label">Items</label>
+              <input className="d_form_control" value={itemsCount(form.items)} readOnly />
+              <Err field="items" />
             </div>
+            <div className="d_form_group">
+              <label className="d_form_label">Amount (₹)</label>
+              <input className="d_form_control" value={computeAmountFromItems(form.items).toFixed(2)} readOnly />
+            </div>
+          </div>
+          <div className="d_table_wrap">
+            <table className="d_table">
+              <thead>
+                <tr>
+                  <th>Item Code</th><th>Item Name</th><th>Category</th>
+                  <th>Qty</th><th>Unit Price</th><th>Total</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {(form.items || []).map((item, index) => (
+                  <tr key={index}>
+                    <td><input className="d_form_control" value={item.itemCode || ''}
+                      onChange={(e) => updateItemField(index, 'itemCode', e.target.value)} /></td>
+                    <td><input className="d_form_control" value={item.itemName || ''}
+                      onChange={(e) => updateItemField(index, 'itemName', e.target.value)} />
+                      <Err field={`items_${index}_itemName`} /></td>
+                    <td><input className="d_form_control" value={item.category || ''}
+                      onChange={(e) => updateItemField(index, 'category', e.target.value)} /></td>
+                    <td><input type="number" className="d_form_control" min={1} value={item.quantity || ''}
+                      onChange={(e) => updateItemField(index, 'quantity', e.target.value)} />
+                      <Err field={`items_${index}_quantity`} /></td>
+                    <td><input type="number" className="d_form_control" min={0} step="0.01" value={item.unitPrice || ''}
+                      onChange={(e) => updateItemField(index, 'unitPrice', e.target.value)} />
+                      <Err field={`items_${index}_unitPrice`} /></td>
+                    <td><strong>{computeLineTotal(item).toLocaleString('en-IN')}</strong></td>
+                    <td><button type="button" className="d_icon_btn d_del" title="Remove item"
+                      onClick={() => removeItemRow(index)}><MdDelete /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button type="button" className="d_btn d_btn_secondary" onClick={addItemRow}>Add Item</button>
+          </div>
+          <div className="d_form_row cols-1">
             <div className="d_form_group">
               <label className="d_form_label">Status</label>
               <select className="d_form_control" {...f('status')}>
