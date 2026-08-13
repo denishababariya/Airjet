@@ -961,7 +961,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
                       onChange={(e) => updateItemField(index, 'category', e.target.value)} /></td>
                     <td><input type="number" className="d_form_control" min={1} value={item.quantity || ''}
                       onChange={(e) => updateItemField(index, 'quantity', e.target.value)} />
-                      <Err field={`items_$`{index}_quantity`} /></td>
+                      <Err field={`items_${index}_quantity`} /></td>
                     <td><input type="number" className="d_form_control" min={0} step="0.01" value={item.unitPrice || ''}
                       onChange={(e) => updateItemField(index, 'unitPrice', e.target.value)} />
                       <Err field={`items_${index}_unitPrice`} /></td>
