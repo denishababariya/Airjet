@@ -17,7 +17,7 @@ export default function Ledger() {
 
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Ledger</div>
           <div className="d_page_subtitle">Account-wise transaction ledger with running balance</div>

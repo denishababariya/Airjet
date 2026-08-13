@@ -23,6 +23,14 @@ import CheckInOut       from './pages/attendance/CheckInOut';
 import Payroll          from './pages/Payroll';
 import Purchase         from './pages/Purchase';
 import Sales            from './pages/Sales';
+import SalesDashboard   from './pages/sales/SalesDashboard';
+import Customers        from './pages/sales/Customers';
+import Quotations       from './pages/sales/Quotations';
+import SalesOrders      from './pages/sales/SalesOrders';
+import Invoices         from './pages/sales/Invoices';
+import Payments         from './pages/sales/Payments';
+import SalesReturns     from './pages/sales/SalesReturns';
+import SalesReports     from './pages/sales/SalesReports';
 import SpareParts       from './pages/SpareParts';
 import Warehouse        from './pages/Warehouse';
 import Service          from './pages/Service';
@@ -72,8 +80,11 @@ const PAGE_MAP = {
   'Check In/Out':               { component: CheckInOut },
 
   // ── Payroll ────────────────────────────────────────────────
-  payroll:                      { component: Payroll, defaultTab: 'salary' },
-  'Salary Generation':          { component: Payroll, defaultTab: 'salary' },
+  payroll:                      { component: Payroll, defaultTab: 'dashboard' },
+  'Payroll Dashboard':          { component: Payroll, defaultTab: 'dashboard' },
+  'Salary Generation':          { component: Payroll, defaultTab: 'salary-generation' },
+  'Salary List':                { component: Payroll, defaultTab: 'salary-list' },
+  'Payroll Reports':            { component: Payroll, defaultTab: 'reports' },
   'Allowances':                 { component: Payroll, defaultTab: 'allowances' },
   'Deductions':                 { component: Payroll, defaultTab: 'deductions' },
   'Payslip Download':           { component: Payroll, defaultTab: 'payslip' },
@@ -88,11 +99,15 @@ const PAGE_MAP = {
   'Raw Material Purchases': { component: RawMaterialPurchases },
 
   // ── Sales ──────────────────────────────────────────────────
-  sales:               { component: Sales, defaultTab: 'customers' },
-  'Customers':         { component: Sales, defaultTab: 'customers' },
-  'Quotations':        { component: Sales, defaultTab: 'quotations' },
-  'Sales Orders':      { component: Sales, defaultTab: 'orders' },
-  'Invoices':          { component: Sales, defaultTab: 'invoices' },
+  sales:               { component: SalesDashboard },
+  'Sales Dashboard':   { component: SalesDashboard },
+  'Customers':         { component: Customers },
+  'Quotations':        { component: Quotations },
+  'Sales Orders':      { component: SalesOrders },
+  'Invoices':          { component: Invoices },
+  'Payments':          { component: Payments },
+  'Sales Returns':     { component: SalesReturns },
+  'Sales Reports':     { component: SalesReports },
 
   // ── Spare Parts ────────────────────────────────────────────
   spareparts:          { component: SpareParts, defaultTab: 'parts' },

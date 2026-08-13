@@ -149,7 +149,7 @@ export default function PurchaseOrders() {
 
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Purchase Orders</div>
           <div className="d_page_subtitle">Manage purchase orders for airjet loom spare parts</div>

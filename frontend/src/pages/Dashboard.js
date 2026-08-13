@@ -136,7 +136,7 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
 
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <h1 className="d_page_title">Dashboard</h1>
         <p className="d_page_subtitle">Welcome back, {currentUser?.employee?.name || 'User'} — here's what's happening today.</p>
       </div>

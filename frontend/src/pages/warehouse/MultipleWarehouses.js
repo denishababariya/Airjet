@@ -17,7 +17,7 @@ const summaryCards = [
 export default function MultipleWarehouses() {
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Warehouses</div>
           <div className="d_page_subtitle">Manage multiple warehouse locations and capacity</div>

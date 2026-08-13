@@ -1,25 +1,34 @@
-const Employee = require('../model/Empl.model');
-const Attendance = require('../model/Attendance.model');
-const Stock = require('../model/Stock.model');
-const SpareParts = require('../model/SpareParts.model');
-const Income = require('../model/Income.model');
-const ErpRecord = require('../model/ErpRecord.model');
-const Customer = require('../model/Customer.model');
-const Supplier = require('../model/Supplier.model');
-const { getAllModuleData } = require('../services/universalDataSync.service');
+const Employee = require("../model/Empl.model");
+const Attendance = require("../model/Attendance.model");
+const Stock = require("../model/Stock.model");
+const SpareParts = require("../model/SpareParts.model");
+const Income = require("../model/Income.model");
+const ErpRecord = require("../model/ErpRecord.model");
+const Customer = require("../model/Customer.model");
+const Supplier = require("../model/Supplier.model");
+const { getAllModuleData } = require("../services/universalDataSync.service");
 
-const formatCurrency = (n) => `₹${(n || 0).toLocaleString('en-IN')}`;
+const formatCurrency = (n) => `₹${(n || 0).toLocaleString("en-IN")}`;
 const formatDisplayDate = (value) => {
-  if (!value) return '-';
+  if (!value) return "-";
   const parsed = new Date(value);
   if (!Number.isNaN(parsed.getTime())) {
-    return parsed.toLocaleDateString('en-IN');
+    return parsed.toLocaleDateString("en-IN");
   }
   return value;
 };
 
-const isPendingStatus = (status = '') =>
-  !['Received', 'Delivered', 'Paid', 'Collected', 'Completed', 'Cancelled', 'Resolved', 'Closed'].includes(status);
+const isPendingStatus = (status = "") =>
+  ![
+    "Received",
+    "Delivered",
+    "Paid",
+    "Collected",
+    "Completed",
+    "Cancelled",
+    "Resolved",
+    "Closed",
+  ].includes(status);
 
 const getDashboardStats = async (req, res) => {
   try {
@@ -45,50 +54,71 @@ const getDashboardStats = async (req, res) => {
       payables,
     ] = await Promise.all([
       Employee.countDocuments(),
-      Promise.all([Stock.countDocuments(), SpareParts.countDocuments()]).then(([s, p]) => s + p),
+      Promise.all([Stock.countDocuments(), SpareParts.countDocuments()]).then(
+        ([s, p]) => s + p,
+      ),
       Stock.countDocuments({
         $expr: {
-          $lte: ['$quantity', '$minimumStock'],
+          $lte: ["$quantity", "$minimumStock"],
         },
       }),
       SpareParts.countDocuments({
         $expr: {
-          $lte: ['$quantity', '$minimumStock'],
+          $lte: ["$quantity", "$minimumStock"],
         },
       }),
       Income.aggregate([
-        { $match: { incomeType: 'Sales', date: { $gte: today, $lt: tomorrow } } },
-        { $group: { _id: null, total: { $sum: '$amount' } } },
+        {
+          $match: { incomeType: "Sales", date: { $gte: today, $lt: tomorrow } },
+        },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       Income.aggregate([
-        { $match: { incomeType: 'Purchase', date: { $gte: today, $lt: tomorrow } } },
-        { $group: { _id: null, total: { $sum: '$amount' } } },
+        {
+          $match: {
+            incomeType: "Purchase",
+            date: { $gte: today, $lt: tomorrow },
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
-      ErpRecord.countDocuments({ module: 'service', recordType: 'ticket', status: 'Open' }),
+      ErpRecord.countDocuments({
+        module: "service",
+        recordType: "ticket",
+        status: "Open",
+      }),
       Customer.countDocuments(),
-      ErpRecord.find({ module: 'sales', recordType: 'order' }).sort({ createdAt: -1 }).limit(5),
-      ErpRecord.find({ module: 'sales', recordType: 'invoice' }).sort({ createdAt: -1 }).limit(5),
-      ErpRecord.find({ module: 'service', recordType: 'ticket' }).sort({ createdAt: -1 }).limit(5),
-      ErpRecord.find({ module: 'purchase', recordType: 'order' }).sort({ createdAt: -1 }).limit(5),
+      ErpRecord.find({ module: "sales", recordType: "order" })
+        .sort({ createdAt: -1 })
+        .limit(5),
+      ErpRecord.find({ module: "sales", recordType: "invoice" })
+        .sort({ createdAt: -1 })
+        .limit(5),
+      ErpRecord.find({ module: "service", recordType: "ticket" })
+        .sort({ createdAt: -1 })
+        .limit(5),
+      ErpRecord.find({ module: "purchase", recordType: "order" })
+        .sort({ createdAt: -1 })
+        .limit(5),
       ErpRecord.aggregate([
         {
           $match: {
-            module: 'accounts',
-            recordType: 'receivable',
-            status: { $nin: ['Collected', 'Paid', 'Received'] },
+            module: "accounts",
+            recordType: "receivable",
+            status: { $nin: ["Collected", "Paid", "Received"] },
           },
         },
-        { $group: { _id: null, total: { $sum: '$amount' } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       ErpRecord.aggregate([
         {
           $match: {
-            module: 'accounts',
-            recordType: 'payable',
-            status: { $nin: ['Paid', 'Collected', 'Received'] },
+            module: "accounts",
+            recordType: "payable",
+            status: { $nin: ["Paid", "Collected", "Received"] },
           },
         },
-        { $group: { _id: null, total: { $sum: '$amount' } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
     ]);
 
@@ -125,7 +155,7 @@ const getDashboardStats = async (req, res) => {
       customer: t.customer,
       machine: t.machine,
       issue: t.issue,
-      engineer: t.engineer || 'Unassigned',
+      engineer: t.engineer || "Unassigned",
       status: t.status,
     }));
 
@@ -167,28 +197,30 @@ const getDashboardStats = async (req, res) => {
 
 const getRecentActivity = async (req, res) => {
   try {
-    const recentRecords = await ErpRecord.find().sort({ createdAt: -1 }).limit(10);
+    const recentRecords = await ErpRecord.find()
+      .sort({ createdAt: -1 })
+      .limit(10);
     const activities = recentRecords.map((r, i) => {
       let icon, color, text;
-      if (r.module === 'sales') {
-        icon = 'MdPointOfSale';
-        color = '#28a745';
-        text = `New ${r.recordType} ${r.id} created for ${r.customer || 'Customer'}`;
-      } else if (r.module === 'service') {
-        icon = 'MdBuildCircle';
-        color = '#17a2b8';
-        text = `Service ticket ${r.id} assigned to ${r.engineer || 'engineer'}`;
-      } else if (r.module === 'purchase') {
-        icon = 'MdShoppingCart';
-        color = '#f4a124';
-        text = `Purchase order ${r.id} status updated to ${r.status || 'Pending'}`;
-      } else if (r.module === 'payroll') {
-        icon = 'MdCheckCircle';
-        color = '#28a745';
-        text = `Salary generated for ${r.month || 'current month'} — ${r.emp || 'employee'}`;
+      if (r.module === "sales") {
+        icon = "MdPointOfSale";
+        color = "#28a745";
+        text = `New ${r.recordType} ${r.id} created for ${r.customer || "Customer"}`;
+      } else if (r.module === "service") {
+        icon = "MdBuildCircle";
+        color = "#17a2b8";
+        text = `Service ticket ${r.id} assigned to ${r.engineer || "engineer"}`;
+      } else if (r.module === "purchase") {
+        icon = "MdShoppingCart";
+        color = "#f4a124";
+        text = `Purchase order ${r.id} status updated to ${r.status || "Pending"}`;
+      } else if (r.module === "payroll") {
+        icon = "MdCheckCircle";
+        color = "#28a745";
+        text = `Salary generated for ${r.month || "current month"} — ${r.emp || "employee"}`;
       } else {
-        icon = 'MdAccessTime';
-        color = '#1a3c5e';
+        icon = "MdAccessTime";
+        color = "#1a3c5e";
         text = `New ${r.module} record ${r.id} created`;
       }
       const timeAgo = getTimeAgo(r.createdAt);
@@ -203,7 +235,7 @@ const getRecentActivity = async (req, res) => {
 const getTimeAgo = (date) => {
   const now = new Date();
   const diff = Math.floor((now - new Date(date)) / 1000);
-  if (diff < 60) return 'Just now';
+  if (diff < 60) return "Just now";
   if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} hr ago`;
   return `${Math.floor(diff / 86400)} days ago`;
@@ -221,7 +253,7 @@ const getAllModuleDataController = async (req, res) => {
 const globalSearch = async (req, res) => {
   try {
     const { query } = req.query;
-    if (!query || query.trim() === '') {
+    if (!query || query.trim() === "") {
       return res.status(200).json({ results: [], total: 0 });
     }
 
@@ -231,111 +263,116 @@ const globalSearch = async (req, res) => {
     // Search Employees
     const employees = await Employee.find({
       $or: [
-        { name: { $regex: searchTerm, $options: 'i' } },
-        { email: { $regex: searchTerm, $options: 'i' } },
-      ]
+        { name: { $regex: searchTerm, $options: "i" } },
+        { email: { $regex: searchTerm, $options: "i" } },
+      ],
     }).limit(10);
-    employees.forEach(emp => {
+    employees.forEach((emp) => {
       results.push({
-        type: 'Employee',
+        type: "Employee",
         id: emp.id,
         name: emp.name,
-        description: `${emp.department?.name || 'N/A'} - ${emp.designation?.name || 'N/A'}`,
-        link: 'employee',
+        description: `${emp.department?.name || "N/A"} - ${emp.designation?.name || "N/A"}`,
+        link: "employee",
       });
     });
 
     // Search Customers
     const customers = await Customer.find({
       $or: [
-        { name: { $regex: searchTerm, $options: 'i' } },
-        { email: { $regex: searchTerm, $options: 'i' } },
-        { phone: { $regex: searchTerm, $options: 'i' } },
-        { companyName: { $regex: searchTerm, $options: 'i' } },
-      ]
+        { name: { $regex: searchTerm, $options: "i" } },
+        { email: { $regex: searchTerm, $options: "i" } },
+        { phone: { $regex: searchTerm, $options: "i" } },
+        { companyName: { $regex: searchTerm, $options: "i" } },
+      ],
     }).limit(10);
-    customers.forEach(cust => {
+    customers.forEach((cust) => {
       results.push({
-        type: 'Customer',
+        type: "Customer",
         id: cust.id,
         name: cust.name,
-        description: cust.companyName || cust.city || 'Customer',
-        link: 'sales',
+        description: cust.companyName || cust.city || "Customer",
+        link: "sales",
       });
     });
 
     // Search Suppliers
     const suppliers = await Supplier.find({
       $or: [
-        { name: { $regex: searchTerm, $options: 'i' } },
-        { contact: { $regex: searchTerm, $options: 'i' } },
-        { phone: { $regex: searchTerm, $options: 'i' } },
-        { city: { $regex: searchTerm, $options: 'i' } },
-      ]
+        { name: { $regex: searchTerm, $options: "i" } },
+        { contact: { $regex: searchTerm, $options: "i" } },
+        { phone: { $regex: searchTerm, $options: "i" } },
+        { city: { $regex: searchTerm, $options: "i" } },
+      ],
     }).limit(10);
-    suppliers.forEach(sup => {
+    suppliers.forEach((sup) => {
       results.push({
-        type: 'Supplier',
+        type: "Supplier",
         id: sup.id,
         name: sup.name,
-        description: sup.city || 'Supplier',
-        link: 'purchase',
+        description: sup.city || "Supplier",
+        link: "purchase",
       });
     });
 
     // Search Stock
     const stockItems = await Stock.find({
       $or: [
-        { itemName: { $regex: searchTerm, $options: 'i' } },
-        { itemCode: { $regex: searchTerm, $options: 'i' } },
-        { category: { $regex: searchTerm, $options: 'i' } },
-      ]
+        { itemName: { $regex: searchTerm, $options: "i" } },
+        { itemCode: { $regex: searchTerm, $options: "i" } },
+        { category: { $regex: searchTerm, $options: "i" } },
+      ],
     }).limit(10);
-    stockItems.forEach(item => {
+    stockItems.forEach((item) => {
       results.push({
-        type: 'Stock',
+        type: "Stock",
         id: item.id,
         name: item.itemName,
         description: `${item.category} - Qty: ${item.quantity}`,
-        link: 'warehouse',
+        link: "warehouse",
       });
     });
 
     // Search Spare Parts
     const spareParts = await SpareParts.find({
       $or: [
-        { partName: { $regex: searchTerm, $options: 'i' } },
-        { partNumber: { $regex: searchTerm, $options: 'i' } },
-        { category: { $regex: searchTerm, $options: 'i' } },
-        { brand: { $regex: searchTerm, $options: 'i' } },
-      ]
+        { partName: { $regex: searchTerm, $options: "i" } },
+        { partNumber: { $regex: searchTerm, $options: "i" } },
+        { category: { $regex: searchTerm, $options: "i" } },
+        { brand: { $regex: searchTerm, $options: "i" } },
+      ],
     }).limit(10);
-    spareParts.forEach(part => {
+    spareParts.forEach((part) => {
       results.push({
-        type: 'Spare Part',
+        type: "Spare Part",
         id: part.id,
         name: part.partName,
         description: `${part.partNumber} - ${part.brand}`,
-        link: 'spareparts',
+        link: "spareparts",
       });
     });
 
     // Search ERP Records
     const erpRecords = await ErpRecord.find({
       $or: [
-        { customer: { $regex: searchTerm, $options: 'i' } },
-        { supplier: { $regex: searchTerm, $options: 'i' } },
-        { emp: { $regex: searchTerm, $options: 'i' } },
-        { part: { $regex: searchTerm, $options: 'i' } },
-        { id: { $regex: searchTerm, $options: 'i' } },
-      ]
+        { customer: { $regex: searchTerm, $options: "i" } },
+        { supplier: { $regex: searchTerm, $options: "i" } },
+        { emp: { $regex: searchTerm, $options: "i" } },
+        { part: { $regex: searchTerm, $options: "i" } },
+        { id: { $regex: searchTerm, $options: "i" } },
+      ],
     }).limit(15);
-    erpRecords.forEach(record => {
+    erpRecords.forEach((record) => {
       results.push({
         type: record.module.toUpperCase(),
         id: record.id,
-        name: record.customer || record.supplier || record.emp || record.part || record.id,
-        description: `${record.recordType} - ${record.status || 'Active'}`,
+        name:
+          record.customer ||
+          record.supplier ||
+          record.emp ||
+          record.part ||
+          record.id,
+        description: `${record.recordType} - ${record.status || "Active"}`,
         link: record.module,
       });
     });
@@ -348,14 +385,14 @@ const globalSearch = async (req, res) => {
 
 const getAttendanceStats = async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
 
     const [activeEmployees, todayRecords, leaveRecords] = await Promise.all([
-      Employee.find({ status: 'Active' }, { _id: 1, id: 1 }),
-      Attendance.find({ date: today, recordType: 'attendance' }),
+      Employee.find({ status: "Active" }, { _id: 1, id: 1 }),
+      Attendance.find({ date: today, recordType: "attendance" }),
       Attendance.find({
-        recordType: 'leave',
-        status: 'Approved',
+        recordType: "leave",
+        status: "Approved",
         $or: [
           { date: today },
           {
@@ -366,9 +403,14 @@ const getAttendanceStats = async (req, res) => {
       }),
     ]);
 
-    const employeeKey = (record) => String(record.employeeId || record.empId || '').trim();
-    const activeIds = new Set(activeEmployees.map((employee) => String(employee._id)));
-    const activeEmpCodes = new Set(activeEmployees.map((employee) => String(employee.id)));
+    const employeeKey = (record) =>
+      String(record.employeeId || record.empId || "").trim();
+    const activeIds = new Set(
+      activeEmployees.map((employee) => String(employee._id)),
+    );
+    const activeEmpCodes = new Set(
+      activeEmployees.map((employee) => String(employee.id)),
+    );
     const isActiveRecord = (record) => {
       const key = employeeKey(record);
       return activeIds.has(key) || activeEmpCodes.has(key);
@@ -376,12 +418,14 @@ const getAttendanceStats = async (req, res) => {
 
     const filteredTodayRecords = todayRecords.filter(isActiveRecord);
     const filteredLeaveRecords = leaveRecords.filter(isActiveRecord);
-    const presentRecords = filteredTodayRecords.filter((r) => r.status === 'Present');
-    const lateRecords = filteredTodayRecords.filter((r) => r.status === 'Late');
+    const presentRecords = filteredTodayRecords.filter(
+      (r) => r.status === "Present",
+    );
+    const lateRecords = filteredTodayRecords.filter((r) => r.status === "Late");
     const coveredEmployees = new Set(
       [...presentRecords, ...lateRecords, ...filteredLeaveRecords]
         .map(employeeKey)
-        .filter(Boolean)
+        .filter(Boolean),
     );
 
     const present = presentRecords.length;

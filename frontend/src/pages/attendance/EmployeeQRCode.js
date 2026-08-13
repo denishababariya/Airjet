@@ -110,7 +110,7 @@ const EmployeeQRCode = () => {
 
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <h1 className="d_page_title">Employee QR Codes</h1>
         <p className="d_page_subtitle">Generate and manage employee QR codes for attendance</p>
       </div>

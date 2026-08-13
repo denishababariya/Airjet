@@ -237,6 +237,66 @@ router.delete('/customers/:id', authenticate, authorize('Admin'), controller.del
 router.patch('/customers/:id/purchase', authenticate, controller.updateCustomerPurchase);
 
 // ──────────────────────────────────────────────────────────────
+// Sales Module Routes
+// ──────────────────────────────────────────────────────────────
+// Quotations
+router.get('/quotations', authenticate, controller.quotation.getAllQuotations);
+router.get('/quotations/:id', authenticate, controller.quotation.getQuotationById);
+router.post('/quotations', authenticate, authorizeByLevel(2), controller.quotation.createQuotation);
+router.put('/quotations/:id', authenticate, authorizeByLevel(2), controller.quotation.updateQuotation);
+router.delete('/quotations/:id', authenticate, authorize('Admin'), controller.quotation.deleteQuotation);
+router.post('/quotations/:id/send', authenticate, authorizeByLevel(2), controller.quotation.sendQuotation);
+router.post('/quotations/:id/accept', authenticate, authorizeByLevel(2), controller.quotation.acceptQuotation);
+router.post('/quotations/:id/reject', authenticate, authorizeByLevel(2), controller.quotation.rejectQuotation);
+router.post('/quotations/:id/convert', authenticate, authorizeByLevel(2), controller.quotation.convertToSalesOrder);
+
+// Sales Orders
+router.get('/sales-orders', authenticate, controller.salesOrder.getAllSalesOrders);
+router.get('/sales-orders/:id', authenticate, controller.salesOrder.getSalesOrderById);
+router.post('/sales-orders', authenticate, authorizeByLevel(2), controller.salesOrder.createSalesOrder);
+router.put('/sales-orders/:id', authenticate, authorizeByLevel(2), controller.salesOrder.updateSalesOrder);
+router.delete('/sales-orders/:id', authenticate, authorize('Admin'), controller.salesOrder.deleteSalesOrder);
+router.post('/sales-orders/:id/confirm', authenticate, authorizeByLevel(2), controller.salesOrder.confirmSalesOrder);
+router.post('/sales-orders/:id/cancel', authenticate, authorizeByLevel(2), controller.salesOrder.cancelSalesOrder);
+router.post('/sales-orders/:id/reserve-stock', authenticate, authorizeByLevel(2), controller.salesOrder.reserveStock);
+
+// Invoices
+router.get('/invoices', authenticate, controller.invoice.getAllInvoices);
+router.get('/invoices/:id', authenticate, controller.invoice.getInvoiceById);
+router.post('/invoices', authenticate, authorizeByLevel(2), controller.invoice.createInvoice);
+router.put('/invoices/:id', authenticate, authorizeByLevel(2), controller.invoice.updateInvoice);
+router.delete('/invoices/:id', authenticate, authorize('Admin'), controller.invoice.deleteInvoice);
+router.post('/invoices/:id/issue', authenticate, authorizeByLevel(2), controller.invoice.issueInvoice);
+router.post('/invoices/:id/cancel', authenticate, authorizeByLevel(2), controller.invoice.cancelInvoice);
+router.post('/invoices/:id/payment', authenticate, authorizeByLevel(2), controller.invoice.addPayment);
+
+// Payments
+router.get('/payments', authenticate, controller.payment.getAllPayments);
+router.get('/payments/:id', authenticate, controller.payment.getPaymentById);
+router.post('/payments', authenticate, authorizeByLevel(2), controller.payment.createPayment);
+router.put('/payments/:id', authenticate, authorizeByLevel(2), controller.payment.updatePayment);
+router.delete('/payments/:id', authenticate, authorize('Admin'), controller.payment.deletePayment);
+
+// Sales Returns
+router.get('/sales-returns', authenticate, controller.salesReturn.getAllSalesReturns);
+router.get('/sales-returns/:id', authenticate, controller.salesReturn.getSalesReturnById);
+router.post('/sales-returns', authenticate, authorizeByLevel(2), controller.salesReturn.createSalesReturn);
+router.put('/sales-returns/:id', authenticate, authorizeByLevel(2), controller.salesReturn.updateSalesReturn);
+router.delete('/sales-returns/:id', authenticate, authorize('Admin'), controller.salesReturn.deleteSalesReturn);
+router.post('/sales-returns/:id/approve', authenticate, authorizeByLevel(2), controller.salesReturn.approveSalesReturn);
+router.post('/sales-returns/:id/process', authenticate, authorizeByLevel(2), controller.salesReturn.processSalesReturn);
+router.post('/sales-returns/:id/reject', authenticate, authorizeByLevel(2), controller.salesReturn.rejectSalesReturn);
+
+// Sales Dashboard & Reports
+router.get('/sales/dashboard/summary', authenticate, controller.salesDashboard.getDashboardSummary);
+router.get('/sales/dashboard/chart', authenticate, controller.salesDashboard.getSalesChartData);
+router.get('/sales/reports/daily', authenticate, controller.salesDashboard.getDailySalesReport);
+router.get('/sales/reports/monthly', authenticate, controller.salesDashboard.getMonthlySalesReport);
+router.get('/sales/reports/customer', authenticate, controller.salesDashboard.getCustomerSalesReport);
+router.get('/sales/reports/product', authenticate, controller.salesDashboard.getProductSalesReport);
+router.get('/sales/reports/gst', authenticate, controller.salesDashboard.getGSTSalesReport);
+
+// ──────────────────────────────────────────────────────────────
 // Dashboard Routes
 // ──────────────────────────────────────────────────────────────
 router.get('/dashboard/stats', authenticate, controller.getDashboardStats);

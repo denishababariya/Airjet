@@ -4,5 +4,11 @@ module.exports = {
   ...require("./Designation.model.js"),
   ...require("./Depart.model.js"),
   ...require("./Payroll.model.js"),
-
+  ...require("./Customer.model.js"),
+  ...require("./SpareParts.model.js"),
+  ...require("./Quotation.model.js"),
+  ...require("./SalesOrder.model.js"),
+  ...require("./Invoice.model.js"),
+  ...require("./Payment.model.js"),
+  ...require("./SalesReturn.model.js"),
 };

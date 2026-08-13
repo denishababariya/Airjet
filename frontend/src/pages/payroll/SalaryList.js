@@ -228,7 +228,6 @@ export default function SalaryList({ onViewDetails, onEdit, onApprove, onPay, on
               <table className="d_table" style={{ minWidth: 1000 }}>
                 <thead>
                   <tr>
-                    <th>Salary ID</th>
                     <th>Employee</th>
                     <th>Department</th>
                     <th>Designation</th>
@@ -245,10 +244,9 @@ export default function SalaryList({ onViewDetails, onEdit, onApprove, onPay, on
                   </tr>
                 </thead>
                 <tbody>
-                  {salaries.length === 0 && <tr className="d_empty"><td colSpan={14}>No salary records found</td></tr>}
+                  {salaries.length === 0 && <tr className="d_empty"><td colSpan={13}>No salary records found</td></tr>}
                   {salaries.map(r => (
                     <tr key={r._id}>
-                      <td><code>{r.id?.slice(0, 8)}...</code></td>
                       <td>
                         <strong>{r.employeeName}</strong>
                         <br/>

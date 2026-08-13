@@ -42,12 +42,12 @@ const customerSchema = new mongoose.Schema({
     },
     customerType: {
         type: String,
-        enum: ['Individual', 'Business', 'Government'],
-        default: 'Individual'
+        enum: ['Dealer', 'Distributor', 'Retailer', 'Manufacturer', 'Service Customer', 'Other'],
+        default: 'Other'
     },
     status: {
         type: String,
-        enum: ['Active', 'Inactive', 'Blacklisted'],
+        enum: ['Active', 'Inactive', 'Blocked'],
         default: 'Active'
     },
     totalPurchases: {
@@ -65,9 +65,28 @@ const customerSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    creditDays: {
+        type: Number,
+        default: 30
+    },
     currentBalance: {
         type: Number,
         default: 0
+    },
+    paymentTerms: {
+        type: String,
+        enum: ['Cash', 'Immediate', '7 Days', '15 Days', '30 Days', '45 Days', '60 Days'],
+        default: '30 Days'
+    },
+    openingBalance: {
+        type: Number,
+        default: 0
+    },
+    billingAddress: {
+        type: String
+    },
+    shippingAddress: {
+        type: String
     },
     notes: {
         type: String

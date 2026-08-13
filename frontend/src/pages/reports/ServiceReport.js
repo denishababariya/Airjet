@@ -20,7 +20,7 @@ const summaryCards = [
 export default function ServiceReport() {
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Service Report</div>
           <div className="d_page_subtitle">Monthly service ticket summary — Jan to Jun 2026</div>

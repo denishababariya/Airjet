@@ -40,7 +40,7 @@ export default function Payables() {
 
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Payables</div>
           <div className="d_page_subtitle">Track supplier outstanding payments and dues</div>

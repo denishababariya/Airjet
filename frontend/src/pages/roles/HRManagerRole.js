@@ -31,7 +31,7 @@ const users = [
 export default function HRManagerRole() {
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">HR Manager Role</div>
           <div className="d_page_subtitle">Access to Employee Management, Attendance, Payroll, and Reports modules</div>

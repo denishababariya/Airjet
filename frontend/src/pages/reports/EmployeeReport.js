@@ -22,7 +22,7 @@ const summaryCards = [
 export default function EmployeeReport() {
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Employee Report</div>
           <div className="d_page_subtitle">Employee master summary and status</div>

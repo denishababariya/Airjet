@@ -13,7 +13,7 @@ const brands = [
 export default function Brand() {
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Brands</div>
           <div className="d_page_subtitle">Manage spare part manufacturers and brands</div>

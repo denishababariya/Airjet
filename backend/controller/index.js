@@ -17,4 +17,10 @@ module.exports = {
   ...require("./purchase.controller.js"),
   ...require("./rawMaterial.controller.js"),
   ...require("./payroll.controller.js"),
+  quotation: require("./quotation.controller.js"),
+  salesOrder: require("./salesOrder.controller.js"),
+  invoice: require("./invoice.controller.js"),
+  payment: require("./payment.controller.js"),
+  salesReturn: require("./salesReturn.controller.js"),
+  salesDashboard: require("./salesDashboard.controller.js"),
 };

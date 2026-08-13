@@ -1,85 +1,393 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdVisibility, MdSearch, MdPeople } from 'react-icons/md';
+import Modal from '../../components/Modal';
+import api from '../../utils/api';
 
-const customers = [
-  { id: 'CUST001', name: 'Vardhman Textiles Ltd', contact: 'Sanjay Gupta', phone: '+91 98761 23450', city: 'Ludhiana', gst: '03AABCV2345A1Z8', credit: 500000, outstanding: 125000, status: 'Active' },
-  { id: 'CUST002', name: 'Welspun India Ltd', contact: 'Pradeep Mehta', phone: '+91 97654 87654', city: 'Anjar', gst: '24AABCW4567B2Z5', credit: 750000, outstanding: 0, status: 'Active' },
-  { id: 'CUST003', name: 'Bhilwara Spinners Pvt Ltd', contact: 'Anita Sharma', phone: '+91 94123 56789', city: 'Bhilwara', gst: '08AABPB1234C3Z2', credit: 300000, outstanding: 87500, status: 'Active' },
-  { id: 'CUST004', name: 'Arvind Limited (Weaving Division)', contact: 'Ravi Patel', phone: '+91 99001 34567', city: 'Ahmedabad', gst: '24AAACA5678D4Z9', credit: 1000000, outstanding: 234000, status: 'Active' },
-  { id: 'CUST005', name: 'Sri Ramakrishna Mills', contact: 'Murugan K', phone: '+91 91234 67890', city: 'Coimbatore', gst: '33AABCS9012E5Z6', credit: 200000, outstanding: 200000, status: 'Inactive' },
-];
+const blankCustomer = {
+    name: '',
+    companyName: '',
+    contactPerson: '',
+    email: '',
+    phone: '',
+    alternatePhone: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    gstNumber: '',
+    panNumber: '',
+    customerType: 'Other',
+    creditLimit: 0,
+    creditDays: 30,
+    paymentTerms: '30 Days',
+    openingBalance: 0,
+    billingAddress: '',
+    shippingAddress: '',
+    status: 'Active',
+    notes: ''
+};
 
 export default function Customers() {
-  const [search, setSearch] = useState('');
+    const [customers, setCustomers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [search, setSearch] = useState('');
+    const [modal, setModal] = useState(false);
+    const [form, setForm] = useState(blankCustomer);
+    const [editId, setEditId] = useState(null);
+    const [errors, setErrors] = useState({});
 
-  const filtered = customers.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.city.toLowerCase().includes(search.toLowerCase())
-  );
+    useEffect(() => {
+        fetchCustomers();
+    }, []);
 
-  return (
-    <div>
-      <div className="d_page_header">
+    const fetchCustomers = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/customers');
+            setCustomers(response.data || []);
+            setError(null);
+        } catch (err) {
+            setError('Failed to load customers');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filtered = customers.filter(c =>
+        c.name?.toLowerCase().includes(search.toLowerCase()) ||
+        c.city?.toLowerCase().includes(search.toLowerCase()) ||
+        c.companyName?.toLowerCase().includes(search.toLowerCase()) ||
+        c.gstNumber?.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const openAdd = () => {
+        setForm({ ...blankCustomer });
+        setEditId(null);
+        setErrors({});
+        setModal(true);
+    };
+
+    const openEdit = (customer) => {
+        setForm({
+            name: customer.name || '',
+            companyName: customer.companyName || '',
+            contactPerson: customer.contactPerson || '',
+            email: customer.email || '',
+            phone: customer.phone || '',
+            alternatePhone: customer.alternatePhone || '',
+            address: customer.address || '',
+            city: customer.city || '',
+            state: customer.state || '',
+            pincode: customer.pincode || '',
+            gstNumber: customer.gstNumber || '',
+            panNumber: customer.panNumber || '',
+            customerType: customer.customerType || 'Other',
+            creditLimit: customer.creditLimit || 0,
+            creditDays: customer.creditDays || 30,
+            paymentTerms: customer.paymentTerms || '30 Days',
+            openingBalance: customer.openingBalance || 0,
+            billingAddress: customer.billingAddress || '',
+            shippingAddress: customer.shippingAddress || '',
+            status: customer.status || 'Active',
+            notes: customer.notes || ''
+        });
+        setEditId(customer._id);
+        setErrors({});
+        setModal(true);
+    };
+
+    const validate = () => {
+        const e = {};
+        if (!form.name.trim()) e.name = 'Customer name is required';
+        if (!form.email.trim()) e.email = 'Email is required';
+        if (!form.phone.trim()) e.phone = 'Phone is required';
+        if (!form.city.trim()) e.city = 'City is required';
+        if (!form.state.trim()) e.state = 'State is required';
+        return e;
+    };
+
+    const handleSave = async () => {
+        const e = validate();
+        if (Object.keys(e).length) {
+            setErrors(e);
+            return;
+        }
+
+        try {
+            if (editId) {
+                await api.put(`/customers/${editId}`, form);
+            } else {
+                await api.post('/customers', form);
+            }
+            setModal(false);
+            fetchCustomers();
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to save customer');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this customer?')) return;
+        try {
+            await api.delete(`/customers/${id}`);
+            fetchCustomers();
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to delete customer');
+        }
+    };
+
+    const f = (field) => ({
+        value: form[field] ?? '',
+        onChange: (e) => {
+            setForm(p => ({ ...p, [field]: e.target.value }));
+            setErrors(p => ({ ...p, [field]: '' }));
+        }
+    });
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(amount || 0);
+    };
+
+    if (loading) {
+        return (
+            <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div>
+                    <div className="d_page_title">Customers</div>
+                    <div className="d_page_subtitle">Loading...</div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
         <div>
-          <div className="d_page_title">Customers</div>
-          <div className="d_page_subtitle">Manage textile mills and weaving industry clients</div>
-        </div>
-        <button className="d_btn d_btn_primary"><MdAdd /> Add Customer</button>
-      </div>
+            <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div>
+                    <div className="d_page_title">Customers</div>
+                    <div className="d_page_subtitle">Manage textile mills and weaving industry clients</div>
+                </div>
+                <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> Add Customer</button>
+            </div>
 
-      <div className="d_card">
-        <div className="d_card_header">
-          <div className="d_card_title"><span className="d_card_icon"><MdPeople /></span>Customer List</div>
-          <div className="d_search_box">
-            <span className="d_search_icon"><MdSearch /></span>
-            <input className="d_search_input" placeholder="Search customers..." value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
+            {error && <div style={{ padding: '12px', background: '#fee', color: '#c33', marginBottom: '16px', borderRadius: '4px' }}>{error}</div>}
+
+            <div className="d_card">
+                <div className="d_card_header">
+                    <div className="d_card_title"><span className="d_card_icon"><MdPeople /></span>Customer List ({filtered.length})</div>
+                    <div className="d_search_box">
+                        <span className="d_search_icon"><MdSearch /></span>
+                        <input className="d_search_input" placeholder="Search customers..." value={search} onChange={e => setSearch(e.target.value)} />
+                    </div>
+                </div>
+                <div className="d_card_body">
+                    <div className="d_table_wrap">
+                        <table className="d_table" style={{ minWidth: 1000 }}>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Company</th>
+                                    <th>Contact Person</th>
+                                    <th>Phone</th>
+                                    <th>City</th>
+                                    <th>GST No.</th>
+                                    <th>Credit Limit</th>
+                                    <th>Outstanding</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.length === 0 && (
+                                    <tr className="d_empty">
+                                        <td colSpan={11}>No customers found.</td>
+                                    </tr>
+                                )}
+                                {filtered.map(c => (
+                                    <tr key={c._id}>
+                                        <td><code>{c.id}</code></td>
+                                        <td>{c.name}</td>
+                                        <td>{c.companyName || '-'}</td>
+                                        <td>{c.contactPerson || '-'}</td>
+                                        <td>{c.phone}</td>
+                                        <td>{c.city}</td>
+                                        <td><code>{c.gstNumber || '-'}</code></td>
+                                        <td>{formatCurrency(c.creditLimit)}</td>
+                                        <td style={{ color: c.currentBalance > 0 ? 'var(--d-danger)' : 'inherit' }}>
+                                            {formatCurrency(c.currentBalance)}
+                                        </td>
+                                        <td><span className={`d_badge ${c.status === 'Active' ? 'd_success' : 'd_danger'}`}>{c.status}</span></td>
+                                        <td>
+                                            <div className="d_action_btns">
+                                                <button className="d_icon_btn d_view" onClick={() => openEdit(c)}><MdVisibility /></button>
+                                                <button className="d_icon_btn d_edit" onClick={() => openEdit(c)}><MdEdit /></button>
+                                                <button className="d_icon_btn d_del" onClick={() => handleDelete(c._id)}><MdDelete /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Customer' : 'Add Customer'} size="xl">
+                <div className="d_form_row cols-2">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Customer Name <span className="d_req">*</span></label>
+                        <input className="d_form_control" {...f('name')} />
+                        {errors.name && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.name}</span>}
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">Company Name</label>
+                        <input className="d_form_control" {...f('companyName')} />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-2">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Contact Person</label>
+                        <input className="d_form_control" {...f('contactPerson')} />
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">Email <span className="d_req">*</span></label>
+                        <input type="email" className="d_form_control" {...f('email')} />
+                        {errors.email && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.email}</span>}
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-2">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Phone <span className="d_req">*</span></label>
+                        <input className="d_form_control" {...f('phone')} />
+                        {errors.phone && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.phone}</span>}
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">Alternate Phone</label>
+                        <input className="d_form_control" {...f('alternatePhone')} />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-1">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Address</label>
+                        <textarea className="d_form_control" rows="2" {...f('address')} />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-3">
+                    <div className="d_form_group">
+                        <label className="d_form_label">City <span className="d_req">*</span></label>
+                        <input className="d_form_control" {...f('city')} />
+                        {errors.city && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.city}</span>}
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">State <span className="d_req">*</span></label>
+                        <input className="d_form_control" {...f('state')} />
+                        {errors.state && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.state}</span>}
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">Pincode</label>
+                        <input className="d_form_control" {...f('pincode')} />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-2">
+                    <div className="d_form_group">
+                        <label className="d_form_label">GST Number</label>
+                        <input className="d_form_control" {...f('gstNumber')} placeholder="24AABCU1234A1Z8" />
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">PAN Number</label>
+                        <input className="d_form_control" {...f('panNumber')} placeholder="ABCDE1234F" />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-2">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Customer Type</label>
+                        <select className="d_form_control" {...f('customerType')}>
+                            <option value="Dealer">Dealer</option>
+                            <option value="Distributor">Distributor</option>
+                            <option value="Retailer">Retailer</option>
+                            <option value="Manufacturer">Manufacturer</option>
+                            <option value="Service Customer">Service Customer</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">Status</label>
+                        <select className="d_form_control" {...f('status')}>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Blocked">Blocked</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-2">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Credit Limit (₹)</label>
+                        <input type="number" className="d_form_control" {...f('creditLimit')} min="0" />
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">Credit Days</label>
+                        <input type="number" className="d_form_control" {...f('creditDays')} min="0" />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-2">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Payment Terms</label>
+                        <select className="d_form_control" {...f('paymentTerms')}>
+                            <option value="Cash">Cash</option>
+                            <option value="Immediate">Immediate</option>
+                            <option value="7 Days">7 Days</option>
+                            <option value="15 Days">15 Days</option>
+                            <option value="30 Days">30 Days</option>
+                            <option value="45 Days">45 Days</option>
+                            <option value="60 Days">60 Days</option>
+                        </select>
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">Opening Balance (₹)</label>
+                        <input type="number" className="d_form_control" {...f('openingBalance')} min="0" />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-1">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Billing Address</label>
+                        <textarea className="d_form_control" rows="2" {...f('billingAddress')} />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-1">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Shipping Address</label>
+                        <textarea className="d_form_control" rows="2" {...f('shippingAddress')} />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-1">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Notes</label>
+                        <textarea className="d_form_control" rows="2" {...f('notes')} />
+                    </div>
+                </div>
+
+                <div className="d_form_actions">
+                    <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
+                    <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Customer' : 'Create Customer'}</button>
+                </div>
+            </Modal>
         </div>
-        <div className="d_card_body">
-          <div className="d_table_wrap">
-            <table className="d_table" style={{ minWidth: 750 }}>
-              <thead>
-                <tr>
-                  <th>Cust ID</th>
-                  <th>Name</th>
-                  <th>Contact Person</th>
-                  <th>Phone</th>
-                  <th>City</th>
-                  <th>GST No.</th>
-                  <th>Credit Limit (₹)</th>
-                  <th>Outstanding (₹)</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(c => (
-                  <tr key={c.id}>
-                    <td>{c.id}</td>
-                    <td>{c.name}</td>
-                    <td>{c.contact}</td>
-                    <td>{c.phone}</td>
-                    <td>{c.city}</td>
-                    <td><code>{c.gst}</code></td>
-                    <td>{c.credit.toLocaleString('en-IN')}</td>
-                    <td style={{ color: c.outstanding > 0 ? 'var(--d-danger)' : 'inherit' }}>
-                      {c.outstanding.toLocaleString('en-IN')}
-                    </td>
-                    <td><span className={`d_badge ${c.status === 'Active' ? 'd_success' : 'd_danger'}`}>{c.status}</span></td>
-                    <td>
-                      <div className="d_action_btns">
-                        <button className="d_icon_btn d_view"><MdVisibility /></button>
-                        <button className="d_icon_btn d_edit"><MdEdit /></button>
-                        <button className="d_icon_btn d_del"><MdDelete /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    );
 }

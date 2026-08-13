@@ -18,7 +18,7 @@ const statusBadge = s => {
 export default function Returns() {
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Purchase Returns</div>
           <div className="d_page_subtitle">Track and manage goods returned to suppliers</div>

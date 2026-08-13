@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MdDashboard, MdMonetizationOn, MdList, MdAssessment, MdSettings } from 'react-icons/md';
 import PayrollDashboard from './payroll/PayrollDashboard';
 import SalaryGeneration from './payroll/SalaryGeneration';
@@ -9,11 +9,21 @@ import Payslip from './payroll/Payslip';
 import PayrollReports from './payroll/PayrollReports';
 import Allowances from './payroll/Allowances';
 import Deductions from './payroll/Deductions';
+import PayslipDownload from './payroll/PayslipDownload';
 
-const Payroll = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+const Payroll = ({ defaultTab = 'dashboard' }) => {
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [selectedSalaryId, setSelectedSalaryId] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'details', 'edit', 'payslip'
+
+  // Sync activeTab when defaultTab prop changes (from sidebar navigation)
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveTab(defaultTab);
+      setViewMode('list');
+      setSelectedSalaryId(null);
+    }
+  }, [defaultTab]);
 
   const handleViewSalary = (id) => {
     setSelectedSalaryId(id);
@@ -68,6 +78,8 @@ const Payroll = () => {
         return <Allowances />;
       case 'deductions':
         return <Deductions />;
+      case 'payslip':
+        return <PayslipDownload />;
       default:
         return <PayrollDashboard />;
     }
@@ -75,7 +87,7 @@ const Payroll = () => {
 
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Payroll Management</div>
           <div className="d_page_subtitle">Complete salary and payroll management system</div>
@@ -89,7 +101,8 @@ const Payroll = () => {
           ['salary-list', 'Salary List', MdList],
           ['reports', 'Reports', MdAssessment],
           ['allowances', 'Allowances', MdSettings],
-          ['deductions', 'Deductions', MdSettings]
+          ['deductions', 'Deductions', MdSettings],
+          ['payslip', 'Payslip Download', MdSettings]
         ].map(([key, label, Icon]) => (
           <button 
             key={key} 

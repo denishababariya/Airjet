@@ -21,7 +21,7 @@ export default function PayrollReports() {
     setLoading(true);
     try {
       const params = {
-        month: `${filters.month} ${filters.year}`,
+        month: filters.month,
         year: filters.year
       };
       

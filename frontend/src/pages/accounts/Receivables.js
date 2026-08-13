@@ -40,7 +40,7 @@ export default function Receivables() {
 
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Receivables</div>
           <div className="d_page_subtitle">Track customer outstanding amounts and collections</div>

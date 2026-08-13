@@ -22,7 +22,7 @@ export default function PayrollDashboard() {
     setLoading(true);
     try {
       const params = {};
-      if (selectedMonth) params.month = `${selectedMonth} ${selectedYear}`;
+      if (selectedMonth) params.month = selectedMonth;
       if (selectedYear) params.year = selectedYear;
 
       const [statsRes, monthlyRes, deptRes] = await Promise.all([

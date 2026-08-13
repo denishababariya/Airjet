@@ -1,84 +1,580 @@
-import React, { useState } from 'react';
-import { MdAdd, MdEdit, MdVisibility, MdDescription } from 'react-icons/md';
+import React, { useState, useEffect } from 'react';
+import { MdAdd, MdEdit, MdVisibility, MdDescription, MdDelete, MdSend, MdCheck, MdClose, MdRefresh } from 'react-icons/md';
+import Modal from '../../components/Modal';
+import api from '../../utils/api';
 
-const quotations = [
-  { no: 'QT-2026-0055', customer: 'Vardhman Textiles Ltd', date: '20 Jun 2026', valid: '20 Jul 2026', items: 6, amount: 87500, status: 'Sent' },
-  { no: 'QT-2026-0054', customer: 'Arvind Limited', date: '18 Jun 2026', valid: '18 Jul 2026', items: 4, amount: 54200, status: 'Accepted' },
-  { no: 'QT-2026-0053', customer: 'Bhilwara Spinners Pvt Ltd', date: '15 Jun 2026', valid: '15 Jul 2026', items: 8, amount: 132000, status: 'Draft' },
-  { no: 'QT-2026-0052', customer: 'Welspun India Ltd', date: '12 Jun 2026', valid: '12 Jul 2026', items: 3, amount: 38900, status: 'Rejected' },
-  { no: 'QT-2026-0051', customer: 'Sri Ramakrishna Mills', date: '10 Jun 2026', valid: '10 Jul 2026', items: 5, amount: 72600, status: 'Accepted' },
-];
-
-const statusBadge = s => {
-  if (s === 'Accepted') return 'd_success';
-  if (s === 'Rejected') return 'd_danger';
-  if (s === 'Sent') return 'd_info';
-  return 'd_warning';
+const blankQuotation = {
+    customer: '',
+    quotationDate: new Date().toISOString().split('T')[0],
+    validUntil: '',
+    salesPerson: '',
+    billingAddress: '',
+    shippingAddress: '',
+    paymentTerms: '30 Days',
+    deliveryTerms: '',
+    items: [],
+    notes: '',
+    terms: '',
+    status: 'Draft'
 };
 
-const tabs = ['All', 'Draft', 'Sent', 'Accepted', 'Rejected'];
+const blankItem = {
+    sparePart: '',
+    quantity: 1,
+    rate: 0,
+    discount: 0,
+    gstRate: 18,
+    unit: 'Nos'
+};
+
+const statusBadge = s => {
+    if (s === 'Accepted') return 'd_success';
+    if (s === 'Rejected') return 'd_danger';
+    if (s === 'Sent') return 'd_info';
+    if (s === 'Converted') return 'd_primary';
+    return 'd_warning';
+};
+
+const tabs = ['All', 'Draft', 'Sent', 'Accepted', 'Rejected', 'Converted'];
 
 export default function Quotations() {
-  const [activeTab, setActiveTab] = useState('All');
+    const [quotations, setQuotations] = useState([]);
+    const [customers, setCustomers] = useState([]);
+    const [spareParts, setSpareParts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [activeTab, setActiveTab] = useState('All');
+    const [modal, setModal] = useState(false);
+    const [form, setForm] = useState(blankQuotation);
+    const [editId, setEditId] = useState(null);
+    const [errors, setErrors] = useState({});
 
-  const filtered = quotations.filter(q => activeTab === 'All' || q.status === activeTab);
+    useEffect(() => {
+        fetchData();
+    }, []);
 
-  return (
-    <div>
-      <div className="d_page_header">
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const [quotationsRes, customersRes, sparePartsRes] = await Promise.all([
+                api.get('/quotations'),
+                api.get('/customers'),
+                api.get('/spare-parts')
+            ]);
+            setQuotations(quotationsRes.data || []);
+            setCustomers(customersRes.data || []);
+            setSpareParts(sparePartsRes.data || []);
+            setError(null);
+        } catch (err) {
+            setError('Failed to load data');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filtered = quotations.filter(q => activeTab === 'All' || q.status === activeTab);
+
+    const openAdd = () => {
+        setForm({ ...blankQuotation, validUntil: calculateValidUntil(30) });
+        setEditId(null);
+        setErrors({});
+        setModal(true);
+    };
+
+    const openEdit = (quotation) => {
+        setForm({
+            customer: quotation.customer?._id || quotation.customer,
+            quotationDate: quotation.quotationDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+            validUntil: quotation.validUntil?.split('T')[0] || '',
+            salesPerson: quotation.salesPerson || '',
+            billingAddress: quotation.billingAddress || '',
+            shippingAddress: quotation.shippingAddress || '',
+            paymentTerms: quotation.paymentTerms || '30 Days',
+            deliveryTerms: quotation.deliveryTerms || '',
+            items: quotation.items || [],
+            notes: quotation.notes || '',
+            terms: quotation.terms || '',
+            status: quotation.status || 'Draft'
+        });
+        setEditId(quotation._id);
+        setErrors({});
+        setModal(true);
+    };
+
+    const calculateValidUntil = (days) => {
+        const date = new Date();
+        date.setDate(date.getDate() + days);
+        return date.toISOString().split('T')[0];
+    };
+
+    const addItem = () => {
+        if (spareParts.length === 0) {
+            alert('No spare parts available. Please add spare parts first.');
+            return;
+        }
+        setForm(p => ({
+            ...p,
+            items: [...p.items, { ...blankItem, sparePart: spareParts[0]._id, rate: spareParts[0].sellingPrice }]
+        }));
+    };
+
+    const removeItem = (index) => {
+        setForm(p => ({
+            ...p,
+            items: p.items.filter((_, i) => i !== index)
+        }));
+    };
+
+    const updateItem = (index, field, value) => {
+        const updatedItems = [...form.items];
+        updatedItems[index][field] = value;
+
+        // Auto-update rate when spare part changes
+        if (field === 'sparePart') {
+            const selectedPart = spareParts.find(s => s._id === value);
+            if (selectedPart) {
+                updatedItems[index].rate = selectedPart.sellingPrice;
+            }
+        }
+
+        setForm(p => ({ ...p, items: updatedItems }));
+    };
+
+    const calculateTotals = () => {
+        let subtotal = 0;
+        let totalDiscount = 0;
+        let taxableAmount = 0;
+        let totalCGST = 0;
+        let totalSGST = 0;
+        let totalIGST = 0;
+
+        const customer = customers.find(c => c._id === form.customer);
+        const isInterState = customer?.state !== 'Gujarat'; // Assuming company is in Gujarat
+
+        form.items.forEach(item => {
+            const part = spareParts.find(s => s._id === item.sparePart);
+            const rate = item.rate || (part?.sellingPrice) || 0;
+            const grossAmount = item.quantity * rate;
+            const discount = item.discount || 0;
+            const itemTaxableAmount = grossAmount - discount;
+            
+            const totalGST = (itemTaxableAmount * item.gstRate) / 100;
+            let cgstAmount = 0, sgstAmount = 0, igstAmount = 0;
+
+            if (isInterState) {
+                igstAmount = totalGST;
+            } else {
+                cgstAmount = totalGST / 2;
+                sgstAmount = totalGST / 2;
+            }
+
+            const itemTotal = itemTaxableAmount + cgstAmount + sgstAmount + igstAmount;
+
+            subtotal += grossAmount;
+            totalDiscount += discount;
+            taxableAmount += itemTaxableAmount;
+            totalCGST += cgstAmount;
+            totalSGST += sgstAmount;
+            totalIGST += igstAmount;
+        });
+
+        const grandTotal = taxableAmount + totalCGST + totalSGST + totalIGST;
+
+        return { subtotal, totalDiscount, taxableAmount, totalCGST, totalSGST, totalIGST, grandTotal };
+    };
+
+    const { subtotal, totalDiscount, taxableAmount, totalCGST, totalSGST, totalIGST, grandTotal } = calculateTotals();
+
+    const validate = () => {
+        const e = {};
+        if (!form.customer) e.customer = 'Customer is required';
+        if (!form.validUntil) e.validUntil = 'Valid until date is required';
+        if (!form.items || form.items.length === 0) e.items = 'At least one item is required';
+        return e;
+    };
+
+    const handleSave = async () => {
+        const e = validate();
+        if (Object.keys(e).length) {
+            setErrors(e);
+            return;
+        }
+
+        try {
+            const customer = customers.find(c => c._id === form.customer);
+            const isInterState = customer?.state !== 'Gujarat';
+
+            const itemsWithCalculations = form.items.map(item => {
+                const part = spareParts.find(s => s._id === item.sparePart);
+                const rate = item.rate || part?.sellingPrice || 0;
+                const grossAmount = item.quantity * rate;
+                const discount = item.discount || 0;
+                const itemTaxableAmount = grossAmount - discount;
+                
+                const totalGST = (itemTaxableAmount * item.gstRate) / 100;
+                let cgstAmount = 0, sgstAmount = 0, igstAmount = 0;
+
+                if (isInterState) {
+                    igstAmount = totalGST;
+                } else {
+                    cgstAmount = totalGST / 2;
+                    sgstAmount = totalGST / 2;
+                }
+
+                const itemTotal = itemTaxableAmount + cgstAmount + sgstAmount + igstAmount;
+
+                return {
+                    ...item,
+                    description: part?.partName || '',
+                    taxableAmount: itemTaxableAmount,
+                    cgstAmount,
+                    sgstAmount,
+                    igstAmount,
+                    total: itemTotal
+                };
+            });
+
+            const payload = {
+                ...form,
+                items: itemsWithCalculations,
+                subtotal,
+                totalDiscount,
+                taxableAmount,
+                cgst: totalCGST,
+                sgst: totalSGST,
+                igst: totalIGST,
+                grandTotal
+            };
+
+            if (editId) {
+                await api.put(`/quotations/${editId}`, payload);
+            } else {
+                await api.post('/quotations', payload);
+            }
+            setModal(false);
+            fetchData();
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to save quotation');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this quotation?')) return;
+        try {
+            await api.delete(`/quotations/${id}`);
+            fetchData();
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to delete quotation');
+        }
+    };
+
+    const handleStatusChange = async (id, action) => {
+        try {
+            await api.post(`/quotations/${id}/${action}`);
+            fetchData();
+        } catch (err) {
+            setError(err.response?.data?.error || `Failed to ${action} quotation`);
+        }
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(amount || 0);
+    };
+
+    const f = (field) => ({
+        value: form[field] ?? '',
+        onChange: (e) => {
+            setForm(p => ({ ...p, [field]: e.target.value }));
+            setErrors(p => ({ ...p, [field]: '' }));
+        }
+    });
+
+    if (loading) {
+        return (
+            <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div>
+                    <div className="d_page_title">Quotations</div>
+                    <div className="d_page_subtitle">Loading...</div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
         <div>
-          <div className="d_page_title">Quotations</div>
-          <div className="d_page_subtitle">Manage quotations sent to customers</div>
-        </div>
-        <button className="d_btn d_btn_primary"><MdAdd /> New Quotation</button>
-      </div>
+            <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div>
+                    <div className="d_page_title">Quotations</div>
+                    <div className="d_page_subtitle">Manage quotations sent to customers</div>
+                </div>
+                <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> New Quotation</button>
+            </div>
 
-      <div className="d_card">
-        <div className="d_card_header">
-          <div className="d_tabs">
-            {tabs.map(t => (
-              <button key={t} className={`d_tab_btn${activeTab === t ? ' d_active' : ''}`} onClick={() => setActiveTab(t)}>{t}</button>
-            ))}
-          </div>
+            {error && <div style={{ padding: '12px', background: '#fee', color: '#c33', marginBottom: '16px', borderRadius: '4px' }}>{error}</div>}
+
+            <div className="d_card">
+                <div className="d_card_header">
+                    <div className="d_tabs">
+                        {tabs.map(t => (
+                            <button key={t} className={`d_tab_btn${activeTab === t ? ' d_active' : ''}`} onClick={() => setActiveTab(t)}>{t}</button>
+                        ))}
+                    </div>
+                </div>
+                <div className="d_card_body">
+                    <div className="d_table_wrap">
+                        <table className="d_table" style={{ minWidth: 900 }}>
+                            <thead>
+                                <tr>
+                                    <th>Quot No.</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Valid Until</th>
+                                    <th>Items</th>
+                                    <th>Amount (₹)</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.length === 0 && (
+                                    <tr className="d_empty">
+                                        <td colSpan={8}>No quotations found.</td>
+                                    </tr>
+                                )}
+                                {filtered.map(q => (
+                                    <tr key={q._id}>
+                                        <td><strong>{q.quotationNumber}</strong></td>
+                                        <td>{q.customer?.name || q.customer}</td>
+                                        <td>{new Date(q.quotationDate).toLocaleDateString('en-IN')}</td>
+                                        <td>{new Date(q.validUntil).toLocaleDateString('en-IN')}</td>
+                                        <td>{q.items?.length || 0}</td>
+                                        <td>{formatCurrency(q.grandTotal)}</td>
+                                        <td><span className={`d_badge ${statusBadge(q.status)}`}>{q.status}</span></td>
+                                        <td>
+                                            <div className="d_action_btns">
+                                                <button className="d_icon_btn d_view" onClick={() => openEdit(q)}><MdVisibility /></button>
+                                                <button className="d_icon_btn d_edit" onClick={() => openEdit(q)}><MdEdit /></button>
+                                                {q.status === 'Draft' && (
+                                                    <button className="d_icon_btn d_info" onClick={() => handleStatusChange(q._id, 'send')} title="Send"><MdSend /></button>
+                                                )}
+                                                {q.status === 'Sent' && (
+                                                    <>
+                                                        <button className="d_icon_btn d_success" onClick={() => handleStatusChange(q._id, 'accept')} title="Accept"><MdCheck /></button>
+                                                        <button className="d_icon_btn d_danger" onClick={() => handleStatusChange(q._id, 'reject')} title="Reject"><MdClose /></button>
+                                                    </>
+                                                )}
+                                                {q.status === 'Accepted' && !q.convertedToSalesOrder && (
+                                                    <button className="d_icon_btn d_primary" onClick={() => handleStatusChange(q._id, 'convert')} title="Convert to Order"><MdRefresh /></button>
+                                                )}
+                                                <button className="d_icon_btn d_del" onClick={() => handleDelete(q._id)}><MdDelete /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Quotation' : 'New Quotation'} size="xl">
+                <div className="d_form_row cols-2">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Customer <span className="d_req">*</span></label>
+                        <select className="d_form_control" {...f('customer')}>
+                            <option value="">Select Customer</option>
+                            {customers.map(c => (
+                                <option key={c._id} value={c._id}>{c.name} {c.companyName ? `(${c.companyName})` : ''}</option>
+                            ))}
+                        </select>
+                        {errors.customer && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.customer}</span>}
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">Quotation Date</label>
+                        <input type="date" className="d_form_control" {...f('quotationDate')} />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-2">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Valid Until <span className="d_req">*</span></label>
+                        <input type="date" className="d_form_control" {...f('validUntil')} />
+                        {errors.validUntil && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.validUntil}</span>}
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">Sales Person</label>
+                        <input className="d_form_control" {...f('salesPerson')} />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-2">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Payment Terms</label>
+                        <select className="d_form_control" {...f('paymentTerms')}>
+                            <option value="Cash">Cash</option>
+                            <option value="Immediate">Immediate</option>
+                            <option value="7 Days">7 Days</option>
+                            <option value="15 Days">15 Days</option>
+                            <option value="30 Days">30 Days</option>
+                            <option value="45 Days">45 Days</option>
+                            <option value="60 Days">60 Days</option>
+                        </select>
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">Delivery Terms</label>
+                        <input className="d_form_control" {...f('deliveryTerms')} />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-1">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Items <span className="d_req">*</span></label>
+                        {errors.items && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.items}</span>}
+                    </div>
+                </div>
+
+                {form.items.length > 0 && (
+                    <div className="d_table_wrap" style={{ marginBottom: '15px' }}>
+                        <table className="d_table" style={{ minWidth: 800 }}>
+                            <thead>
+                                <tr>
+                                    <th>Part</th>
+                                    <th>Qty</th>
+                                    <th>Rate (₹)</th>
+                                    <th>Discount (₹)</th>
+                                    <th>GST %</th>
+                                    <th>Total (₹)</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {form.items.map((item, index) => (
+                                    <tr key={index}>
+                                        <td>
+                                            <select
+                                                className="d_form_control"
+                                                value={item.sparePart}
+                                                onChange={(e) => updateItem(index, 'sparePart', e.target.value)}
+                                            >
+                                                {spareParts.map(s => (
+                                                    <option key={s._id} value={s._id}>{s.partNumber} - {s.partName}</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input
+                                                type="number"
+                                                className="d_form_control"
+                                                value={item.quantity}
+                                                onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                                                min="1"
+                                                style={{ width: '80px' }}
+                                            />
+                                        </td>
+                                        <td>
+                                            <input
+                                                type="number"
+                                                className="d_form_control"
+                                                value={item.rate}
+                                                onChange={(e) => updateItem(index, 'rate', parseFloat(e.target.value) || 0)}
+                                                min="0"
+                                                style={{ width: '100px' }}
+                                            />
+                                        </td>
+                                        <td>
+                                            <input
+                                                type="number"
+                                                className="d_form_control"
+                                                value={item.discount}
+                                                onChange={(e) => updateItem(index, 'discount', parseFloat(e.target.value) || 0)}
+                                                min="0"
+                                                style={{ width: '80px' }}
+                                            />
+                                        </td>
+                                        <td>
+                                            <select
+                                                className="d_form_control"
+                                                value={item.gstRate}
+                                                onChange={(e) => updateItem(index, 'gstRate', parseFloat(e.target.value))}
+                                                style={{ width: '80px' }}
+                                            >
+                                                <option value="0">0%</option>
+                                                <option value="5">5%</option>
+                                                <option value="12">12%</option>
+                                                <option value="18">18%</option>
+                                                <option value="28">28%</option>
+                                            </select>
+                                        </td>
+                                        <td>{formatCurrency(
+                                            ((item.quantity * item.rate - item.discount) * (1 + item.gstRate / 100))
+                                        )}</td>
+                                        <td>
+                                            <button className="d_icon_btn d_delete" onClick={() => removeItem(index)}><MdDelete /></button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                <button className="d_btn d_btn_outline" onClick={addItem} style={{ marginBottom: '15px' }}><MdAdd /> Add Item</button>
+
+                <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                        <span>Subtotal:</span>
+                        <strong>{formatCurrency(subtotal)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                        <span>Discount:</span>
+                        <strong>{formatCurrency(totalDiscount)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                        <span>Taxable Amount:</span>
+                        <strong>{formatCurrency(taxableAmount)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                        <span>CGST:</span>
+                        <strong>{formatCurrency(totalCGST)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                        <span>SGST:</span>
+                        <strong>{formatCurrency(totalSGST)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                        <span>IGST:</span>
+                        <strong>{formatCurrency(totalIGST)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1em', borderTop: '1px solid #ddd', paddingTop: '10px', marginTop: '10px' }}>
+                        <span>Grand Total:</span>
+                        <strong style={{ color: 'var(--d-primary)' }}>{formatCurrency(grandTotal)}</strong>
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-1">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Notes</label>
+                        <textarea className="d_form_control" rows="2" {...f('notes')} />
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-1">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Terms & Conditions</label>
+                        <textarea className="d_form_control" rows="2" {...f('terms')} />
+                    </div>
+                </div>
+
+                <div className="d_form_actions">
+                    <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
+                    <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Quotation' : 'Create Quotation'}</button>
+                </div>
+            </Modal>
         </div>
-        <div className="d_card_body">
-          <div className="d_table_wrap">
-            <table className="d_table" style={{ minWidth: 750 }}>
-              <thead>
-                <tr>
-                  <th>Quot No.</th>
-                  <th>Customer</th>
-                  <th>Date</th>
-                  <th>Valid Until</th>
-                  <th>Items</th>
-                  <th>Amount (₹)</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(q => (
-                  <tr key={q.no}>
-                    <td><strong>{q.no}</strong></td>
-                    <td>{q.customer}</td>
-                    <td>{q.date}</td>
-                    <td>{q.valid}</td>
-                    <td>{q.items}</td>
-                    <td>₹{q.amount.toLocaleString('en-IN')}</td>
-                    <td><span className={`d_badge ${statusBadge(q.status)}`}>{q.status}</span></td>
-                    <td>
-                      <div className="d_action_btns">
-                        <button className="d_icon_btn d_view"><MdVisibility /></button>
-                        <button className="d_icon_btn d_edit"><MdEdit /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    );
 }

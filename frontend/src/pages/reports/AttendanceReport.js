@@ -20,7 +20,7 @@ const summaryCards = [
 export default function AttendanceReport() {
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Attendance Report</div>
           <div className="d_page_subtitle">Monthly attendance summary — June 2026</div>

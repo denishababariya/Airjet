@@ -15,7 +15,7 @@ export default function PayslipDownload() {
 
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Payslip Download</div>
           <div className="d_page_subtitle">View and download employee payslips</div>

@@ -66,7 +66,7 @@ const AttendanceReport = () => {
 
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <h1 className="d_page_title">Attendance Report</h1>
         <p className="d_page_subtitle">Generate and export attendance reports</p>
       </div>

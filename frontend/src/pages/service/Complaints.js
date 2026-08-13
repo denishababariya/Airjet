@@ -25,7 +25,7 @@ const statusBadge = s => {
 export default function Complaints() {
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Complaints</div>
           <div className="d_page_subtitle">Track and resolve customer machine complaints</div>

@@ -25,7 +25,7 @@ const summaryCards = [
 export default function PayrollReport() {
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Payroll Report</div>
           <div className="d_page_subtitle">Monthly payroll summary — Jan to Jun 2026</div>

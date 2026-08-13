@@ -31,7 +31,7 @@ const menuConfig = [
       },
       {
         label: 'Payroll', icon: <MdPayments />, id: 'payroll',
-        children: ['Salary Generation', 'Allowances', 'Deductions', 'Payslip Download'],
+        children: ['Payroll Dashboard', 'Salary Generation', 'Salary List', 'Payroll Reports', 'Allowances', 'Deductions', 'Payslip Download'],
         module: 'Payroll',
       },
     ],
@@ -50,7 +50,7 @@ const menuConfig = [
       },
       {
         label: 'Sales', icon: <MdPointOfSale />, id: 'sales',
-        children: ['Customers', 'Quotations', 'Sales Orders', 'Invoices'],
+        children: ['Sales Dashboard', 'Customers', 'Quotations', 'Sales Orders', 'Invoices', 'Payments', 'Sales Returns', 'Sales Reports'],
         module: 'Sales',
       },
     ],
@@ -195,7 +195,10 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
                           <div
                             key={child}
                             className={`d_submenu_link ${activeMenu === child ? 'd_active' : ''}`}
-                            onClick={() => setActiveMenu(child)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenu(child);
+                            }}
                           >
                             <span className="d_submenu_dot" />
                             {child}

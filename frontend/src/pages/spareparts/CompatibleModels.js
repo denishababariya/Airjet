@@ -13,7 +13,7 @@ const models = [
 export default function CompatibleModels() {
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Compatible Machine Models</div>
           <div className="d_page_subtitle">Manage airjet loom models and their compatible spare parts</div>

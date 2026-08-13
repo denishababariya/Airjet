@@ -29,7 +29,7 @@ const users = [
 export default function AdminRole() {
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Admin Role</div>
           <div className="d_page_subtitle">Full access excluding system settings</div>

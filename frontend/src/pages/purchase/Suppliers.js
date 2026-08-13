@@ -19,7 +19,7 @@ export default function Suppliers() {
 
   return (
     <div>
-      <div className="d_page_header">
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Suppliers</div>
           <div className="d_page_subtitle">Manage airjet loom spare parts suppliers</div>
