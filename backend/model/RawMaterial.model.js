@@ -87,11 +87,11 @@ const rawMaterialSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Calculate total price before saving
 rawMaterialSchema.pre('save', function(next) {
-  this.totalPrice = this.quantity * this.unitPrice;
+  if (this.isNew || this.$locals?.recalculateTotalPrice) {
+    this.totalPrice = this.quantity * this.unitPrice;
+  }
   
-  // Update status based on quantity
   if (this.quantity === 0) {
     this.status = 'Out of Stock';
   } else if (this.quantity <= this.minimumStock) {

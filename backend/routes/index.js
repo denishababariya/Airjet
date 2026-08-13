@@ -208,6 +208,7 @@ router.patch('/spare-parts/:id/quantity', authenticate, authorizeByLevel(2), con
 router.post('/raw-materials', authenticate, authorizeByLevel(2), controller.createRawMaterial);
 router.get('/raw-materials', authenticate, controller.getAllRawMaterials);
 router.get('/raw-materials/low-stock', authenticate, controller.getLowStockMaterials);
+router.get('/raw-materials/report', authenticate, controller.getRawMaterialReport);
 router.get('/raw-materials/:id', authenticate, controller.getRawMaterialById);
 router.put('/raw-materials/:id', authenticate, authorizeByLevel(2), controller.updateRawMaterial);
 router.delete('/raw-materials/:id', authenticate, authorize('Admin'), controller.deleteRawMaterial);

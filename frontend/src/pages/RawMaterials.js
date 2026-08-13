@@ -14,10 +14,11 @@ const unitOptions = ['kg', 'g', 'litre', 'ml', 'meter', 'cm', 'piece', 'box', 'r
 const RawMaterials = () => {
   const [materials, setMaterials] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [report, setReport] = useState({ summary: {}, transactions: [] });
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [stockModal, setStockModal] = useState(false);
-  const [stockForm, setStockForm] = useState({ materialId: '', quantity: 0, reason: '' });
+  const [stockForm, setStockForm] = useState({ materialId: '', quantity: 0, unitPrice: '', reason: '' });
   const [stockAction, setStockAction] = useState('add'); // 'add' or 'deduct'
   const [form, setForm] = useState({
     name: '', category: 'Metal', description: '',
@@ -36,6 +37,7 @@ const RawMaterials = () => {
   useEffect(() => {
     fetchMaterials();
     fetchSuppliers();
+    fetchReport();
   }, []);
 
   // Auto-calculate total price
@@ -63,6 +65,15 @@ const RawMaterials = () => {
       setSuppliers(res.data || []);
     } catch (err) {
       console.error('Failed to fetch suppliers:', err);
+    }
+  };
+
+  const fetchReport = async () => {
+    try {
+      const res = await rawMaterialsApi.getReport();
+      setReport(res.data || { summary: {}, transactions: [] });
+    } catch (err) {
+      console.error('Failed to fetch raw material report:', err);
     }
   };
 
@@ -124,6 +135,7 @@ const RawMaterials = () => {
         toast.success('Raw material added successfully!');
       }
       fetchMaterials();
+      fetchReport();
       setModal(false);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to save raw material');
@@ -155,6 +167,7 @@ const RawMaterials = () => {
     setStockForm({
       materialId: material._id,
       quantity: 0,
+      unitPrice: action === 'add' ? material.unitPrice || '' : '',
       reason: ''
     });
     setStockAction(action);
@@ -176,8 +189,9 @@ const RawMaterials = () => {
         toast.success('Stock added successfully');
       }
       fetchMaterials();
+      fetchReport();
       setStockModal(false);
-      setStockForm({ materialId: '', quantity: 0, reason: '' });
+      setStockForm({ materialId: '', quantity: 0, unitPrice: '', reason: '' });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update stock');
     }
@@ -192,6 +206,7 @@ const RawMaterials = () => {
   });
 
   const Err = ({ field }) => errors[field] ? <span className="d_field_error">{errors[field]}</span> : null;
+  const money = (value) => `₹${(Number(value) || 0).toLocaleString('en-IN')}`;
 
   const filteredMaterials = materials.filter(m => {
     const matchesSearch = !searchTerm ||
@@ -254,6 +269,14 @@ const RawMaterials = () => {
         </div>
       </div>
 
+      <div className="d_summary_pills mb-3">
+        <span>Total Materials: <strong>{report.summary?.totalMaterials || materials.length}</strong></span>
+        <span>Current Qty: <strong>{report.summary?.currentQuantity || 0}</strong></span>
+        <span>Purchase Value: <strong>{money(report.summary?.purchaseValue)}</strong></span>
+        <span>Current Stock Value: <strong>{money(report.summary?.currentStockValue)}</strong></span>
+        <span>Low Stock: <strong>{report.summary?.lowStock || 0}</strong></span>
+      </div>
+
       <div className="d_card">
         <div className="d_card_header">
           <h2 className="d_card_title"><MdInventory className="d_card_icon" /> Raw Materials ({filteredMaterials.length})</h2>
@@ -271,7 +294,8 @@ const RawMaterials = () => {
                     <th>Quantity</th>
                     <th>Min Stock</th>
                     <th>Unit Price (₹)</th>
-                    <th>Total Value (₹)</th>
+                    <th>Purchase Value (₹)</th>
+                    <th>Current Stock Value (₹)</th>
                     <th>Supplier</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -280,7 +304,7 @@ const RawMaterials = () => {
                 <tbody>
                   {filteredMaterials.length === 0 && (
                     <tr className="d_empty">
-                      <td colSpan={11}>No raw materials found.</td>
+                      <td colSpan={12}>No raw materials found.</td>
                     </tr>
                   )}
                   {filteredMaterials.map(m => (
@@ -291,8 +315,9 @@ const RawMaterials = () => {
                       <td>{String(m.unit)}</td>
                       <td><strong>{String(m.quantity)}</strong></td>
                       <td>{String(m.minimumStock)}</td>
-                      <td>₹{(m.unitPrice || 0).toLocaleString('en-IN')}</td>
-                      <td><strong>₹{((m.quantity || 0) * (m.unitPrice || 0)).toLocaleString('en-IN')}</strong></td>
+                      <td>{money(m.unitPrice)}</td>
+                      <td><strong>{money(m.totalPrice)}</strong></td>
+                      <td>{money((m.quantity || 0) * (m.unitPrice || 0))}</td>
                       <td>{String(m.supplierName || '-')}</td>
                       <td><span className={`d_badge ${statusClass[m.status] || 'd_info'}`}>{String(m.status)}</span></td>
                       <td>
@@ -309,6 +334,49 @@ const RawMaterials = () => {
               </table>
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="d_card mt-3">
+        <div className="d_card_header">
+          <h2 className="d_card_title"><MdInventory className="d_card_icon" /> Raw Material Stock Report</h2>
+        </div>
+        <div className="d_card_body p-0">
+          <div className="d_table_wrap">
+            <table className="d_table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Material</th>
+                  <th>Type</th>
+                  <th>Qty</th>
+                  <th>Unit</th>
+                  <th>Unit Price (₹)</th>
+                  <th>Row Value (₹)</th>
+                  <th>Balance After</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(!report.transactions || report.transactions.length === 0) && (
+                  <tr className="d_empty"><td colSpan={9}>No stock movement found.</td></tr>
+                )}
+                {(report.transactions || []).map((txn) => (
+                  <tr key={txn._id}>
+                    <td>{txn.transactionDate ? new Date(txn.transactionDate).toLocaleDateString('en-IN') : '-'}</td>
+                    <td><strong>{String(txn.materialCode || txn.rawMaterialId?.code || '')}</strong> - {String(txn.materialName || txn.rawMaterialId?.name || '')}</td>
+                    <td><span className={`d_badge ${txn.type === 'Deduct' ? 'd_warning' : 'd_success'}`}>{String(txn.type)}</span></td>
+                    <td>{String(txn.quantity || 0)}</td>
+                    <td>{String(txn.unit || txn.rawMaterialId?.unit || '')}</td>
+                    <td>{money(txn.unitPrice)}</td>
+                    <td><strong>{money(txn.totalAmount)}</strong></td>
+                    <td>{String(txn.balanceAfter || 0)}</td>
+                    <td>{String(txn.reason || '-')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -394,6 +462,22 @@ const RawMaterials = () => {
               onChange={(e) => setStockForm(p => ({ ...p, quantity: Number(e.target.value) }))} />
           </div>
         </div>
+        {stockAction === 'add' && (
+          <div className="d_form_row cols-1">
+            <div className="d_form_group">
+              <label className="d_form_label">Purchase Price (₹)</label>
+              <input
+                type="number"
+                className="d_form_control"
+                placeholder="0"
+                min={0}
+                step="0.01"
+                value={stockForm.unitPrice}
+                onChange={(e) => setStockForm(p => ({ ...p, unitPrice: e.target.value }))}
+              />
+            </div>
+          </div>
+        )}
         <div className="d_form_row cols-1">
           <div className="d_form_group">
             <label className="d_form_label">Reason (Optional)</label>

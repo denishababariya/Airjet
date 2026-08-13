@@ -1,14 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { MdShoppingCart, MdAdd, MdEdit, MdDelete, MdVisibility, MdCheckCircle } from 'react-icons/md';
+import React, { useEffect, useMemo, useState } from 'react';
+import { MdAdd, MdDelete, MdShoppingCart, MdVisibility } from 'react-icons/md';
 import Modal from '../components/Modal';
-// import ConfirmDialog from './components/C';
 import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
-import useConfirm from '../hooks/useConfirm';
 import { rawMaterialPurchasesApi, rawMaterialsApi, suppliersApi } from '../utils/api';
 
-const statusClass = { Pending:'d_warning', Confirmed:'d_info', 'In Transit':'d_primary', Delivered:'d_success', Partial:'d_warning', Cancelled:'d_danger' };
-const paymentStatusClass = { Pending:'d_warning', Partial:'d_info', Paid:'d_success', Overdue:'d_danger' };
+const statusClass = {
+  Pending: 'd_warning',
+  Confirmed: 'd_info',
+  'In Transit': 'd_primary',
+  Delivered: 'd_success',
+  Partial: 'd_warning',
+  Cancelled: 'd_danger'
+};
+
+const blankForm = {
+  supplier: '',
+  supplierId: '',
+  purchaseDate: '',
+  expectedDelivery: '',
+  status: 'Delivered',
+  items: [{ rawMaterialId: '', quantity: 1, unitPrice: 0 }],
+  paymentTerms: '',
+  notes: ''
+};
 
 const RawMaterialPurchases = () => {
   const [purchases, setPurchases] = useState([]);
@@ -18,145 +33,109 @@ const RawMaterialPurchases = () => {
   const [modal, setModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
-  const [form, setForm] = useState({
-    supplier: '', supplierId: '', purchaseDate: '', expectedDelivery: '',
-    items: [], paymentTerms: '', notes: ''
-  });
-  const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState(blankForm);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const { toasts, toast, removeToast } = useToast();
-  const { confirmState, confirm, closeConfirm } = useConfirm();
 
   useEffect(() => {
-    fetchPurchases();
-    fetchMaterials();
-    fetchSuppliers();
+    fetchAll();
   }, []);
 
-  const fetchPurchases = async () => {
+  const fetchAll = async () => {
     setLoading(true);
     try {
-      const res = await rawMaterialPurchasesApi.getAll();
-      setPurchases(res.data || []);
+      const [purchaseRes, materialRes, supplierRes] = await Promise.all([
+        rawMaterialPurchasesApi.getAll(),
+        rawMaterialsApi.getAll(),
+        suppliersApi.getAll()
+      ]);
+      setPurchases(purchaseRes.data || []);
+      setMaterials(materialRes.data || []);
+      setSuppliers(supplierRes.data || []);
     } catch (err) {
-      toast.error('Failed to fetch purchases');
+      toast.error(err.response?.data?.error || 'Failed to load raw material purchases');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchMaterials = async () => {
-    try {
-      const res = await rawMaterialsApi.getAll();
-      setMaterials(res.data || []);
-    } catch (err) {
-      console.error('Failed to fetch materials:', err);
-    }
-  };
-
-  const fetchSuppliers = async () => {
-    try {
-      const res = await suppliersApi.getAll();
-      setSuppliers(res.data || []);
-    } catch (err) {
-      console.error('Failed to fetch suppliers:', err);
-    }
-  };
+  const summary = useMemo(() => {
+    return purchases.reduce((acc, purchase) => {
+      acc.purchases += 1;
+      acc.items += purchase.items?.length || 0;
+      acc.quantity += (purchase.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+      acc.amount += Number(purchase.totalAmount) || 0;
+      return acc;
+    }, { purchases: 0, items: 0, quantity: 0, amount: 0 });
+  }, [purchases]);
 
   const openAdd = () => {
     setForm({
-      supplier: '', supplierId: '', purchaseDate: new Date().toISOString().split('T')[0],
-      expectedDelivery: '', items: [], paymentTerms: '', notes: ''
+      ...blankForm,
+      purchaseDate: new Date().toISOString().split('T')[0],
+      items: [{ rawMaterialId: '', quantity: 1, unitPrice: 0 }]
     });
-    setEditId(null);
     setErrors({});
     setModal(true);
-  };
-
-  const openEdit = (purchase) => {
-    setForm({
-      supplier: purchase.supplier || '',
-      supplierId: purchase.supplierId?._id || '',
-      purchaseDate: purchase.purchaseDate || '',
-      expectedDelivery: purchase.expectedDelivery || '',
-      items: purchase.items || [],
-      paymentTerms: purchase.paymentTerms || '',
-      notes: purchase.notes || ''
-    });
-    setEditId(purchase._id);
-    setErrors({});
-    setModal(true);
-  };
-
-  const openView = (purchase) => {
-    setSelectedPurchase(purchase);
-    setViewModal(true);
-  };
-
-  const addItem = () => {
-    setForm(p => ({
-      ...p,
-      items: [...p.items, { rawMaterialId: '', quantity: 1, unitPrice: 0 }]
-    }));
   };
 
   const updateItem = (index, field, value) => {
-    setForm(p => ({
-      ...p,
-      items: p.items.map((item, i) => 
-        i === index ? { ...item, [field]: value } : item
-      )
+    setForm((prev) => ({
+      ...prev,
+      items: prev.items.map((item, i) => i === index ? { ...item, [field]: value } : item)
+    }));
+  };
+
+  const addItem = () => {
+    setForm((prev) => ({
+      ...prev,
+      items: [...prev.items, { rawMaterialId: '', quantity: 1, unitPrice: 0 }]
     }));
   };
 
   const removeItem = (index) => {
-    setForm(p => ({
-      ...p,
-      items: p.items.filter((_, i) => i !== index)
+    setForm((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
     }));
   };
 
   const validate = () => {
-    const e = {};
-    if (!form.supplierId) e.supplierId = 'Supplier is required';
-    if (!form.purchaseDate) e.purchaseDate = 'Purchase date is required';
-    if (!form.items || form.items.length === 0) e.items = 'At least one item is required';
-    form.items?.forEach((item, i) => {
-      if (!item.rawMaterialId) e[`item_${i}_material`] = 'Material is required';
-      if (!item.quantity || item.quantity <= 0) e[`item_${i}_qty`] = 'Quantity must be greater than 0';
+    const nextErrors = {};
+    if (!form.supplierId) nextErrors.supplierId = 'Supplier is required';
+    if (!form.purchaseDate) nextErrors.purchaseDate = 'Purchase date is required';
+    if (!form.items.length) nextErrors.items = 'At least one item is required';
+    form.items.forEach((item, index) => {
+      if (!item.rawMaterialId) nextErrors[`item_${index}_material`] = 'Material is required';
+      if (!item.quantity || Number(item.quantity) <= 0) nextErrors[`item_${index}_quantity`] = 'Qty must be greater than 0';
+      if (item.unitPrice === '' || Number(item.unitPrice) < 0) nextErrors[`item_${index}_price`] = 'Price is required';
     });
-    return e;
+    return nextErrors;
   };
 
   const handleSave = async () => {
-    const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
+    const nextErrors = validate();
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
+      return;
+    }
+
     setSaving(true);
     try {
-      const processedItems = form.items.map(item => {
-        const material = materials.find(m => m._id === item.rawMaterialId);
-        return {
-          rawMaterialId: item.rawMaterialId,
-          quantity: Number(item.quantity),
-          unitPrice: Number(item.unitPrice) || (material?.unitPrice || 0)
-        };
-      });
-
       const payload = {
         ...form,
-        items: processedItems
+        items: form.items.map((item) => ({
+          rawMaterialId: item.rawMaterialId,
+          quantity: Number(item.quantity) || 0,
+          unitPrice: Number(item.unitPrice) || 0
+        }))
       };
 
-      if (editId) {
-        await rawMaterialPurchasesApi.update(editId, payload);
-        toast.success('Purchase updated successfully!');
-      } else {
-        await rawMaterialPurchasesApi.create(payload);
-        toast.success('Purchase created successfully!');
-      }
-      fetchPurchases();
+      await rawMaterialPurchasesApi.create(payload);
+      toast.success('Raw material purchase added successfully');
       setModal(false);
+      fetchAll();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to save purchase');
     } finally {
@@ -164,71 +143,46 @@ const RawMaterialPurchases = () => {
     }
   };
 
-  const handleDelete = (id, label) => {
-    confirm({
-      title: 'Delete Purchase',
-      message: `Delete ${label}? This action cannot be undone.`,
-      confirmLabel: 'Delete',
-      variant: 'danger',
-      onConfirm: async () => {
-        closeConfirm();
-        try {
-          await rawMaterialPurchasesApi.remove(id);
-          toast.success('Purchase deleted successfully.');
-          fetchPurchases();
-        } catch (err) {
-          toast.error('Failed to delete purchase.');
-        }
-      },
-    });
-  };
-
-  const handleStatusUpdate = async (id, status) => {
+  const handleDelete = async (purchase) => {
     try {
-      await rawMaterialPurchasesApi.update(id, { status });
-      toast.success(`Status updated to ${status}`);
-      fetchPurchases();
+      await rawMaterialPurchasesApi.remove(purchase._id);
+      toast.success('Purchase deleted successfully');
+      fetchAll();
     } catch (err) {
-      toast.error('Failed to update status');
+      toast.error(err.response?.data?.error || 'Failed to delete purchase');
     }
   };
 
-  const f = (field) => ({
-    value: form[field] ?? '',
-    onChange: (e) => {
-      setForm(p => ({ ...p, [field]: e.target.value }));
-      setErrors(p => ({ ...p, [field]: '' }));
-    },
-  });
+  const calculateTotal = () => {
+    return form.items.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)), 0);
+  };
 
   const Err = ({ field }) => errors[field] ? <span className="d_field_error">{errors[field]}</span> : null;
-
-  const calculateTotal = () => {
-    return form.items.reduce((sum, item) => {
-      const material = materials.find(m => m._id === item.rawMaterialId);
-      const price = Number(item.unitPrice) || (material?.unitPrice || 0);
-      return sum + (Number(item.quantity) * price);
-    }, 0);
-  };
 
   return (
     <div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      {/* <ConfirmDialog {...confirmState} onCancel={closeConfirm} /> */}
 
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <h1 className="d_page_title">Raw Material Purchases</h1>
-          <p className="d_page_subtitle">Manage raw material purchases from suppliers</p>
+          <p className="d_page_subtitle">Manual purchase report for raw materials</p>
         </div>
-        <button className="d_btn d_btn_primary" onClick={openAdd}>
-          <MdAdd /> New Purchase
-        </button>
+        <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> Add Purchase</button>
+      </div>
+
+      <div className="d_summary_pills mb-3">
+        <span>Total Purchases: <strong>{summary.purchases}</strong></span>
+        <span>Total Items: <strong>{summary.items}</strong></span>
+        <span>Total Qty: <strong>{summary.quantity}</strong></span>
+        <span>Purchase Value: <strong>₹{summary.amount.toLocaleString('en-IN')}</strong></span>
+        <span>GST Total: <strong>₹{(summary.amount * 0.18).toLocaleString('en-IN')}</strong></span>
+        <span>Grand Total: <strong>₹{(summary.amount * 1.18).toLocaleString('en-IN')}</strong></span>
       </div>
 
       <div className="d_card">
         <div className="d_card_header">
-          <h2 className="d_card_title"><MdShoppingCart className="d_card_icon" /> Purchases ({purchases.length})</h2>
+          <h2 className="d_card_title"><MdShoppingCart className="d_card_icon" /> Purchase Report ({purchases.length})</h2>
         </div>
         <div className="d_card_body p-0">
           {loading ? <div className="text-center py-4">Loading…</div> : (
@@ -238,45 +192,49 @@ const RawMaterialPurchases = () => {
                   <tr>
                     <th>Purchase ID</th>
                     <th>Supplier</th>
-                    <th>Date</th>
-                    <th>Items</th>
+                    <th>Purchase Date</th>
+                    <th>Expected Delivery</th>
+                    <th>Items Count</th>
+                    <th>Total Quantity</th>
                     <th>Total Amount (₹)</th>
+                    <th>GST Amount (₹)</th>
                     <th>Grand Total (₹)</th>
                     <th>Status</th>
-                    <th>Payment Status</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {purchases.length === 0 && (
                     <tr className="d_empty">
-                      <td colSpan={9}>No purchases found.</td>
+                      <td colSpan={11}>No raw material purchases found.</td>
                     </tr>
                   )}
-                  {purchases.map(p => (
-                    <tr key={p._id}>
-                      <td><code>{String(p.id)}</code></td>
-                      <td><strong>{String(p.supplier)}</strong></td>
-                      <td>{String(p.purchaseDate)}</td>
-                      <td>{String(p.items?.length || 0)}</td>
-                      <td><strong>₹{(p.totalAmount || 0).toLocaleString('en-IN')}</strong></td>
-                      <td><strong>₹{(p.grandTotal || 0).toLocaleString('en-IN')}</strong></td>
-                      <td><span className={`d_badge ${statusClass[p.status] || 'd_info'}`}>{String(p.status)}</span></td>
-                      <td><span className={`d_badge ${paymentStatusClass[p.paymentStatus] || 'd_info'}`}>{String(p.paymentStatus)}</span></td>
-                      <td>
-                        <div className="d_action_btns">
-                          <button className="d_icon_btn d_view" onClick={() => openView(p)}><MdVisibility /></button>
-                          <button className="d_icon_btn d_edit" onClick={() => openEdit(p)}><MdEdit /></button>
-                          {p.status !== 'Delivered' && p.status !== 'Cancelled' && (
-                            <button className="d_icon_btn d_success" onClick={() => handleStatusUpdate(p._id, 'Delivered')} title="Mark as Delivered">
-                              <MdCheckCircle />
-                            </button>
-                          )}
-                          <button className="d_icon_btn d_del" onClick={() => handleDelete(p._id, p.id)}><MdDelete /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {purchases.map((purchase) => {
+                    const totalQty = (purchase.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+                    const totalAmount = Number(purchase.totalAmount) || 0;
+                    const gstAmount = totalAmount * 0.18;
+                    const grandTotal = totalAmount + gstAmount;
+                    return (
+                      <tr key={purchase._id}>
+                        <td><code>{String(purchase.id)}</code></td>
+                        <td><strong>{String(purchase.supplier)}</strong></td>
+                        <td>{String(purchase.purchaseDate)}</td>
+                        <td>{String(purchase.expectedDelivery || '-')}</td>
+                        <td><strong>{String(purchase.items?.length || 0)}</strong></td>
+                        <td><strong>{String(totalQty)}</strong></td>
+                        <td><strong>₹{totalAmount.toLocaleString('en-IN')}</strong></td>
+                        <td>₹{gstAmount.toLocaleString('en-IN')}</td>
+                        <td><strong>₹{grandTotal.toLocaleString('en-IN')}</strong></td>
+                        <td><span className={`d_badge ${statusClass[purchase.status] || 'd_info'}`}>{String(purchase.status)}</span></td>
+                        <td>
+                          <div className="d_action_btns">
+                            <button className="d_icon_btn d_view" onClick={() => { setSelectedPurchase(purchase); setViewModal(true); }}><MdVisibility /></button>
+                            <button className="d_icon_btn d_del" onClick={() => handleDelete(purchase)}><MdDelete /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -284,170 +242,125 @@ const RawMaterialPurchases = () => {
         </div>
       </div>
 
-      <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Purchase' : 'New Purchase'} size="lg">
+      <Modal open={modal} onClose={() => setModal(false)} title="Add Raw Material Purchase" size="lg">
         <div className="d_form_row cols-2">
           <div className="d_form_group">
             <label className="d_form_label">Supplier <span className="d_req">*</span></label>
-            <select className="d_form_control" {...f('supplierId')} onChange={(e) => {
-              const supplier = suppliers.find(s => s._id === e.target.value);
-              setForm(p => ({ ...p, supplierId: e.target.value, supplier: supplier?.name || '' }));
+            <select className="d_form_control" value={form.supplierId} onChange={(e) => {
+              const supplier = suppliers.find((s) => s._id === e.target.value);
+              setForm((prev) => ({ ...prev, supplierId: e.target.value, supplier: supplier?.name || '' }));
+              setErrors((prev) => ({ ...prev, supplierId: '' }));
             }}>
               <option value="">Select Supplier</option>
-              {suppliers.map(s => <option key={s._id} value={s._id}>{String(s.name)}</option>)}
+              {suppliers.map((supplier) => <option key={supplier._id} value={supplier._id}>{supplier.name}</option>)}
             </select>
             <Err field="supplierId" />
           </div>
           <div className="d_form_group">
             <label className="d_form_label">Purchase Date <span className="d_req">*</span></label>
-            <input type="date" className="d_form_control" {...f('purchaseDate')} />
+            <input className="d_form_control" type="date" value={form.purchaseDate} onChange={(e) => setForm((prev) => ({ ...prev, purchaseDate: e.target.value }))} />
             <Err field="purchaseDate" />
           </div>
         </div>
+
         <div className="d_form_row cols-2">
+          <div className="d_form_group">
+            <label className="d_form_label">Status</label>
+            <select className="d_form_control" value={form.status} onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}>
+              <option>Delivered</option>
+              <option>Pending</option>
+              <option>Confirmed</option>
+              <option>In Transit</option>
+              <option>Partial</option>
+              <option>Cancelled</option>
+            </select>
+          </div>
           <div className="d_form_group">
             <label className="d_form_label">Expected Delivery</label>
-            <input type="date" className="d_form_control" {...f('expectedDelivery')} />
-          </div>
-          <div className="d_form_group">
-            <label className="d_form_label">Payment Terms</label>
-            <input className="d_form_control" placeholder="e.g. Net 30" {...f('paymentTerms')} />
+            <input className="d_form_control" type="date" value={form.expectedDelivery} onChange={(e) => setForm((prev) => ({ ...prev, expectedDelivery: e.target.value }))} />
           </div>
         </div>
 
-        <div className="d_form_row cols-1">
-          <div className="d_form_group">
-            <label className="d_form_label">Items <span className="d_req">*</span></label>
-            {form.items?.map((item, index) => (
-              <div key={index} className="d_item_row d-flex gap-2 mb-2 align-items-end">
-                <div style={{ flex: 2 }}>
-                  <select
-                    className="d_form_control"
-                    value={item.rawMaterialId}
-                    onChange={(e) => updateItem(index, 'rawMaterialId', e.target.value)}
-                  >
-                    <option value="">Select Material</option>
-                    {materials.map(m => <option key={m._id} value={m._id}>{String(m.code)} - {String(m.name)}</option>)}
-                  </select>
-                  <Err field={`item_${index}_material`} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <input
-                    type="number"
-                    className="d_form_control"
-                    placeholder="Qty"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                    min={1}
-                  />
-                  <Err field={`item_${index}_qty`} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <input
-                    type="number"
-                    className="d_form_control"
-                    placeholder="Price"
-                    value={item.unitPrice}
-                    onChange={(e) => updateItem(index, 'unitPrice', e.target.value)}
-                    min={0}
-                    step="0.01"
-                  />
-                </div>
-                <button className="d_btn d_btn_danger" onClick={() => removeItem(index)}><MdDelete /></button>
-              </div>
-            ))}
-            <button className="d_btn d_btn_outline d_btn_sm" onClick={addItem}><MdAdd /> Add Item</button>
-            <Err field="items" />
-          </div>
+        <div className="d_table_wrap">
+          <table className="d_table">
+            <thead>
+              <tr>
+                <th>Raw Material</th>
+                <th>Qty</th>
+                <th>Unit Price (₹)</th>
+                <th>Total (₹)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {form.items.map((item, index) => (
+                <tr key={index}>
+                  <td>
+                    <select className="d_form_control" value={item.rawMaterialId} onChange={(e) => updateItem(index, 'rawMaterialId', e.target.value)}>
+                      <option value="">Select Material</option>
+                      {materials.map((material) => <option key={material._id} value={material._id}>{material.code} - {material.name}</option>)}
+                    </select>
+                    <Err field={`item_${index}_material`} />
+                  </td>
+                  <td>
+                    <input className="d_form_control" type="number" min={1} value={item.quantity} onChange={(e) => updateItem(index, 'quantity', e.target.value)} />
+                    <Err field={`item_${index}_quantity`} />
+                  </td>
+                  <td>
+                    <input className="d_form_control" type="number" min={0} step="0.01" value={item.unitPrice} onChange={(e) => updateItem(index, 'unitPrice', e.target.value)} />
+                    <Err field={`item_${index}_price`} />
+                  </td>
+                  <td><strong>₹{((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toLocaleString('en-IN')}</strong></td>
+                  <td><button className="d_icon_btn d_del" onClick={() => removeItem(index)}><MdDelete /></button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+        <button type="button" className="d_btn d_btn_outline d_btn_sm mt-2" onClick={addItem}><MdAdd /> Add Item</button>
 
-        <div className="d_form_row cols-2">
+        <div className="d_form_row cols-2 mt-3">
           <div className="d_form_group">
             <label className="d_form_label">Total Amount</label>
             <div className="d_form_control d_readonly">₹{calculateTotal().toLocaleString('en-IN')}</div>
           </div>
           <div className="d_form_group">
-            <label className="d_form_label">Grand Total (incl. 18% GST)</label>
+            <label className="d_form_label">Grand Total (18% GST)</label>
             <div className="d_form_control d_readonly">₹{(calculateTotal() * 1.18).toLocaleString('en-IN')}</div>
-          </div>
-        </div>
-
-        <div className="d_form_row cols-1">
-          <div className="d_form_group">
-            <label className="d_form_label">Notes</label>
-            <textarea className="d_form_control" rows={3} placeholder="Additional notes..." {...f('notes')} />
           </div>
         </div>
 
         <div className="d_form_actions">
           <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
-          <button className="d_btn d_btn_primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : editId ? 'Update Purchase' : 'Create Purchase'}
-          </button>
+          <button className="d_btn d_btn_primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Purchase'}</button>
         </div>
       </Modal>
 
       <Modal open={viewModal} onClose={() => setViewModal(false)} title="Purchase Details" size="lg">
         {selectedPurchase && (
-          <div>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">Purchase ID</label>
-                <div className="d_form_control d_readonly">{String(selectedPurchase.id)}</div>
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Supplier</label>
-                <div className="d_form_control d_readonly">{String(selectedPurchase.supplier)}</div>
-              </div>
-            </div>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">Purchase Date</label>
-                <div className="d_form_control d_readonly">{String(selectedPurchase.purchaseDate)}</div>
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Expected Delivery</label>
-                <div className="d_form_control d_readonly">{String(selectedPurchase.expectedDelivery || '-')}</div>
-              </div>
-            </div>
-            
-            <h4 className="mt-3 mb-2">Items</h4>
+          <div className="d_table_wrap">
             <table className="d_table">
               <thead>
                 <tr>
                   <th>Material</th>
-                  <th>Quantity</th>
+                  <th>Qty</th>
                   <th>Unit</th>
-                  <th>Unit Price</th>
-                  <th>Total</th>
+                  <th>Unit Price (₹)</th>
+                  <th>Purchase Value (₹)</th>
                 </tr>
               </thead>
               <tbody>
-                {selectedPurchase.items?.map((item, i) => (
-                  <tr key={i}>
-                    <td>{String(item.materialName)}</td>
-                    <td>{String(item.quantity)}</td>
-                    <td>{String(item.unit)}</td>
+                {(selectedPurchase.items || []).map((item, index) => (
+                  <tr key={index}>
+                    <td>{item.materialCode} - {item.materialName}</td>
+                    <td>{item.quantity}</td>
+                    <td>{item.unit}</td>
                     <td>₹{(item.unitPrice || 0).toLocaleString('en-IN')}</td>
-                    <td>₹{(item.totalPrice || 0).toLocaleString('en-IN')}</td>
+                    <td><strong>₹{(item.totalPrice || 0).toLocaleString('en-IN')}</strong></td>
                   </tr>
                 ))}
               </tbody>
             </table>
-
-            <div className="d_form_row cols-2 mt-3">
-              <div className="d_form_group">
-                <label className="d_form_label">Total Amount</label>
-                <div className="d_form_control d_readonly">₹{(selectedPurchase.totalAmount || 0).toLocaleString('en-IN')}</div>
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Grand Total</label>
-                <div className="d_form_control d_readonly">₹{(selectedPurchase.grandTotal || 0).toLocaleString('en-IN')}</div>
-              </div>
-            </div>
-
-            <div className="d_form_actions mt-3">
-              <button className="d_btn d_btn_outline" onClick={() => setViewModal(false)}>Close</button>
-            </div>
           </div>
         )}
       </Modal>

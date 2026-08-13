@@ -306,6 +306,7 @@ export const suppliersApi = {
 export const rawMaterialsApi = {
   getAll: (params = {}) => api.get('/raw-materials', { params }),
   getLowStock: () => api.get('/raw-materials/low-stock'),
+  getReport: () => api.get('/raw-materials/report'),
   getById: (id) => api.get(`/raw-materials/${id}`),
   create: (data) => api.post('/raw-materials', data),
   update: (id, data) => api.put(`/raw-materials/${id}`, data),
