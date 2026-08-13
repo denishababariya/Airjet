@@ -1,33 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  MdPeople, MdAdd, MdEdit, MdDelete, MdSearch,
-  MdVisibility, MdVisibilityOff, MdLockPerson,
-} from 'react-icons/md';
-import Modal from '../components/Modal';
-import ConfirmDialog from '../components/ConfirmDialog';
-import ToastContainer from '../components/Toast';
-import useToast from '../hooks/useToast';
-import { employeesApi, departmentsApi, designationsApi, hrApi } from '../utils/api';
-import { V, validate as validateFields } from '../utils/validators';
+  MdPeople,
+  MdAdd,
+  MdEdit,
+  MdDelete,
+  MdSearch,
+  MdVisibility,
+  MdVisibilityOff,
+  MdLockPerson,
+} from "react-icons/md";
+import Modal from "../components/Modal";
+import ConfirmDialog from "../components/ConfirmDialog";
+import ToastContainer from "../components/Toast";
+import useToast from "../hooks/useToast";
+import {
+  employeesApi,
+  departmentsApi,
+  designationsApi,
+  hrApi,
+} from "../utils/api";
+import { V, validate as validateFields } from "../utils/validators";
 
 const blank = {
-  name: '', email: '', phone: '', address: '', gender: '', salary: '',
-  workShift: 'Day', cast: '', bod: '', age: '', joiningDate: '',
-  department: '', designation: '', status: 'Active',
-  image: '', docImage: '',
-  password: '', confirmPassword: '',
+  name: "",
+  email: "",
+  phone: "",
+  address: "",
+  gender: "",
+  salary: "",
+  workShift: "Day",
+  cast: "",
+  bod: "",
+  age: "",
+  joiningDate: "",
+  department: "",
+  designation: "",
+  status: "Active",
+  image: "",
+  docImage: "",
+  password: "",
+  confirmPassword: "",
   imageFile: null,
   docImageFile: null,
 };
 
 // Designations that get a login account
-const ADMIN_DESIGNATIONS = ['HR', 'Admin', 'Manager', 'Head', 'HR Manager'];
+const ADMIN_DESIGNATIONS = ["HR", "Admin", "Manager", "Head", "HR Manager"];
 
-const statusClass = { Active: 'd_success', Inactive: 'd_danger', 'On Leave': 'd_warning' };
+const statusClass = {
+  Active: "d_success",
+  Inactive: "d_danger",
+  "On Leave": "d_warning",
+};
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const calcAge = (bod) => {
-  if (!bod) return '';
+  if (!bod) return "";
   const birth = new Date(bod);
   const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
@@ -41,8 +69,8 @@ const EmployeeMaster = ({ currentUser }) => {
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(blank);
   const [editId, setEditId] = useState(null);
@@ -54,27 +82,38 @@ const EmployeeMaster = ({ currentUser }) => {
   const [userStatusLoading, setUserStatusLoading] = useState(false);
   // confirm dialog state
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null); // () => Promise<void>
+  const [deleteId, setDeleteId] = useState(null);
   const { toasts, toast, removeToast } = useToast();
 
-  const canManage = ['Admin', 'HR', 'Manager'].includes(currentUser?.role);
+  const canManage = ["Admin", "HR", "Manager"].includes(currentUser?.role);
 
   // ── Designation / Department helpers ───────────────────────
   const isAdminDesignation = (designationId) => {
-    const designation = designations.find(d => (d._id || d.id) === designationId);
-    return designation && ADMIN_DESIGNATIONS.some(admin =>
-      designation.title?.toLowerCase().includes(admin.toLowerCase())
+    const designation = designations.find(
+      (d) => (d._id || d.id) === designationId,
+    );
+    return (
+      designation &&
+      ADMIN_DESIGNATIONS.some((admin) =>
+        designation.title?.toLowerCase().includes(admin.toLowerCase()),
+      )
     );
   };
 
   const isHRDepartment = (departmentId) => {
-    const department = departments.find(d => (d._id || d.id) === departmentId);
-    return department && department.title?.toLowerCase().includes('hr');
+    const department = departments.find(
+      (d) => (d._id || d.id) === departmentId,
+    );
+    return department && department.title?.toLowerCase().includes("hr");
   };
 
   const isHRManagerDesignation = (designationId) => {
-    const designation = designations.find(d => (d._id || d.id) === designationId);
-    return designation && designation.title?.toLowerCase().includes('hr manager');
+    const designation = designations.find(
+      (d) => (d._id || d.id) === designationId,
+    );
+    return (
+      designation && designation.title?.toLowerCase().includes("hr manager")
+    );
   };
 
   // FIX: was calling undefined isAdminDesig / isHRDept
@@ -84,7 +123,7 @@ const EmployeeMaster = ({ currentUser }) => {
   // ── Fetch ───────────────────────────────────────────────────
   const fetchAll = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const [empRes, deptRes, desRes] = await Promise.all([
         employeesApi.getAll(),
@@ -95,24 +134,31 @@ const EmployeeMaster = ({ currentUser }) => {
       setDepartments(deptRes.data);
       setDesignations(desRes.data);
     } catch (err) {
-      setError(err.displayMessage || 'Failed to load employees');
+      setError(err.displayMessage || "Failed to load employees");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    fetchAll();
+  }, []);
 
   // Designations filtered by selected department
   const filteredDesigs = form.department
-    ? designations.filter(d => (d.department?._id || d.department?.id || d.department) === form.department)
+    ? designations.filter(
+        (d) =>
+          (d.department?._id || d.department?.id || d.department) ===
+          form.department,
+      )
     : designations;
 
   // Table search
-  const filtered = data.filter(e =>
-    (e.name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (e.id || '').toLowerCase().includes(search.toLowerCase()) ||
-    (e.department?.title || '').toLowerCase().includes(search.toLowerCase())
+  const filtered = data.filter(
+    (e) =>
+      (e.name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (e.id || "").toLowerCase().includes(search.toLowerCase()) ||
+      (e.department?.title || "").toLowerCase().includes(search.toLowerCase()),
   );
 
   // ── Open Add modal ──────────────────────────────────────────
@@ -129,24 +175,26 @@ const EmployeeMaster = ({ currentUser }) => {
   // ── Open Edit modal ─────────────────────────────────────────
   const openEdit = async (emp) => {
     setForm({
-      name: emp.name || '',
-      email: emp.email || '',
-      phone: String(emp.phoneNo || ''),
-      address: emp.address || '',
-      gender: emp.gender || '',
-      salary: emp.salary || '',
-      workShift: emp.workShift || 'Day',
-      cast: emp.cast || '',
-      bod: emp.bod ? emp.bod.split('T')[0] : '',
-      age: emp.age || '',
-      joiningDate: emp.joiningDate ? emp.joiningDate.split('T')[0] : '',
-      department: emp.department?._id || emp.department?.id || emp.department || '',
-      designation: emp.designation?._id || emp.designation?.id || emp.designation || '',
-      status: emp.status || 'Active',
-      image: emp.image || '',
-      docImage: emp.docImage || '',
-      password: '',
-      confirmPassword: '',
+      name: emp.name || "",
+      email: emp.email || "",
+      phone: String(emp.phoneNo || ""),
+      address: emp.address || "",
+      gender: emp.gender || "",
+      salary: emp.salary || "",
+      workShift: emp.workShift || "Day",
+      cast: emp.cast || "",
+      bod: emp.bod ? emp.bod.split("T")[0] : "",
+      age: emp.age || "",
+      joiningDate: emp.joiningDate ? emp.joiningDate.split("T")[0] : "",
+      department:
+        emp.department?._id || emp.department?.id || emp.department || "",
+      designation:
+        emp.designation?._id || emp.designation?.id || emp.designation || "",
+      status: emp.status || "Active",
+      image: emp.image || "",
+      docImage: emp.docImage || "",
+      password: "",
+      confirmPassword: "",
       imageFile: null,
       docImageFile: null,
     });
@@ -174,26 +222,30 @@ const EmployeeMaster = ({ currentUser }) => {
   // ── Validate ────────────────────────────────────────────────
   const validate = () => {
     const e = validateFields({
-      name: V.name(form.name, 'Employee name'),
+      name: V.name(form.name, "Employee name"),
       phone: V.phone(form.phone),
       email: V.email(form.email),
-      salary: form.salary !== '' ? V.optionalAmount(form.salary, 'Salary') : '',
+      salary: form.salary !== "" ? V.optionalAmount(form.salary, "Salary") : "",
     });
-    if (!form.department) e.department = 'Department is required';
-    if (!form.designation) e.designation = 'Designation is required';
+    if (!form.department) e.department = "Department is required";
+    if (!form.designation) e.designation = "Designation is required";
 
     // Password rules for login-account designations
     if (needsLoginAccount()) {
       const pwd = form.password.trim();
       if (!editId) {
         // Add mode: password required
-        if (!pwd) e.password = 'Password is required for this role';
-        else if (pwd.length < 6) e.password = 'Password must be at least 6 characters';
-        else if (pwd !== form.confirmPassword.trim()) e.confirmPassword = 'Passwords do not match';
+        if (!pwd) e.password = "Password is required for this role";
+        else if (pwd.length < 6)
+          e.password = "Password must be at least 6 characters";
+        else if (pwd !== form.confirmPassword.trim())
+          e.confirmPassword = "Passwords do not match";
       } else if (pwd) {
         // Edit mode: password optional but if given must be valid
-        if (pwd.length < 6) e.password = 'Password must be at least 6 characters';
-        else if (pwd !== form.confirmPassword.trim()) e.confirmPassword = 'Passwords do not match';
+        if (pwd.length < 6)
+          e.password = "Password must be at least 6 characters";
+        else if (pwd !== form.confirmPassword.trim())
+          e.confirmPassword = "Passwords do not match";
       }
     }
     return e;
@@ -202,7 +254,10 @@ const EmployeeMaster = ({ currentUser }) => {
   // ── Save ────────────────────────────────────────────────────
   const handleSave = async () => {
     const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
 
     try {
       const payload = {
@@ -225,7 +280,12 @@ const EmployeeMaster = ({ currentUser }) => {
       };
 
       if (editId) {
-        await employeesApi.update(editId, payload, form.imageFile, form.docImageFile);
+        await employeesApi.update(
+          editId,
+          payload,
+          form.imageFile,
+          form.docImageFile,
+        );
 
         // Update login account password if provided
         if (
@@ -234,12 +294,18 @@ const EmployeeMaster = ({ currentUser }) => {
             isHRManagerDesignation(form.designation)) &&
           form.password.trim()
         ) {
-          const designation = designations.find(d => (d._id || d.id) === form.designation);
-          const role = designation?.title || 'User';
+          const designation = designations.find(
+            (d) => (d._id || d.id) === form.designation,
+          );
+          const role = designation?.title || "User";
           await hrApi.createUserWithRole(editId, role, form.password.trim());
         }
       } else {
-        const employee = await employeesApi.create(payload, form.imageFile, form.docImageFile);
+        const employee = await employeesApi.create(
+          payload,
+          form.imageFile,
+          form.docImageFile,
+        );
         const newId = employee.data._id || employee.data.id;
 
         // Create login account for qualifying designations/departments
@@ -249,47 +315,63 @@ const EmployeeMaster = ({ currentUser }) => {
             isHRManagerDesignation(form.designation)) &&
           form.password.trim()
         ) {
-          const designation = designations.find(d => (d._id || d.id) === form.designation);
-          const role = designation?.title || 'User';
+          const designation = designations.find(
+            (d) => (d._id || d.id) === form.designation,
+          );
+          const role = designation?.title || "User";
           await hrApi.createUserWithRole(newId, role, form.password.trim());
         }
       }
 
       setModal(false);
       fetchAll();
-      toast.success(editId ? 'Employee updated successfully' : 'Employee added successfully');
+      toast.success(
+        editId
+          ? "Employee updated successfully"
+          : "Employee added successfully",
+      );
     } catch (err) {
-      setError(err.displayMessage || err.response?.data?.error || 'Failed to save employee');
-      toast.error(err.displayMessage || err.response?.data?.error || 'Failed to save employee');
+      setError(
+        err.displayMessage ||
+          err.response?.data?.error ||
+          "Failed to save employee",
+      );
+      toast.error(
+        err.displayMessage ||
+          err.response?.data?.error ||
+          "Failed to save employee",
+      );
     }
   };
 
   // ── Delete ──────────────────────────────────────────────────
-  const handleDelete = async (id) => {
-    setConfirmAction(async () => {
-      try {
-        await employeesApi.remove(id);
-        fetchAll();
-        toast.success('Employee deleted successfully');
-      } catch (err) {
-        setError(err.displayMessage || 'Failed to delete employee');
-        toast.error(err.displayMessage || 'Failed to delete employee');
-      }
-    });
+  const handleDelete = (id) => {
+    setDeleteId(id);
     setConfirmOpen(true);
   };
 
   const handleConfirm = async () => {
-    setConfirmOpen(false);
-    if (confirmAction) {
-      await confirmAction();
-      setConfirmAction(null);
+    if (!deleteId) return;
+
+    try {
+      setConfirmOpen(false);
+
+      await employeesApi.remove(deleteId);
+
+      setDeleteId(null);
+      await fetchAll();
+
+      toast.success("Employee deleted successfully");
+    } catch (err) {
+      setDeleteId(null);
+      setError(err.displayMessage || "Failed to delete employee");
+      toast.error(err.displayMessage || "Failed to delete employee");
     }
   };
 
   const handleConfirmCancel = () => {
     setConfirmOpen(false);
-    setConfirmAction(null);
+    setDeleteId(null);
   };
 
   // ── Field helper ────────────────────────────────────────────
@@ -297,13 +379,13 @@ const EmployeeMaster = ({ currentUser }) => {
     value: form[field],
     onChange: (ev) => {
       const val = ev.target.value;
-      setForm(p => {
+      setForm((p) => {
         const next = { ...p, [field]: val };
-        if (field === 'department') next.designation = '';
-        if (field === 'bod') next.age = calcAge(val);
+        if (field === "department") next.designation = "";
+        if (field === "bod") next.age = calcAge(val);
         return next;
       });
-      setErrors(p => ({ ...p, [field]: '' }));
+      setErrors((p) => ({ ...p, [field]: "" }));
     },
   });
 
@@ -313,7 +395,9 @@ const EmployeeMaster = ({ currentUser }) => {
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <h1 className="d_page_title">Employee Master</h1>
-          <p className="d_page_subtitle">Manage all employee records and worker logins</p>
+          <p className="d_page_subtitle">
+            Manage all employee records and worker logins
+          </p>
         </div>
         {canManage && (
           <button className="d_btn d_btn_primary" onClick={openAdd}>
@@ -327,7 +411,8 @@ const EmployeeMaster = ({ currentUser }) => {
       <div className="d_card">
         <div className="d_card_header flex-wrap gap-2">
           <h2 className="d_card_title">
-            <MdPeople className="d_card_icon" /> All Employees ({filtered.length})
+            <MdPeople className="d_card_icon" /> All Employees (
+            {filtered.length})
           </h2>
           <div className="d_search_box">
             <MdSearch className="d_search_icon" />
@@ -335,7 +420,7 @@ const EmployeeMaster = ({ currentUser }) => {
               className="d_search_input"
               placeholder="Search name, ID, dept…"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
         </div>
@@ -369,18 +454,28 @@ const EmployeeMaster = ({ currentUser }) => {
                       <td colSpan={12}>No employees found.</td>
                     </tr>
                   )}
-                  {filtered.map(e => (
+                  {filtered.map((e) => (
                     <tr key={e._id || e.id}>
-                      <td><code>{e.id || e._id}</code></td>
-                      <td><strong>{e.name}</strong></td>
-                      <td>{e.department?.title || '-'}</td>
-                      <td>{e.designation?.title || '-'}</td>
-                      <td>{e.phoneNo || '-'}</td>
-                      <td>{e.email}</td>
-                      <td>{e.salary ? `₹${Number(e.salary).toLocaleString('en-IN')}` : '-'}</td>
-                      <td>{e.workShift || '-'}</td>
                       <td>
-                        <span className={`d_badge ${statusClass[e.status] || 'd_info'}`}>
+                        <code>{e.id || e._id}</code>
+                      </td>
+                      <td>
+                        <strong>{e.name}</strong>
+                      </td>
+                      <td>{e.department?.title || "-"}</td>
+                      <td>{e.designation?.title || "-"}</td>
+                      <td>{e.phoneNo || "-"}</td>
+                      <td>{e.email}</td>
+                      <td>
+                        {e.salary
+                          ? `₹${Number(e.salary).toLocaleString("en-IN")}`
+                          : "-"}
+                      </td>
+                      <td>{e.workShift || "-"}</td>
+                      <td>
+                        <span
+                          className={`d_badge ${statusClass[e.status] || "d_info"}`}
+                        >
                           {e.status}
                         </span>
                       </td>
@@ -389,11 +484,24 @@ const EmployeeMaster = ({ currentUser }) => {
                           <img
                             src={`http://localhost:5000${e.image}`}
                             alt={e.name}
-                            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
-                            onClick={() => window.open(`http://localhost:5000${e.image}`, '_blank')}
+                            style={{
+                              width: 40,
+                              height: 40,
+                              objectFit: "cover",
+                              borderRadius: 4,
+                              cursor: "pointer",
+                            }}
+                            onClick={() =>
+                              window.open(
+                                `http://localhost:5000${e.image}`,
+                                "_blank",
+                              )
+                            }
                           />
                         ) : (
-                          <span style={{ color: '#999', fontSize: 12 }}>No image</span>
+                          <span style={{ color: "#999", fontSize: 12 }}>
+                            No image
+                          </span>
                         )}
                       </td>
                       <td>
@@ -401,11 +509,24 @@ const EmployeeMaster = ({ currentUser }) => {
                           <img
                             src={`http://localhost:5000${e.docImage}`}
                             alt="Document"
-                            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
-                            onClick={() => window.open(`http://localhost:5000${e.docImage}`, '_blank')}
+                            style={{
+                              width: 40,
+                              height: 40,
+                              objectFit: "cover",
+                              borderRadius: 4,
+                              cursor: "pointer",
+                            }}
+                            onClick={() =>
+                              window.open(
+                                `http://localhost:5000${e.docImage}`,
+                                "_blank",
+                              )
+                            }
                           />
                         ) : (
-                          <span style={{ color: '#999', fontSize: 12 }}>No doc</span>
+                          <span style={{ color: "#999", fontSize: 12 }}>
+                            No doc
+                          </span>
                         )}
                       </td>
                       <td>
@@ -443,22 +564,27 @@ const EmployeeMaster = ({ currentUser }) => {
       <Modal
         open={modal}
         onClose={() => setModal(false)}
-        title={editId ? 'Edit Employee' : 'Add New Employee'}
+        title={editId ? "Edit Employee" : "Add New Employee"}
         size="lg"
       >
         {/* Login account banner (edit mode only) */}
         {editId && needsLoginAccount() && (
           <div
-            className={`d_alert ${userStatusLoading ? 'd_info' : userStatus?.hasUser ? 'd_success' : 'd_warning'} mb-3`}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px' }}
+            className={`d_alert ${userStatusLoading ? "d_info" : userStatus?.hasUser ? "d_success" : "d_warning"} mb-3`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 14px",
+            }}
           >
             <MdLockPerson style={{ fontSize: 18, flexShrink: 0 }} />
             <span style={{ fontSize: 13 }}>
               {userStatusLoading
-                ? 'Checking login account…'
+                ? "Checking login account…"
                 : userStatus?.hasUser
                   ? `Login account exists · Role: ${userStatus.role} · ${userStatus.status} — leave password blank to keep unchanged`
-                  : 'No login account yet — enter a password below to create one'}
+                  : "No login account yet — enter a password below to create one"}
             </span>
           </div>
         )}
@@ -466,58 +592,91 @@ const EmployeeMaster = ({ currentUser }) => {
         {/* Row 1 — Name & Email */}
         <div className="d_form_row cols-2">
           <div className="d_form_group">
-            <label className="d_form_label">Full Name <span className="d_req">*</span></label>
-            <input className="d_form_control" placeholder="e.g. Rajesh Kumar" {...f('name')} />
-            {errors.name && <span className="d_field_error">{errors.name}</span>}
+            <label className="d_form_label">
+              Full Name <span className="d_req">*</span>
+            </label>
+            <input
+              className="d_form_control"
+              placeholder="e.g. Rajesh Kumar"
+              {...f("name")}
+            />
+            {errors.name && (
+              <span className="d_field_error">{errors.name}</span>
+            )}
           </div>
           <div className="d_form_group">
-            <label className="d_form_label">Email <span className="d_req">*</span></label>
-            <input type="email" className="d_form_control" placeholder="email@airjet.in" {...f('email')} />
-            {errors.email && <span className="d_field_error">{errors.email}</span>}
+            <label className="d_form_label">
+              Email <span className="d_req">*</span>
+            </label>
+            <input
+              type="email"
+              className="d_form_control"
+              placeholder="email@airjet.in"
+              {...f("email")}
+            />
+            {errors.email && (
+              <span className="d_field_error">{errors.email}</span>
+            )}
           </div>
         </div>
 
         {/* Row 2 — Department & Designation */}
         <div className="d_form_row cols-2">
           <div className="d_form_group">
-            <label className="d_form_label">Department <span className="d_req">*</span></label>
-            <select className="d_form_control" {...f('department')}>
+            <label className="d_form_label">
+              Department <span className="d_req">*</span>
+            </label>
+            <select className="d_form_control" {...f("department")}>
               <option value="">Select Department</option>
-              {departments.map(d => (
-                <option key={d._id || d.id} value={d._id || d.id}>{String(d.title)}</option>
+              {departments.map((d) => (
+                <option key={d._id || d.id} value={d._id || d.id}>
+                  {String(d.title)}
+                </option>
               ))}
             </select>
-            {errors.department && <span className="d_field_error">{errors.department}</span>}
+            {errors.department && (
+              <span className="d_field_error">{errors.department}</span>
+            )}
           </div>
           <div className="d_form_group">
-            <label className="d_form_label">Designation <span className="d_req">*</span></label>
-            <select className="d_form_control" {...f('designation')}>
+            <label className="d_form_label">
+              Designation <span className="d_req">*</span>
+            </label>
+            <select className="d_form_control" {...f("designation")}>
               <option value="">Select Designation</option>
-              {filteredDesigs.map(d => (
-                <option key={d._id || d.id} value={d._id || d.id}>{String(d.title)}</option>
+              {filteredDesigs.map((d) => (
+                <option key={d._id || d.id} value={d._id || d.id}>
+                  {String(d.title)}
+                </option>
               ))}
             </select>
-            {errors.designation && <span className="d_field_error">{errors.designation}</span>}
+            {errors.designation && (
+              <span className="d_field_error">{errors.designation}</span>
+            )}
           </div>
         </div>
 
         {/* Row 3 — Phone & Gender */}
         <div className="d_form_row cols-2">
           <div className="d_form_group">
-            <label className="d_form_label">Phone <span className="d_req">*</span></label>
+            <label className="d_form_label">
+              Phone <span className="d_req">*</span>
+            </label>
             <input
               className="d_form_control"
               placeholder="10-digit mobile"
               maxLength={10}
               inputMode="numeric"
               pattern="[0-9]{10}"
-              {...f('phone')}
+              {...f("phone")}
             />
-            {errors.phone && <span className="d_field_error">{errors.phone}</span>}
+            {errors.phone && (
+              <span className="d_field_error">{errors.phone}</span>
+            )}
           </div>
           <div className="d_form_group">
             <label className="d_form_label">Gender</label>
-            <select className="d_form_control" {...f('gender')}>
+            <select className="d_form_control" {...f("gender")}>
               <option value="">Select</option>
               <option>Male</option>
               <option>Female</option>
@@ -530,12 +689,20 @@ const EmployeeMaster = ({ currentUser }) => {
         <div className="d_form_row cols-2">
           <div className="d_form_group">
             <label className="d_form_label">Salary (₹)</label>
-            <input type="number" className="d_form_control" placeholder="e.g. 25000" min={0} {...f('salary')} />
-            {errors.salary && <span className="d_field_error">{errors.salary}</span>}
+            <input
+              type="number"
+              className="d_form_control"
+              placeholder="e.g. 25000"
+              min={0}
+              {...f("salary")}
+            />
+            {errors.salary && (
+              <span className="d_field_error">{errors.salary}</span>
+            )}
           </div>
           <div className="d_form_group">
             <label className="d_form_label">Work Shift</label>
-            <select className="d_form_control" {...f('workShift')}>
+            <select className="d_form_control" {...f("workShift")}>
               <option>Day</option>
               <option>Night</option>
               <option>Rotational</option>
@@ -547,7 +714,7 @@ const EmployeeMaster = ({ currentUser }) => {
         <div className="d_form_row cols-2">
           <div className="d_form_group">
             <label className="d_form_label">Date of Birth</label>
-            <input type="date" className="d_form_control" {...f('bod')} />
+            <input type="date" className="d_form_control" {...f("bod")} />
           </div>
           <div className="d_form_group">
             <label className="d_form_label">Age (auto-calculated)</label>
@@ -556,7 +723,7 @@ const EmployeeMaster = ({ currentUser }) => {
               className="d_form_control"
               placeholder="Auto-filled from DOB"
               readOnly={!!form.bod}
-              {...f('age')}
+              {...f("age")}
             />
           </div>
         </div>
@@ -565,11 +732,15 @@ const EmployeeMaster = ({ currentUser }) => {
         <div className="d_form_row cols-2">
           <div className="d_form_group">
             <label className="d_form_label">Joining Date</label>
-            <input type="date" className="d_form_control" {...f('joiningDate')} />
+            <input
+              type="date"
+              className="d_form_control"
+              {...f("joiningDate")}
+            />
           </div>
           <div className="d_form_group">
             <label className="d_form_label">Status</label>
-            <select className="d_form_control" {...f('status')}>
+            <select className="d_form_control" {...f("status")}>
               <option>Active</option>
               <option>Inactive</option>
               <option>On Leave</option>
@@ -581,11 +752,19 @@ const EmployeeMaster = ({ currentUser }) => {
         <div className="d_form_row cols-2">
           <div className="d_form_group">
             <label className="d_form_label">Address</label>
-            <input className="d_form_control" placeholder="Full address" {...f('address')} />
+            <input
+              className="d_form_control"
+              placeholder="Full address"
+              {...f("address")}
+            />
           </div>
           <div className="d_form_group">
             <label className="d_form_label">Category</label>
-            <input className="d_form_control" placeholder="e.g. General" {...f('cast')} />
+            <input
+              className="d_form_control"
+              placeholder="e.g. General"
+              {...f("cast")}
+            />
           </div>
         </div>
 
@@ -600,19 +779,45 @@ const EmployeeMaster = ({ currentUser }) => {
               onChange={(e) => {
                 const file = e.target.files[0];
                 if (file) {
-                  setForm(p => ({ ...p, imageFile: file, image: URL.createObjectURL(file) }));
+                  setForm((p) => ({
+                    ...p,
+                    imageFile: file,
+                    image: URL.createObjectURL(file),
+                  }));
                 }
               }}
             />
             {form.image && !form.imageFile && (
               <div style={{ marginTop: 8 }}>
-                <img src={form.image} alt="Profile" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }} />
+                <img
+                  src={form.image}
+                  alt="Profile"
+                  style={{
+                    width: 80,
+                    height: 80,
+                    objectFit: "cover",
+                    borderRadius: 4,
+                    border: "1px solid #ddd",
+                  }}
+                />
               </div>
             )}
             {form.imageFile && (
               <div style={{ marginTop: 8 }}>
-                <img src={form.image} alt="Preview" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }} />
-                <span style={{ fontSize: 12, color: '#666', marginLeft: 8 }}>{form.imageFile.name}</span>
+                <img
+                  src={form.image}
+                  alt="Preview"
+                  style={{
+                    width: 80,
+                    height: 80,
+                    objectFit: "cover",
+                    borderRadius: 4,
+                    border: "1px solid #ddd",
+                  }}
+                />
+                <span style={{ fontSize: 12, color: "#666", marginLeft: 8 }}>
+                  {form.imageFile.name}
+                </span>
               </div>
             )}
           </div>
@@ -625,19 +830,45 @@ const EmployeeMaster = ({ currentUser }) => {
               onChange={(e) => {
                 const file = e.target.files[0];
                 if (file) {
-                  setForm(p => ({ ...p, docImageFile: file, docImage: URL.createObjectURL(file) }));
+                  setForm((p) => ({
+                    ...p,
+                    docImageFile: file,
+                    docImage: URL.createObjectURL(file),
+                  }));
                 }
               }}
             />
             {form.docImage && !form.docImageFile && (
               <div style={{ marginTop: 8 }}>
-                <img src={form.docImage} alt="Document" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }} />
+                <img
+                  src={form.docImage}
+                  alt="Document"
+                  style={{
+                    width: 80,
+                    height: 80,
+                    objectFit: "cover",
+                    borderRadius: 4,
+                    border: "1px solid #ddd",
+                  }}
+                />
               </div>
             )}
             {form.docImageFile && (
               <div style={{ marginTop: 8 }}>
-                <img src={form.docImage} alt="Preview" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }} />
-                <span style={{ fontSize: 12, color: '#666', marginLeft: 8 }}>{form.docImageFile.name}</span>
+                <img
+                  src={form.docImage}
+                  alt="Preview"
+                  style={{
+                    width: 80,
+                    height: 80,
+                    objectFit: "cover",
+                    borderRadius: 4,
+                    border: "1px solid #ddd",
+                  }}
+                />
+                <span style={{ fontSize: 12, color: "#666", marginLeft: 8 }}>
+                  {form.docImageFile.name}
+                </span>
               </div>
             )}
           </div>
@@ -650,64 +881,80 @@ const EmployeeMaster = ({ currentUser }) => {
               <label className="d_form_label">
                 Password {!editId && <span className="d_req">*</span>}
               </label>
-              <div style={{ position: 'relative' }}>
+              <div style={{ position: "relative" }}>
                 <input
-                  type={showPwd ? 'text' : 'password'}
+                  type={showPwd ? "text" : "password"}
                   className="d_form_control"
-                  placeholder={editId ? 'Leave blank to keep existing' : 'Min 6 characters'}
+                  placeholder={
+                    editId ? "Leave blank to keep existing" : "Min 6 characters"
+                  }
                   value={form.password}
-                  onChange={ev => {
-                    setForm(p => ({ ...p, password: ev.target.value }));
-                    setErrors(p => ({ ...p, password: '' }));
+                  onChange={(ev) => {
+                    setForm((p) => ({ ...p, password: ev.target.value }));
+                    setErrors((p) => ({ ...p, password: "" }));
                   }}
                   style={{ paddingRight: 38 }}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPwd(v => !v)}
+                  onClick={() => setShowPwd((v) => !v)}
                   style={pwdToggleStyle}
                   tabIndex={-1}
                 >
                   {showPwd ? <MdVisibilityOff /> : <MdVisibility />}
                 </button>
               </div>
-              {errors.password && <span className="d_field_error">{errors.password}</span>}
+              {errors.password && (
+                <span className="d_field_error">{errors.password}</span>
+              )}
             </div>
 
             <div className="d_form_group">
               <label className="d_form_label">
                 Confirm Password {!editId && <span className="d_req">*</span>}
               </label>
-              <div style={{ position: 'relative' }}>
+              <div style={{ position: "relative" }}>
                 <input
-                  type={showConfPwd ? 'text' : 'password'}
+                  type={showConfPwd ? "text" : "password"}
                   className="d_form_control"
-                  placeholder={editId ? 'Leave blank to keep existing' : 'Repeat password'}
+                  placeholder={
+                    editId ? "Leave blank to keep existing" : "Repeat password"
+                  }
                   value={form.confirmPassword}
-                  onChange={ev => {
-                    setForm(p => ({ ...p, confirmPassword: ev.target.value }));
-                    setErrors(p => ({ ...p, confirmPassword: '' }));
+                  onChange={(ev) => {
+                    setForm((p) => ({
+                      ...p,
+                      confirmPassword: ev.target.value,
+                    }));
+                    setErrors((p) => ({ ...p, confirmPassword: "" }));
                   }}
                   style={{ paddingRight: 38 }}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfPwd(v => !v)}
+                  onClick={() => setShowConfPwd((v) => !v)}
                   style={pwdToggleStyle}
                   tabIndex={-1}
                 >
                   {showConfPwd ? <MdVisibilityOff /> : <MdVisibility />}
                 </button>
               </div>
-              {errors.confirmPassword && <span className="d_field_error">{errors.confirmPassword}</span>}
+              {errors.confirmPassword && (
+                <span className="d_field_error">{errors.confirmPassword}</span>
+              )}
             </div>
           </div>
         )}
 
         <div className="d_form_actions">
-          <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
+          <button
+            className="d_btn d_btn_outline"
+            onClick={() => setModal(false)}
+          >
+            Cancel
+          </button>
           <button className="d_btn d_btn_primary" onClick={handleSave}>
-            {editId ? 'Update Employee' : 'Save Employee'}
+            {editId ? "Update Employee" : "Save Employee"}
           </button>
         </div>
       </Modal>
@@ -728,9 +975,16 @@ const EmployeeMaster = ({ currentUser }) => {
 };
 
 const pwdToggleStyle = {
-  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-  background: 'none', border: 'none', cursor: 'pointer',
-  color: 'var(--d-text-muted)', display: 'flex', alignItems: 'center',
+  position: "absolute",
+  right: 10,
+  top: "50%",
+  transform: "translateY(-50%)",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  color: "var(--d-text-muted)",
+  display: "flex",
+  alignItems: "center",
   padding: 0,
 };
 

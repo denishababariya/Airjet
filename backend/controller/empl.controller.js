@@ -1,6 +1,28 @@
 const emp = require("../model/Empl.model");
 const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModules } = require("../services/universalDataSync.service");
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+
+const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
+
+const deleteFileIfExists = (filePath) => {
+  if (!filePath) return;
+
+  try {
+    const filename = path.basename(filePath);
+    const fullPath = path.join(UPLOAD_DIR, filename);
+
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+      console.log(`Deleted file: ${fullPath}`);
+    } else {
+      console.log(`File not found: ${fullPath}`);
+    }
+  } catch (err) {
+    console.error(`Failed to delete file: ${filePath}`, err.message);
+  }
+};
 
 const generateEmpId = () => 'EMP' + Date.now().toString().slice(-6);
 
@@ -79,21 +101,29 @@ const getEmployeeById = async (req, res) => {
 const updateEmployee = async (req, res) => {
   const { id } = req.params;
   try {
+    const existingEmployee = await emp.findById(id);
+    if (!existingEmployee) {
+      return res.status(404).json({ error: "Employee not found" });
+    }
+
     const payload = { ...req.body };
     if (payload.phoneNo) payload.phoneNo = Number(payload.phoneNo);
     if (payload.bod) payload.age = calculateAge(payload.bod);
+    
+    // If new image is uploaded, delete the old one
     if (req.files?.image?.[0]) {
+      deleteFileIfExists(existingEmployee.image);
       payload.image = `/uploads/${req.files.image[0].filename}`;
     }
+    // If new docImage is uploaded, delete the old one
     if (req.files?.docImage?.[0]) {
+      deleteFileIfExists(existingEmployee.docImage);
       payload.docImage = `/uploads/${req.files.docImage[0].filename}`;
     }
+    
     const employee = await emp.findByIdAndUpdate(id, payload, { new: true })
       .populate('department')
       .populate('designation');
-    if (!employee) {
-      return res.status(404).json({ error: "Employee not found" });
-    }
     
     // Sync updated employee data across all modules
     await syncEntityAcrossModules(employee, 'employee', 'update');
@@ -106,18 +136,44 @@ const updateEmployee = async (req, res) => {
 
 const deleteEmployee = async (req, res) => {
   const { id } = req.params;
+
   try {
-    const employee = await emp.findByIdAndDelete(id);
+    const employee = await emp.findById(id);
+
     if (!employee) {
-      return res.status(404).json({ error: "Employee not found" });
+      return res.status(404).json({
+        error: "Employee not found"
+      });
     }
-    
-    // Delete employee data from all modules
+
+    // Delete employee profile image from uploads folder
+    if (employee.image) {
+      deleteFileIfExists(employee.image);
+    }
+
+    // Delete employee document image from uploads folder
+    if (employee.docImage) {
+      deleteFileIfExists(employee.docImage);
+    }
+
+    // Delete employee from Employee collection
+    await emp.findByIdAndDelete(id);
+
+    // Delete employee data from all related modules
     await deleteEntityFromModules(id, 'employee');
-    
-    res.status(200).json({ message: "Employee deleted successfully" });
+
+    return res.status(200).json({
+      success: true,
+      message: "Employee and associated images deleted successfully"
+    });
+
   } catch (error) {
-    res.status(500).json({ error: "Error deleting employee" });
+    console.error("Delete employee error:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Error deleting employee"
+    });
   }
 };
 

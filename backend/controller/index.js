@@ -16,4 +16,5 @@ module.exports = {
   ...require("./role.controller.js"),
   ...require("./purchase.controller.js"),
   ...require("./rawMaterial.controller.js"),
+  ...require("./payroll.controller.js"),
 };

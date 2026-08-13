@@ -8,10 +8,11 @@ import useConfirm from '../hooks/useConfirm';
 import { stockApi, erpApi } from '../utils/api';
 import { V, validate } from '../utils/validators';
 
-const statusClass = { Active:'d_success', Completed:'d_success', 'In Transit':'d_info', Pending:'d_warning', Inactive:'d_danger' };
+const statusClass = { Active:'d_success', Completed:'d_success', 'In Transit':'d_info', Pending:'d_warning', Inactive:'d_danger', Added:'d_success', Deducted:'d_danger', Transferred:'d_info' };
 const blankWH  = { name: '', location: '', capacity: '', unitPrice: '', manager: '', status: 'Active' };
 const blankTRF = { from: '', to: '', part: '', qty: '', date: '', status: 'Pending' };
 const blankAUD = { location: '', date: '', items: '', status: 'Pending', notes: '' };
+const blankTXN = { item: '', type: '', quantity: '', date: '', reference: '', notes: '' };
 
 const toISODate = (d) => {
   if (!d) return '';
@@ -27,6 +28,7 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
   const [warehouses, setWarehouses] = useState([]);
   const [transfers, setTransfers] = useState([]);
   const [audits, setAudits]       = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [modal, setModal]         = useState(false);
   const [form, setForm]           = useState(blankWH);
@@ -42,15 +44,17 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
   const isWH  = tab === 'warehouses';
   const isTRF = tab === 'transfers';
   const isAUD = tab === 'audits';
+  const isTXN = tab === 'transactions';
 
   const fetchStock     = async () => { setLoading(true); try { const { data } = await stockApi.getAll(); setWarehouses(data); } catch (err) { toast.error(err.displayMessage || 'Failed to load stock'); } finally { setLoading(false); } };
   const fetchTransfers = async () => { try { const { data } = await erpApi.getAll('warehouse','transfer'); setTransfers(data); } catch (err) { toast.error(err.displayMessage || 'Failed to load transfers'); } };
   const fetchAudits    = async () => { try { const { data } = await erpApi.getAll('warehouse','audit');    setAudits(data);     } catch (err) { toast.error(err.displayMessage || 'Failed to load audits'); } };
+  const fetchTransactions = async () => { try { const { data } = await erpApi.getAll('warehouse','transaction'); setTransactions(data); } catch (err) { toast.error(err.displayMessage || 'Failed to load transactions'); } };
 
-  useEffect(() => { fetchStock(); fetchTransfers(); fetchAudits(); }, []);
+  useEffect(() => { fetchStock(); fetchTransfers(); fetchAudits(); fetchTransactions(); }, []);
 
   const openAdd = () => {
-    setForm(isWH ? blankWH : isAUD ? blankAUD : blankTRF);
+    setForm(isWH ? blankWH : isAUD ? blankAUD : isTXN ? blankTXN : blankTRF);
     setEditId(null); setErrors({}); setImageFiles([]); setImagePreviews([]); setModal(true);
   };
   const openEdit = (row) => {
@@ -63,6 +67,9 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
       setImagePreviews(row.images || []);
     } else if (isAUD) {
       setForm({ location: row.location||'', date: toISODate(row.date), items: String(row.items??''), status: row.status||'Pending', notes: row.notes||'' });
+      setImagePreviews([]);
+    } else if (isTXN) {
+      setForm({ item: row.item||'', type: row.type||'', quantity: String(row.quantity??''), date: toISODate(row.date), reference: row.reference||'', notes: row.notes||'' });
       setImagePreviews([]);
     } else {
       setForm({ from: row.from||'', to: row.to||'', part: row.part||'', qty: String(row.qty??''), date: toISODate(row.date), status: row.status||'Pending' });
@@ -92,6 +99,12 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
       qty:  V.positiveInt(form.qty, 'Quantity'),
       date: V.date(form.date, 'Transfer date'),
     });
+    if (isTXN) return validate({
+      item:     V.required(form.item, 'Item'),
+      type:     V.required(form.type, 'Transaction type'),
+      quantity: V.positiveInt(form.quantity, 'Quantity'),
+      date:     V.date(form.date, 'Transaction date'),
+    });
     // audit
     return validate({
       location: V.required(form.location, 'Location'),
@@ -115,15 +128,56 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
           location: form.location.trim(), supplier: form.manager.trim(),
           minimumStock: 0, description: '',
         };
+        const oldQty = editId ? warehouses.find(w => w._id === editId)?.quantity || 0 : 0;
         if (editId) await stockApi.update(editId, payload, imageFiles); else await stockApi.create(payload, imageFiles);
+        
+        // Log transaction if quantity changed
+        if (editId && qty !== oldQty) {
+          const txnPayload = {
+            module: 'warehouse', recordType: 'transaction',
+            id: `TXN-${String(Date.now()).slice(-6)}`,
+            item: form.name,
+            type: qty > oldQty ? 'Added' : 'Deducted',
+            quantity: Math.abs(qty - oldQty),
+            date: new Date().toISOString().split('T')[0],
+            reference: `Stock Update - ${editId}`,
+            notes: `Quantity changed from ${oldQty} to ${qty}`
+          };
+          await erpApi.create(txnPayload);
+          fetchTransactions();
+        }
+        
         toast.success(editId ? 'Stock item updated!' : 'Stock item added!');
         fetchStock();
       } else if (isTRF) {
         const payload = { module:'warehouse', recordType:'transfer', ...form, qty: Number(form.qty)||0 };
         if (!editId) payload.id = `TRF-${String(Date.now()).slice(-6)}`;
         if (editId) await erpApi.update(editId, payload); else await erpApi.create(payload);
+        
+        // Log transaction for transfer
+        if (!editId) {
+          const txnPayload = {
+            module: 'warehouse', recordType: 'transaction',
+            id: `TXN-${String(Date.now()).slice(-6)}`,
+            item: form.part,
+            type: 'Transferred',
+            quantity: Number(form.qty),
+            date: form.date,
+            reference: payload.id,
+            notes: `Transfer from ${form.from} to ${form.to}`
+          };
+          await erpApi.create(txnPayload);
+          fetchTransactions();
+        }
+        
         toast.success(editId ? 'Transfer updated!' : 'Transfer created!');
         fetchTransfers();
+      } else if (isTXN) {
+        const payload = { module:'warehouse', recordType:'transaction', ...form, quantity: Number(form.quantity)||0 };
+        if (!editId) payload.id = `TXN-${String(Date.now()).slice(-6)}`;
+        if (editId) await erpApi.update(editId, payload); else await erpApi.create(payload);
+        toast.success(editId ? 'Transaction updated!' : 'Transaction recorded!');
+        fetchTransactions();
       } else {
         const payload = { module:'warehouse', recordType:'audit', ...form, items: Number(form.items)||0 };
         if (!editId) payload.id = `AUD-${String(Date.now()).slice(-6)}`;
@@ -146,6 +200,7 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
         try {
           if (isWH)       { await stockApi.remove(id); fetchStock(); }
           else if (isTRF) { await erpApi.remove(id); fetchTransfers(); }
+          else if (isTXN) { await erpApi.remove(id); fetchTransactions(); }
           else            { await erpApi.remove(id); fetchAudits(); }
           toast.success('Record deleted.');
         } catch (err) { toast.error(err.displayMessage || 'Failed to delete'); }
@@ -161,12 +216,12 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div><h1 className="d_page_title">Warehouse Management</h1><p className="d_page_subtitle">Manage warehouses, stock transfers and audits</p></div>
         <button className="d_btn d_btn_primary" onClick={openAdd}>
-          <MdAdd /> {isWH ? 'Add Warehouse' : isTRF ? 'New Transfer' : 'Schedule Audit'}
+          <MdAdd /> {isWH ? 'Add Warehouse' : isTRF ? 'New Transfer' : isTXN ? 'Record Transaction' : 'Schedule Audit'}
         </button>
       </div>
 
       <div className="d_tabs mb-3">
-        {[['warehouses','Warehouses'],['transfers','Stock Transfers'],['audits','Stock Audits']].map(([k,v]) => (
+        {[['warehouses','Warehouses'],['transfers','Stock Transfers'],['transactions','Inventory History'],['audits','Stock Audits']].map(([k,v]) => (
           <button key={k} className={`d_tab_btn ${tab===k?'d_active':''}`} onClick={() => setTab(k)}>{v}</button>
         ))}
       </div>
@@ -266,6 +321,42 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
         </div>
       )}
 
+      {/* Inventory Transaction History */}
+      {isTXN && (
+        <div className="d_card">
+          <div className="d_card_header"><h2 className="d_card_title"><MdFactCheck className="d_card_icon" /> Inventory Transaction History ({transactions.length})</h2></div>
+          <div className="d_card_body p-0">
+            {transactions.length === 0 ? (
+              <div className="text-center py-5">
+                <p style={{ color:'var(--d-text-muted)' }}>No inventory transactions recorded.</p>
+                <button className="d_btn d_btn_primary mt-2" onClick={openAdd}><MdAdd /> Record Transaction</button>
+              </div>
+            ) : (
+              <div className="d_table_wrap"><table className="d_table">
+                <thead><tr><th>Transaction ID</th><th>Item</th><th>Type</th><th>Quantity</th><th>Date</th><th>Reference</th><th>Notes</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {transactions.map(t => (
+                    <tr key={t._id}>
+                      <td><code>{String(t.id)}</code></td>
+                      <td><strong>{String(t.item)}</strong></td>
+                      <td><span className={`d_badge ${statusClass[t.type]||'d_info'}`}>{String(t.type)}</span></td>
+                      <td>{String(t.quantity)}</td>
+                      <td>{String(t.date)}</td>
+                      <td><code>{String(t.reference||'-')}</code></td>
+                      <td>{String(t.notes||'-')}</td>
+                      <td><div className="d_action_btns">
+                        <button className="d_icon_btn d_edit" onClick={() => openEdit(t)}><MdEdit /></button>
+                        <button className="d_icon_btn d_del"  onClick={() => handleDelete(t._id, `transaction "${t.id}"`)}><MdDelete /></button>
+                      </div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table></div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Warehouse / Stock Modal */}
       {isWH && (
         <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Stock Item' : 'Add Stock Item'} size="md">
@@ -355,6 +446,47 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
           <div className="d_form_actions">
             <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
             <button className="d_btn d_btn_primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : editId ? 'Update Audit' : 'Schedule Audit'}</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Transaction Modal */}
+      {isTXN && (
+        <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Transaction' : 'Record Inventory Transaction'} size="md">
+          <div className="d_form_row cols-2">
+            <div className="d_form_group">
+              <label className="d_form_label">Item <span className="d_req">*</span></label>
+              <select className="d_form_control" {...f('item')}>
+                <option value="">Select Item</option>
+                {warehouses.map(w => <option key={w._id} value={w.itemName}>{w.itemName} ({w.itemCode})</option>)}
+              </select>
+              <Err field="item" />
+            </div>
+            <div className="d_form_group">
+              <label className="d_form_label">Transaction Type <span className="d_req">*</span></label>
+              <select className="d_form_control" {...f('type')}>
+                <option value="">Select Type</option>
+                <option>Added</option>
+                <option>Deducted</option>
+                <option>Transferred</option>
+                <option>Adjusted</option>
+              </select>
+              <Err field="type" />
+            </div>
+          </div>
+          <div className="d_form_row cols-2">
+            <div className="d_form_group"><label className="d_form_label">Quantity <span className="d_req">*</span></label><input type="number" className="d_form_control" min={1} placeholder="e.g. 10" {...f('quantity')} /><Err field="quantity" /></div>
+            <div className="d_form_group"><label className="d_form_label">Date <span className="d_req">*</span></label><input type="date" className="d_form_control" {...f('date')} /><Err field="date" /></div>
+          </div>
+          <div className="d_form_row cols-1">
+            <div className="d_form_group"><label className="d_form_label">Reference</label><input className="d_form_control" placeholder="e.g. Order #ORD-123456" {...f('reference')} /></div>
+          </div>
+          <div className="d_form_row cols-1">
+            <div className="d_form_group"><label className="d_form_label">Notes</label><textarea className="d_form_control" rows={2} placeholder="Reason for transaction..." {...f('notes')} /></div>
+          </div>
+          <div className="d_form_actions">
+            <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
+            <button className="d_btn d_btn_primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : editId ? 'Update Transaction' : 'Record Transaction'}</button>
           </div>
         </Modal>
       )}

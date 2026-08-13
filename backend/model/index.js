@@ -3,5 +3,6 @@ module.exports = {
   ...require("./Empl.model.js"),
   ...require("./Designation.model.js"),
   ...require("./Depart.model.js"),
+  ...require("./Payroll.model.js"),
 
 };

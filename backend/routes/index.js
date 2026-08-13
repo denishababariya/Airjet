@@ -280,4 +280,26 @@ router.post('/role-permissions/bulk', authenticate, authorize('Admin'), controll
 // My Permissions
 router.get('/my-permissions', authenticate, controller.getMyPermissions);
 
+// ──────────────────────────────────────────────────────────────
+// Payroll Routes
+// ──────────────────────────────────────────────────────────────
+router.get('/payroll', authenticate, controller.getAllPayroll);
+router.get('/payroll/dashboard-stats', authenticate, controller.getPayrollDashboardStats);
+router.get('/payroll/monthly-summary', authenticate, controller.getMonthlyPayrollSummary);
+router.get('/payroll/department-summary', authenticate, controller.getDepartmentSalarySummary);
+router.get('/payroll/:id', authenticate, controller.getPayrollById);
+router.post('/payroll/generate', authenticate, authorize('Admin', 'HR', 'Manager', 'Accountant'), controller.generateSalary);
+router.post('/payroll/generate-all', authenticate, authorize('Admin', 'HR', 'Manager', 'Accountant'), controller.generateAllSalaries);
+router.put('/payroll/:id', authenticate, authorize('Admin', 'HR', 'Manager', 'Accountant'), controller.updatePayroll);
+router.delete('/payroll/:id', authenticate, authorize('Admin'), controller.deletePayroll);
+router.post('/payroll/:id/approve', authenticate, authorize('Admin', 'HR Manager', 'Accountant'), controller.approveSalary);
+router.post('/payroll/:id/pay', authenticate, authorize('Admin', 'HR Manager', 'Accountant'), controller.paySalary);
+router.post('/payroll/:id/cancel', authenticate, authorize('Admin'), controller.cancelSalary);
+
+// Payroll Reports
+router.get('/payroll/reports/monthly', authenticate, controller.getMonthlySalaryReport);
+router.get('/payroll/reports/overtime', authenticate, controller.getOvertimeReport);
+router.get('/payroll/reports/deductions', authenticate, controller.getDeductionReport);
+router.get('/payroll/reports/payments', authenticate, controller.getPaymentReport);
+
 module.exports = router;

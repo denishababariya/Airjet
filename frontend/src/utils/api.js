@@ -419,6 +419,26 @@ export const profitLossApi = {
   remove: (id) => api.delete(`/erp/${id}`),
 };
 
+export const payrollApi = {
+  getAll: (params = {}) => api.get('/payroll', { params }),
+  getById: (id) => api.get(`/payroll/${id}`),
+  getDashboardStats: (params = {}) => api.get('/payroll/dashboard-stats', { params }),
+  getMonthlySummary: (params = {}) => api.get('/payroll/monthly-summary', { params }),
+  getDepartmentSummary: (params = {}) => api.get('/payroll/department-summary', { params }),
+  generate: (data) => api.post('/payroll/generate', data),
+  generateAll: (data) => api.post('/payroll/generate-all', data),
+  update: (id, data) => api.put(`/payroll/${id}`, data),
+  remove: (id) => api.delete(`/payroll/${id}`),
+  approve: (id) => api.post(`/payroll/${id}/approve`),
+  pay: (id, data) => api.post(`/payroll/${id}/pay`, data),
+  cancel: (id) => api.post(`/payroll/${id}/cancel`),
+  // Reports
+  getMonthlyReport: (params = {}) => api.get('/payroll/reports/monthly', { params }),
+  getOvertimeReport: (params = {}) => api.get('/payroll/reports/overtime', { params }),
+  getDeductionReport: (params = {}) => api.get('/payroll/reports/deductions', { params }),
+  getPaymentReport: (params = {}) => api.get('/payroll/reports/payments', { params }),
+};
+
 export default api;
 
 

@@ -1,24 +1,85 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdMonetizationOn } from 'react-icons/md';
-
-const allowances = [
-  { id: 'AL001', name: 'House Rent Allowance (HRA)', type: 'Percentage', value: '40%', applicable: 'All Employees', status: 'Active' },
-  { id: 'AL002', name: 'Dearness Allowance (DA)', type: 'Percentage', value: '20%', applicable: 'All Employees', status: 'Active' },
-  { id: 'AL003', name: 'Travel Allowance', type: 'Fixed', value: '₹1,500', applicable: 'All Employees', status: 'Active' },
-  { id: 'AL004', name: 'Medical Allowance', type: 'Fixed', value: '₹1,250', applicable: 'All Employees', status: 'Active' },
-  { id: 'AL005', name: 'Special Allowance', type: 'Fixed', value: '₹2,000', applicable: 'Senior Staff', status: 'Active' },
-  { id: 'AL006', name: 'Performance Bonus', type: 'Percentage', value: '10%', applicable: 'Sales & Service Teams', status: 'Inactive' },
-];
+import Modal from '../../components/Modal';
+import ToastContainer from '../../components/Toast';
+import useToast from '../../hooks/useToast';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import useConfirm from '../../hooks/useConfirm';
 
 export default function Allowances() {
+  const [allowances, setAllowances] = useState([]);
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState({ name: '', type: 'Fixed', value: '', applicable: 'All Employees', status: 'Active' });
+  const [editId, setEditId] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const { toasts, toast, removeToast } = useToast();
+  const { confirmState, confirm, closeConfirm } = useConfirm();
+
+  useEffect(() => {
+    // In a real implementation, fetch from API
+    setAllowances([
+      { _id: '1', name: 'House Rent Allowance (HRA)', type: 'Percentage', value: '40%', applicable: 'All Employees', status: 'Active' },
+      { _id: '2', name: 'Dearness Allowance (DA)', type: 'Percentage', value: '20%', applicable: 'All Employees', status: 'Active' },
+      { _id: '3', name: 'Travel Allowance', type: 'Fixed', value: '₹1,500', applicable: 'All Employees', status: 'Active' },
+      { _id: '4', name: 'Medical Allowance', type: 'Fixed', value: '₹1,250', applicable: 'All Employees', status: 'Active' },
+      { _id: '5', name: 'Special Allowance', type: 'Fixed', value: '₹2,000', applicable: 'Senior Staff', status: 'Active' },
+    ]);
+  }, []);
+
+  const openAdd = () => {
+    setForm({ name: '', type: 'Fixed', value: '', applicable: 'All Employees', status: 'Active' });
+    setEditId(null);
+    setModal(true);
+  };
+
+  const openEdit = (allowance) => {
+    setForm({ ...allowance });
+    setEditId(allowance._id);
+    setModal(true);
+  };
+
+  const handleSave = () => {
+    if (!form.name || !form.value) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (editId) {
+      setAllowances(allowances.map(a => a._id === editId ? { ...form, _id: editId } : a));
+      toast.success('Allowance updated successfully');
+    } else {
+      setAllowances([...allowances, { ...form, _id: Date.now().toString() }]);
+      toast.success('Allowance added successfully');
+    }
+    setModal(false);
+  };
+
+  const handleDelete = (id) => {
+    confirm({
+      title: 'Delete Allowance',
+      message: 'Are you sure you want to delete this allowance?',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+      onConfirm: () => {
+        closeConfirm();
+        setAllowances(allowances.filter(a => a._id !== id));
+        toast.success('Allowance deleted successfully');
+      }
+    });
+  };
+
   return (
     <div>
-      <div className="d_page_header">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ConfirmDialog {...confirmState} onCancel={closeConfirm} />
+
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <div className="d_page_title">Allowances Management</div>
           <div className="d_page_subtitle">Configure salary allowance components</div>
         </div>
-        <button className="d_btn d_btn_primary"><MdAdd /> Add Allowance</button>
+        <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> Add Allowance</button>
       </div>
 
       <div className="d_card">
@@ -30,7 +91,6 @@ export default function Allowances() {
             <table className="d_table" style={{ minWidth: 750 }}>
               <thead>
                 <tr>
-                  <th>Allowance ID</th>
                   <th>Name</th>
                   <th>Type</th>
                   <th>Value</th>
@@ -40,18 +100,18 @@ export default function Allowances() {
                 </tr>
               </thead>
               <tbody>
+                {allowances.length === 0 && <tr className="d_empty"><td colSpan={6}>No allowances configured</td></tr>}
                 {allowances.map(a => (
-                  <tr key={a.id}>
-                    <td>{a.id}</td>
-                    <td>{a.name}</td>
+                  <tr key={a._id}>
+                    <td><strong>{a.name}</strong></td>
                     <td><span className={`d_badge ${a.type === 'Fixed' ? 'd_info' : 'd_primary'}`}>{a.type}</span></td>
                     <td><strong>{a.value}</strong></td>
                     <td>{a.applicable}</td>
                     <td><span className={`d_badge ${a.status === 'Active' ? 'd_success' : 'd_danger'}`}>{a.status}</span></td>
                     <td>
                       <div className="d_action_btns">
-                        <button className="d_icon_btn d_edit"><MdEdit /></button>
-                        <button className="d_icon_btn d_del"><MdDelete /></button>
+                        <button className="d_icon_btn d_edit" onClick={() => openEdit(a)}><MdEdit /></button>
+                        <button className="d_icon_btn d_del" onClick={() => handleDelete(a._id)}><MdDelete /></button>
                       </div>
                     </td>
                   </tr>
@@ -61,6 +121,64 @@ export default function Allowances() {
           </div>
         </div>
       </div>
+
+      <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Allowance' : 'Add Allowance'} size="md">
+        <div className="d_form_group mb-3">
+          <label className="d_form_label">Allowance Name <span className="d_req">*</span></label>
+          <input 
+            className="d_form_control" 
+            placeholder="e.g., House Rent Allowance"
+            value={form.name}
+            onChange={e => setForm({...form, name: e.target.value})}
+          />
+        </div>
+        <div className="d_form_row cols-2">
+          <div className="d_form_group">
+            <label className="d_form_label">Type</label>
+            <select 
+              className="d_form_control" 
+              value={form.type}
+              onChange={e => setForm({...form, type: e.target.value})}
+            >
+              <option value="Fixed">Fixed</option>
+              <option value="Percentage">Percentage</option>
+            </select>
+          </div>
+          <div className="d_form_group">
+            <label className="d_form_label">Value <span className="d_req">*</span></label>
+            <input 
+              className="d_form_control" 
+              placeholder={form.type === 'Percentage' ? 'e.g., 40%' : 'e.g., ₹1,500'}
+              value={form.value}
+              onChange={e => setForm({...form, value: e.target.value})}
+            />
+          </div>
+        </div>
+        <div className="d_form_group mb-3">
+          <label className="d_form_label">Applicable To</label>
+          <input 
+            className="d_form_control" 
+            placeholder="e.g., All Employees"
+            value={form.applicable}
+            onChange={e => setForm({...form, applicable: e.target.value})}
+          />
+        </div>
+        <div className="d_form_group mb-3">
+          <label className="d_form_label">Status</label>
+          <select 
+            className="d_form_control" 
+            value={form.status}
+            onChange={e => setForm({...form, status: e.target.value})}
+          >
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+        <div className="d_form_actions">
+          <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
+          <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update' : 'Save'}</button>
+        </div>
+      </Modal>
     </div>
   );
 }
