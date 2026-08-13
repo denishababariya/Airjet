@@ -89,7 +89,7 @@ const menuConfig = [
       },
       {
         label: 'Reports', icon: <MdBarChart />, id: 'reports',
-        children: ['Sales Report', 'Purchase Report', 'Inventory Report', 'Payroll Report', 'Attendance Report'],
+        children: ['Sales Report', 'Purchase Report', 'Inventory Report', 'Payroll Report', 'Attendance Report', 'Raw Material Report'],
         module: 'Reports',
       },
     ],

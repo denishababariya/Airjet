@@ -28,6 +28,7 @@ import Warehouse        from './pages/Warehouse';
 import Service          from './pages/Service';
 import RawMaterials     from './pages/RawMaterials';
 import RawMaterialPurchases from './pages/RawMaterialPurchases';
+import RawMaterialReport from './pages/RawMaterialReport';
 import Accounts         from './pages/Accounts';
 import Reports          from './pages/Reports';
 import Profile          from './pages/Profile';
@@ -126,6 +127,7 @@ const PAGE_MAP = {
   'Purchase Report':   { component: Reports, defaultTab: 'purchase' },
   'Inventory Report':  { component: Reports, defaultTab: 'inventory' },
   'Payroll Report':    { component: Reports, defaultTab: 'payroll' },
+  'Raw Material Report': { component: RawMaterialReport },
 
   // ── Role Management ────────────────────────────────────────
   'Role Management':   { component: RoleManagement },

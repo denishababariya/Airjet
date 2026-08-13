@@ -1,11 +1,35 @@
 const mongoose = require('mongoose');
 const RawMaterial = require('../model/RawMaterial.model');
 const RawMaterialPurchase = require('../model/RawMaterialPurchase.model');
+const RawMaterialTransaction = require('../model/RawMaterialTransaction.model');
 const Supplier = require('../model/Supplier.model');
 
 const generateId = async (prefix, model) => {
   const count = await model.countDocuments();
   return `${prefix}${String(count + 1).padStart(4, '0')}`;
+};
+
+const normalizeNumber = (value, fallback = 0) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+};
+
+const createStockTransaction = async ({ material, type, quantity, unitPrice, reason, referenceId, userId }) => {
+  if (!material || !quantity) return null;
+
+  return RawMaterialTransaction.create({
+    rawMaterialId: material._id,
+    materialCode: material.code,
+    materialName: material.name,
+    type,
+    quantity: normalizeNumber(quantity),
+    unit: material.unit,
+    unitPrice: normalizeNumber(unitPrice),
+    balanceAfter: material.quantity,
+    reason: reason || '',
+    referenceId: referenceId || '',
+    createdBy: userId || null
+  });
 };
 
 // ──────────────────────────────────────────────────────────────
@@ -43,6 +67,17 @@ const createRawMaterial = async (req, res) => {
       qualityCheck: qualityCheck || { required: false, status: 'Pending' }
     });
 
+    if ((Number(quantity) || 0) > 0) {
+      await createStockTransaction({
+        material: rawMaterial,
+        type: 'Opening',
+        quantity: Number(quantity) || 0,
+        unitPrice: Number(unitPrice) || 0,
+        reason: 'Opening stock',
+        userId: req.user?._id
+      });
+    }
+
     res.status(201).json(rawMaterial);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -62,7 +97,6 @@ const getAllRawMaterials = async (req, res) => {
 
     const materials = await RawMaterial.find(filter)
       .populate('supplier', 'name contact phone city')
-      .populate('warehouse', 'name location')
       .sort({ createdAt: -1 });
     
     res.status(200).json(materials);
@@ -74,8 +108,7 @@ const getAllRawMaterials = async (req, res) => {
 const getRawMaterialById = async (req, res) => {
   try {
     const material = await RawMaterial.findById(req.params.id)
-      .populate('supplier', 'name contact phone city gst email')
-      .populate('warehouse', 'name location capacity');
+      .populate('supplier', 'name contact phone city gst email');
     
     if (!material) return res.status(404).json({ error: 'Raw material not found' });
     
@@ -90,18 +123,16 @@ const updateRawMaterial = async (req, res) => {
     const material = await RawMaterial.findById(req.params.id);
     if (!material) return res.status(404).json({ error: 'Raw material not found' });
 
-    // Don't allow updating the auto-generated code
-    const { code, ...updateData } = req.body;
+    const { code, totalPrice, id, ...updateData } = req.body;
+    Object.assign(material, updateData, { updatedBy: req.user?._id });
 
-    const updated = await RawMaterial.findByIdAndUpdate(
-      req.params.id,
-      { ...updateData, updatedBy: req.user?._id },
-      { new: true }
-    );
+    material.$locals.recalculateTotalPrice = true;
+    const updated = await material.save();
 
     res.status(200).json(updated);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Update Raw Material Error:', error);
+    res.status(500).json({ error: error.message || 'Failed to update raw material' });
   }
 };
 
@@ -120,21 +151,31 @@ const deleteRawMaterial = async (req, res) => {
 const deductStock = async (req, res) => {
   try {
     const { materialId, quantity, reason } = req.body;
+    const qty = normalizeNumber(quantity);
 
     const material = await RawMaterial.findById(materialId);
     if (!material) return res.status(404).json({ error: 'Raw material not found' });
 
-    if (material.quantity < quantity) {
+    if (qty <= 0) {
+      return res.status(400).json({ error: 'Quantity must be greater than 0' });
+    }
+
+    if (material.quantity < qty) {
       return res.status(400).json({ error: 'Insufficient stock' });
     }
 
-    const updated = await RawMaterial.findByIdAndUpdate(
-      materialId,
-      {
-        $inc: { quantity: -quantity }
-      },
-      { new: true }
-    );
+    material.quantity -= qty;
+    material.totalPrice = material.quantity * material.unitPrice;
+    const updated = await material.save();
+
+    await createStockTransaction({
+      material: updated,
+      type: 'Deduct',
+      quantity: qty,
+      unitPrice: material.unitPrice,
+      reason: reason || 'Raw material used',
+      userId: req.user?._id
+    });
 
     res.status(200).json(updated);
   } catch (error) {
@@ -145,18 +186,39 @@ const deductStock = async (req, res) => {
 // Add stock manually (adjustment)
 const addStock = async (req, res) => {
   try {
-    const { materialId, quantity, reason } = req.body;
+    const { materialId, quantity, unitPrice, reason } = req.body;
+    const qty = normalizeNumber(quantity);
+    const price = unitPrice === undefined || unitPrice === '' ? null : normalizeNumber(unitPrice, null);
 
     const material = await RawMaterial.findById(materialId);
     if (!material) return res.status(404).json({ error: 'Raw material not found' });
 
-    const updated = await RawMaterial.findByIdAndUpdate(
-      materialId,
-      {
-        $inc: { quantity: quantity }
-      },
-      { new: true }
-    );
+    if (qty <= 0) {
+      return res.status(400).json({ error: 'Quantity must be greater than 0' });
+    }
+
+    if (price !== null && price < 0) {
+      return res.status(400).json({ error: 'Unit price cannot be negative' });
+    }
+
+    material.quantity += qty;
+    if (price !== null) {
+      material.unitPrice = price;
+      material.lastPurchasePrice = price;
+    }
+    material.totalPrice = material.quantity * material.unitPrice;
+    material.lastPurchaseDate = new Date();
+
+    const updated = await material.save();
+
+    await createStockTransaction({
+      material: updated,
+      type: 'Add',
+      quantity: qty,
+      unitPrice: material.unitPrice,
+      reason: reason || 'Stock added',
+      userId: req.user?._id
+    });
 
     res.status(200).json(updated);
   } catch (error) {
@@ -169,7 +231,7 @@ const addStock = async (req, res) => {
 // ──────────────────────────────────────────────────────────────
 const createRawMaterialPurchase = async (req, res) => {
   try {
-    const { supplier, supplierId, purchaseDate, expectedDelivery, items, paymentTerms, notes } = req.body;
+    const { supplier, supplierId, purchaseDate, expectedDelivery, items, paymentTerms, notes, status } = req.body;
     const userId = req.user?._id;
 
     if (!supplier || !supplierId || !purchaseDate || !items || !Array.isArray(items) || items.length === 0) {
@@ -222,7 +284,7 @@ const createRawMaterialPurchase = async (req, res) => {
       supplierId,
       purchaseDate,
       expectedDelivery: expectedDelivery || '',
-      status: 'Pending',
+      status: status || 'Pending',
       items: processedItems,
       totalAmount,
       gstRate: 18,
@@ -239,14 +301,24 @@ const createRawMaterialPurchase = async (req, res) => {
     // Auto-add stock if status is Delivered
     if (status === 'Delivered') {
       for (const item of processedItems) {
-        await RawMaterial.findByIdAndUpdate(
-          item.rawMaterialId,
-          {
-            $inc: { quantity: item.quantity },
-            lastPurchaseDate: new Date(),
-            lastPurchasePrice: item.unitPrice
-          }
-        );
+        const material = await RawMaterial.findById(item.rawMaterialId);
+        if (material) {
+          material.quantity += item.quantity;
+          material.unitPrice = item.unitPrice;
+          material.totalPrice = material.quantity * material.unitPrice;
+          material.lastPurchaseDate = new Date();
+          material.lastPurchasePrice = item.unitPrice;
+          const updatedMaterial = await material.save();
+          await createStockTransaction({
+            material: updatedMaterial,
+            type: 'Purchase',
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            reason: `Purchase ${purchase.id}`,
+            referenceId: purchase._id,
+            userId
+          });
+        }
       }
     }
 
@@ -304,13 +376,26 @@ const updateRawMaterialPurchase = async (req, res) => {
     // Handle delivery - update stock quantities
     if (req.body.status === 'Delivered' && purchase.status !== 'Delivered') {
       for (const item of purchase.items) {
-        await RawMaterial.findByIdAndUpdate(item.rawMaterialId, {
-          $inc: { quantity: item.quantity },
-          lastPurchaseDate: new Date(),
-          lastPurchasePrice: item.unitPrice,
-          supplier: purchase.supplierId,
-          supplierName: purchase.supplier
-        });
+        const material = await RawMaterial.findById(item.rawMaterialId);
+        if (material) {
+          material.quantity += item.quantity;
+          material.unitPrice = item.unitPrice;
+          material.totalPrice = material.quantity * material.unitPrice;
+          material.lastPurchaseDate = new Date();
+          material.lastPurchasePrice = item.unitPrice;
+          material.supplier = purchase.supplierId;
+          material.supplierName = purchase.supplier;
+          const updatedMaterial = await material.save();
+          await createStockTransaction({
+            material: updatedMaterial,
+            type: 'Purchase',
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            reason: `Purchase ${purchase.id}`,
+            referenceId: purchase._id,
+            userId: req.user?._id
+          });
+        }
       }
       
       payload.actualDelivery = new Date().toISOString().split('T')[0];
@@ -383,8 +468,7 @@ const getSupplierRawMaterials = async (req, res) => {
   try {
     const { supplierId } = req.params;
     
-    const materials = await RawMaterial.find({ supplier: supplierId })
-      .populate('warehouse', 'name location');
+    const materials = await RawMaterial.find({ supplier: supplierId });
     
     res.status(200).json(materials);
   } catch (error) {
@@ -401,6 +485,115 @@ const getLowStockMaterials = async (req, res) => {
       .sort({ quantity: 1 });
     
     res.status(200).json(materials);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getRawMaterialReport = async (req, res) => {
+  try {
+    const { startDate, endDate, category, supplier } = req.query;
+    const filter = {};
+    
+    if (startDate && endDate) {
+      filter.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+    if (category) filter.category = category;
+    if (supplier) filter.supplier = supplier;
+
+    const materials = await RawMaterial.find(filter)
+      .populate('supplier', 'name contact phone city')
+      .sort({ createdAt: -1 });
+
+    const transactions = await RawMaterialTransaction.find()
+      .populate('rawMaterialId', 'name code category unit')
+      .sort({ transactionDate: -1, createdAt: -1 });
+
+    const purchases = await RawMaterialPurchase.find()
+      .populate('supplierId', 'name contact phone city')
+      .sort({ purchaseDate: -1 });
+
+    const summary = materials.reduce((acc, material) => {
+      const currentStockValue = (Number(material.quantity) || 0) * (Number(material.unitPrice) || 0);
+
+      acc.totalMaterials += 1;
+      acc.currentQuantity += Number(material.quantity) || 0;
+      acc.currentStockValue += currentStockValue;
+      
+      if (material.status === 'Low Stock') acc.lowStock += 1;
+      if (material.status === 'Out of Stock') acc.outOfStock += 1;
+      if (material.status === 'In Stock') acc.inStock += 1;
+      
+      return acc;
+    }, {
+      totalMaterials: 0,
+      currentQuantity: 0,
+      currentStockValue: 0,
+      inStock: 0,
+      lowStock: 0,
+      outOfStock: 0
+    });
+
+    const purchaseSummary = purchases.reduce((acc, purchase) => {
+      acc.totalPurchases += 1;
+      acc.totalPurchaseAmount += Number(purchase.totalAmount) || 0;
+      acc.totalGstAmount += Number(purchase.gstAmount) || 0;
+      acc.totalGrandTotal += Number(purchase.grandTotal) || 0;
+      
+      if (purchase.status === 'Pending') acc.pending += 1;
+      if (purchase.status === 'Delivered') acc.delivered += 1;
+      if (purchase.status === 'Confirmed') acc.confirmed += 1;
+      if (purchase.status === 'In Transit') acc.inTransit += 1;
+      
+      return acc;
+    }, {
+      totalPurchases: 0,
+      totalPurchaseAmount: 0,
+      totalGstAmount: 0,
+      totalGrandTotal: 0,
+      pending: 0,
+      delivered: 0,
+      confirmed: 0,
+      inTransit: 0
+    });
+
+    const categoryBreakdown = materials.reduce((acc, material) => {
+      if (!acc[material.category]) {
+        acc[material.category] = {
+          count: 0,
+          quantity: 0,
+          value: 0
+        };
+      }
+      acc[material.category].count += 1;
+      acc[material.category].quantity += Number(material.quantity) || 0;
+      acc[material.category].value += (Number(material.quantity) || 0) * (Number(material.unitPrice) || 0);
+      return acc;
+    }, {});
+
+    const stockMovements = transactions.reduce((acc, transaction) => {
+      if (!acc[transaction.type]) {
+        acc[transaction.type] = {
+          count: 0,
+          quantity: 0,
+          value: 0
+        };
+      }
+      acc[transaction.type].count += 1;
+      acc[transaction.type].quantity += Number(transaction.quantity) || 0;
+      acc[transaction.type].value += Number(transaction.totalAmount) || 0;
+      return acc;
+    }, {});
+
+    res.status(200).json({
+      summary,
+      purchaseSummary,
+      categoryBreakdown,
+      stockMovements,
+      materials,
+      transactions,
+      purchases
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -428,5 +621,6 @@ module.exports = {
 
   // Supplier Materials
   getSupplierRawMaterials,
-  getLowStockMaterials
+  getLowStockMaterials,
+  getRawMaterialReport
 };
