@@ -196,18 +196,6 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
         </div>
       </div>
 
-      {/* ── Low Stock Alert ────────────────────────────────────── */}
-      {lowStockCount > 0 && (
-        <div className="d_alert d_danger mb-4">
-          <MdWarning style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }} />
-          <div style={{ flex: 1 }}>
-            <strong>Low Stock Warning:</strong> {lowStockCount} item{lowStockCount !== 1 ? 's are' : ' is'} below minimum stock level.
-            Immediate purchase orders recommended.
-          </div>
-          <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('Part Number')}>View All</button>
-        </div>
-      )}
-
       {/* ── Row 2: Recent Orders + Pending POs ────────────────── */}
       <div className="row g-3 mb-4">
         {/* Recent Sales Orders */}

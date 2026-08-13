@@ -9,10 +9,11 @@ import {
 const formatCurrency = (value) => `₹${Number(value || 0).toLocaleString('en-IN')}`;
 const formatNumber = (value) => Number(value || 0).toLocaleString('en-IN');
 
-const RawMaterialReport = () => {
+const RawMaterialReport = (setActiveMenu) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigateTo = (menu) => setActiveMenu?.(menu);
 
   useEffect(() => {
     const load = async () => {
@@ -114,21 +115,21 @@ const RawMaterialReport = () => {
   ];
 
   const summaryCards = [
-    { label: 'Total Materials', value: formatNumber(summary.totalMaterials), icon: <MdInventory2 />, color: 'var(--d-primary)' },
-    { label: 'Current Quantity', value: formatNumber(summary.currentQuantity), icon: <MdLayers />, color: 'var(--d-info)' },
-    { label: 'Stock Value', value: formatCurrency(summary.currentStockValue), icon: <MdShoppingCart />, color: 'var(--d-success)' },
-    { label: 'Low Stock', value: formatNumber(summary.lowStock), icon: <MdTrendingUp />, color: 'var(--d-warning)' },
+    { label: 'Total Materials', value: formatNumber(summary.totalMaterials), icon: <MdInventory2 />, color: 'var(--d-success)', backgroundColor: 'rgba(40, 167, 69, 0.1)' },
+    { label: 'Current Quantity', value: formatNumber(summary.currentQuantity), icon: <MdLayers />, color: 'var(--d-primary)', backgroundColor: 'rgba(26, 60, 94, 0.1)' },
+    { label: 'Stock Value', value: formatCurrency(summary.currentStockValue), icon: <MdShoppingCart />, color: 'var(--d-info)', backgroundColor: 'rgba(23, 162, 184, 0.1)' },
+    { label: 'Low Stock', value: formatNumber(summary.lowStock), icon: <MdTrendingUp />, color: 'var(--d-danger)', backgroundColor: 'rgba(220, 53, 69, 0.1)' },
   ];
 
   return (
-    <div style={{ padding: '24px', maxWidth: '2560px', margin: '0 auto', minWidth: '320px' }}>
-      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2" style={{ marginBottom: '28px' }}>
+    <div>
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
-          <h5 className="d_page_title" style={{ fontSize: '1.5rem', marginBottom: '10px', color: '#2C3E50', fontWeight: '700' }}>Raw Material Report</h5>
-          <p className="d_page_subtitle" style={{ fontSize: '0.95rem', color: '#7F8C8D', fontWeight: '400' }}>Purchase and stock performance with interactive charts and live inventory metrics.</p>
+          <h1 className="d_page_title">Raw Material Report</h1>
+          <p className="d_page_subtitle">Purchase and stock performance with interactive charts and live inventory metrics.</p>
         </div>
-        <button className="d_btn d_btn_accent" style={{ fontSize: '0.9rem', padding: '12px 20px', backgroundColor: 'var(--d-primary)', color: '#2C3E50', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.3s ease' }}>
-          <MdDownload style={{ marginRight: '8px', fontSize: '1.1rem' }} /> Export
+        <button className="d_btn d_btn_primary" >
+          <MdDownload /> Export
         </button>
       </div>
 
@@ -137,46 +138,22 @@ const RawMaterialReport = () => {
 
       {!loading && report && (
         <>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '20px',
-            marginBottom: '28px'
-          }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '28px' }}          >
             {summaryCards.map((card) => (
-              <div className="d_card" key={card.label} style={{ padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF', border: `1px solid ${card.color}40`, transition: 'transform 0.2s ease, box-shadow 0.2s ease' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
-                  <span style={{ fontSize: '1.5rem', color: card.color }}>{card.icon}</span>
-                  <h5 style={{ fontSize: '1rem', color: '#546E7A', fontWeight: '600', margin: 0 }}>{card.label}</h5>
+              <div className="d_stat_card" key={card.label} style={{ borderLeft: `4px solid ${card.color}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}                >
+                  <span className='d_stat_icon' style={{ fontSize: '1.5rem', marginBottom: '5px', color: card.color, backgroundColor: card.backgroundColor, }}                  >
+                    {card.icon}
+                  </span>
+                  <h5 style={{ fontSize: '1rem', color: '#546E7A', fontWeight: '600', margin: 0 }}                  >
+                    {card.label}
+                  </h5>
                 </div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '700', color: card.color, letterSpacing: '-0.5px' }}>
+                <div className='ms-1' style={{ fontSize: '1.5rem', fontWeight: '700', color: card.color, letterSpacing: '-0.5px' }}                >
                   {card.value}
                 </div>
               </div>
             ))}
-          </div>
-
-          <div style={{ display: 'grid', gap: '20px', marginBottom: '28px' }}>
-            <div className="d_card" style={{ padding: '28px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
-              <div className="d_card_header" style={{ marginBottom: '24px' }}>
-                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#2C3E50', margin: 0 }}>
-                  <MdShoppingCart style={{ color: 'var(--d-primary)' }} /> Purchase Summary
-                </h5>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '18px', marginBottom: '20px' }}>
-                {[
-                  { label: 'Total Purchases', value: formatNumber(purchaseSummary.totalPurchases), color: 'var(--d-primary)' },
-                  { label: 'Total Amount', value: formatCurrency(purchaseSummary.totalPurchaseAmount), color: 'var(--d-success)' },
-                  { label: 'Total GST', value: formatCurrency(purchaseSummary.totalGstAmount), color: 'var(--d-warning)' },
-                  { label: 'Grand Total', value: formatCurrency(purchaseSummary.totalGrandTotal), color: 'var(--d-accent)' }
-                ].map((item) => (
-                  <div key={item.label} style={{ padding: '20px', background: '#FFFFFF', borderRadius: '12px', border: `1px solid ${item.color}40` }}>
-                    <h5 style={{ fontSize: '0.95rem', color: '#546E7A', marginBottom: '10px', fontWeight: '600', margin: 0 }}>{item.label}</h5>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: item.color, letterSpacing: '-0.5px' }}>{item.value}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '20px', marginBottom: '28px' }}>
@@ -227,7 +204,7 @@ const RawMaterialReport = () => {
                         contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: '0.95rem' }}
                       />
                       <Legend style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <Area type="monotone" dataKey="quantity" stroke="var(--d-success)" fill="var(--d-success)" fillOpacity={0.5} />
+                      <Area type="monotone" dataKey="quantity" stroke="var(--d-success)" fill="#00800014" fillOpacity={0.5} />
                     </AreaChart>
                   </ResponsiveContainer>
                 )}
@@ -235,95 +212,32 @@ const RawMaterialReport = () => {
             </div>
           </div>
 
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '20px', marginBottom: '28px' }}>
             <div className="d_card" style={{ padding: '28px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
               <div className="d_card_header" style={{ marginBottom: '24px' }}>
                 <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#2C3E50', margin: 0 }}>
-                  <MdShowChart style={{ color: 'var(--d-accent)' }} /> Purchase Timeline
+                  <MdBarChart style={{ color: 'var(--d-primary)' }} /> Compliance by Supplier
                 </h5>
               </div>
               <div className="d_card_body" style={{ height: '320px' }}>
-                {purchaseTrend.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#7F8C8D', padding: '50px', fontSize: '1rem', backgroundColor: '#F8F9FA', borderRadius: '12px' }}>No purchase timeline available.</div>
+                {complianceBySupplier.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: '#7F8C8D', padding: '50px', fontSize: '1rem', backgroundColor: '#F8F9FA', borderRadius: '12px' }}>No compliance data available.</div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={purchaseTrend}>
+                    <BarChart data={complianceBySupplier}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E8EAF6" />
-                      <XAxis dataKey="month" style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <YAxis yAxisId="left" dataKey="count" style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <YAxis yAxisId="right" dataKey="amount" orientation="right" style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
+                      <XAxis dataKey="name" style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
+                      <YAxis domain={[0, 100]} style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
                       <Tooltip
-                        formatter={(value, name) => name === 'count' ? [value, 'Purchases'] : [formatCurrency(value), 'Amount']}
+                        formatter={(value) => `${value}%`}
                         contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: '0.95rem' }}
                       />
                       <Legend style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <Line yAxisId="left" dataKey="count" stroke="var(--d-accent)" strokeWidth={2.5} dot={{ fill: 'var(--d-accent)', strokeWidth: 2, r: 5 }} />
-                      <Line yAxisId="right" dataKey="amount" stroke="var(--d-danger)" strokeWidth={2.5} dot={{ fill: 'var(--d-danger)', strokeWidth: 2, r: 5 }} />
-                    </LineChart>
+                      <Bar dataKey="compliance" fill="var(--d-primary)" radius={[8, 8, 0, 0]} />
+                    </BarChart>
                   </ResponsiveContainer>
                 )}
-              </div>
-            </div>
-
-            <div className="d_card" style={{ padding: '28px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
-              <div className="d_card_header" style={{ marginBottom: '24px' }}>
-                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#2C3E50', margin: 0 }}>
-                  <MdPieChart style={{ color: 'var(--d-warning)' }} /> Stock Status Distribution
-                </h5>
-              </div>
-              <div className="d_card_body" style={{ height: '320px' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={stockStatusData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={90}
-                      fill="#8884d8"
-                      dataKey="value"
-                      style={{ fontSize: '0.9rem', fill: '#546E7A' }}
-                    >
-                      {stockStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => formatNumber(value)} contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: '0.95rem' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-            <div className="d_card" style={{ padding: '28px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
-              <div className="d_card_header" style={{ marginBottom: '24px' }}>
-                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#2C3E50', margin: 0 }}>
-                  <MdPieChart style={{ color: 'var(--d-danger)' }} /> Purchase Status Distribution
-                </h5>
-              </div>
-              <div className="d_card_body" style={{ height: '320px' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={purchaseStatusData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={90}
-                      fill="#8884d8"
-                      dataKey="value"
-                      style={{ fontSize: '0.9rem', fill: '#546E7A' }}
-                    >
-                      {purchaseStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => formatNumber(value)} contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: '0.95rem' }} />
-                  </PieChart>
-                </ResponsiveContainer>
               </div>
             </div>
 
@@ -357,139 +271,77 @@ const RawMaterialReport = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-            <div className="d_card" style={{ padding: '28px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
-              <div className="d_card_header" style={{ marginBottom: '24px' }}>
-                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#2C3E50', margin: 0 }}>
-                  <MdTrendingUp style={{ color: 'var(--d-success)' }} /> Supplier Compliance Rate
-                </h5>
-              </div>
-              <div className="d_card_body" style={{ height: '320px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ position: 'relative', width: '200px', height: '200px' }}>
-                  <svg width="200" height="200" viewBox="0 0 200 200">
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="80"
-                      fill="none"
-                      stroke="#E8EAF6"
-                      strokeWidth="16"
-                    />
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="80"
-                      fill="none"
-                      stroke="var(--d-success)"
-                      strokeWidth="16"
-                      strokeLinecap="round"
-                      strokeDasharray={`${(supplierComplianceRate / 100) * 502} 502`}
-                      transform="rotate(-90 100 100)"
-                      style={{ transition: 'stroke-dasharray 1s ease-in-out' }}
-                    />
-                  </svg>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--d-success)', letterSpacing: '-0.5px' }}>
-                      {supplierComplianceRate}%
-                    </div>
-                    <div style={{ fontSize: '0.9rem', color: '#7F8C8D', marginTop: '4px' }}>
-                      Overall compliance
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <div className="d_card mb-4">
+            <div className="d_card_header">
+              <h2 className="d_card_title">
+                <MdBarChart className="d_card_icon" />
+                Material Purchase & Stock Summary
+              </h2>
+
+              <button
+                className="d_btn d_btn_outline d_btn_sm"
+                onClick={() => navigateTo('Raw Materials')}
+              >
+                View All
+              </button>
             </div>
 
-            <div className="d_card" style={{ padding: '28px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
-              <div className="d_card_header" style={{ marginBottom: '24px' }}>
-                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#2C3E50', margin: 0 }}>
-                  <MdBarChart style={{ color: 'var(--d-primary)' }} /> Compliance by Supplier
-                </h5>
-              </div>
-              <div className="d_card_body" style={{ height: '320px' }}>
-                {complianceBySupplier.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#7F8C8D', padding: '50px', fontSize: '1rem', backgroundColor: '#F8F9FA', borderRadius: '12px' }}>No compliance data available.</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={complianceBySupplier}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E8EAF6" />
-                      <XAxis dataKey="name" style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <YAxis domain={[0, 100]} style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <Tooltip
-                        formatter={(value) => `${value}%`}
-                        contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: '0.95rem' }}
-                      />
-                      <Legend style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <Bar dataKey="compliance" fill="var(--d-primary)" radius={[8, 8, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-            <div className="d_card" style={{ padding: '28px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
-              <div className="d_card_header" style={{ marginBottom: '24px' }}>
-                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#2C3E50', margin: 0 }}>
-                  <MdShowChart style={{ color: 'var(--d-accent)' }} /> % of Passed Tests
-                </h5>
-              </div>
-              <div className="d_card_body" style={{ height: '320px' }}>
-                {passedTestsData.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#7F8C8D', padding: '50px', fontSize: '1rem', backgroundColor: '#F8F9FA', borderRadius: '12px' }}>No test data available.</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={passedTestsData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E8EAF6" />
-                      <XAxis dataKey="week" label={{ value: 'Week', position: 'insideBottom', offset: -5, style: { fontSize: '0.85rem', fill: '#546E7A' } }} style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <YAxis domain={[0, 100]} label={{ value: 'Percentage', angle: -90, position: 'insideLeft', style: { fontSize: '0.85rem', fill: '#546E7A' } }} style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <Tooltip
-                        formatter={(value) => `${value}%`}
-                        contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: '0.95rem' }}
-                      />
-                      <Legend style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <Line dataKey="Line 1" stroke="var(--d-accent)" strokeWidth={2.5} dot={{ fill: 'var(--d-accent)', strokeWidth: 2, r: 5 }} />
-                      <Line dataKey="Line 2" stroke="var(--d-danger)" strokeWidth={2.5} dot={{ fill: 'var(--d-danger)', strokeWidth: 2, r: 5 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="d_card" style={{ padding: '28px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF', marginBottom: '28px' }}>
-            <div className="d_card_header" style={{ marginBottom: '24px' }}>
-              <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#2C3E50', margin: 0 }}>
-                <MdBarChart style={{ color: 'var(--d-primary)' }} /> Material Purchase & Stock Summary
-              </h5>
-            </div>
             <div className="d_card_body p-0">
-              <div className="d_table_wrap" style={{ overflowX: 'auto' }}>
-                <table className="d_table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
+              <div className="d_table_wrap">
+                <table className="d_table">
                   <thead>
-                    <tr style={{ background: '#F8F9FA' }}>
-                      <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.9rem', fontWeight: '700', color: '#2C3E50', letterSpacing: '0.3px' }}>Material</th>
-                      <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.9rem', fontWeight: '700', color: '#2C3E50', letterSpacing: '0.3px' }}>Category</th>
-                      <th style={{ padding: '16px', textAlign: 'right', fontSize: '0.9rem', fontWeight: '700', color: '#2C3E50', letterSpacing: '0.3px' }}>Quantity</th>
-                      <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.9rem', fontWeight: '700', color: '#2C3E50', letterSpacing: '0.3px' }}>Unit</th>
-                      <th style={{ padding: '16px', textAlign: 'right', fontSize: '0.9rem', fontWeight: '700', color: '#2C3E50', letterSpacing: '0.3px' }}>Unit Price</th>
-                      <th style={{ padding: '16px', textAlign: 'right', fontSize: '0.9rem', fontWeight: '700', color: '#2C3E50', letterSpacing: '0.3px' }}>Stock Value</th>
+                    <tr>
+                      <th>#</th>
+                      <th>Material</th>
+                      <th>Category</th>
+                      <th>Quantity</th>
+                      <th>Unit</th>
+                      <th>Unit Price</th>
+                      <th>Stock Value</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {materials.length === 0 && (
-                      <tr style={{ background: '#FFFFFF' }}><td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: '#7F8C8D', fontSize: '1rem' }}>No material rows available.</td></tr>
-                    )}
-                    {materials.slice(0, 15).map((material, index) => (
-                      <tr key={material._id} style={{ borderBottom: '1px solid #E8EAF6', backgroundColor: index % 2 === 0 ? '#FFFFFF' : '#F8F9FA' }}>
-                        <td style={{ padding: '16px', fontSize: '0.95rem', color: '#2C3E50', fontWeight: '600' }}>{material.name || material.code}</td>
-                        <td style={{ padding: '16px', fontSize: '0.95rem', color: '#546E7A' }}>{material.category || '—'}</td>
-                        <td style={{ padding: '16px', textAlign: 'right', fontSize: '0.95rem', color: '#2C3E50', fontWeight: '600' }}>{formatNumber(material.quantity)}</td>
-                        <td style={{ padding: '16px', fontSize: '0.95rem', color: '#546E7A' }}>{material.unit || '—'}</td>
-                        <td style={{ padding: '16px', textAlign: 'right', fontSize: '0.95rem', color: '#546E7A' }}>{formatCurrency(material.unitPrice)}</td>
-                        <td style={{ padding: '16px', textAlign: 'right', fontSize: '0.95rem', color: 'var(--d-success)', fontWeight: '700' }}>{formatCurrency((Number(material.quantity) || 0) * (Number(material.unitPrice) || 0))}</td>
+                      <tr className="d_empty">
+                        <td colSpan={7}>
+                          No material rows available.
+                        </td>
                       </tr>
+                    )}
+
+                    {materials.slice(0, 5).map((material, index) => (<tr key={material._id}>                          <td>{index + 1}</td>
+                      <td>
+                        <strong>
+                          {material.name || material.code}
+                        </strong>
+                      </td>
+
+                      <td>
+                        {material.category || '—'}
+                      </td>
+
+                      <td>
+                        {formatNumber(material.quantity)}
+                      </td>
+
+                      <td>
+                        {material.unit || '—'}
+                      </td>
+
+                      <td>
+                        {formatCurrency(material.unitPrice)}
+                      </td>
+
+                      <td>
+                        <strong style={{ color: 'var(--d-success)' }}>
+                          {formatCurrency(
+                            (Number(material.quantity) || 0) *
+                            (Number(material.unitPrice) || 0)
+                          )}
+                        </strong>
+                      </td>
+                    </tr>
                     ))}
                   </tbody>
                 </table>
