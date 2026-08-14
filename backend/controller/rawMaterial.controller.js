@@ -238,7 +238,6 @@ const createRawMaterialPurchase = async (req, res) => {
       return res.status(400).json({ error: 'Supplier, purchase date, and items are required' });
     }
 
-    // Validate supplier exists
     const supplierDoc = await Supplier.findById(supplierId);
     if (!supplierDoc) {
       return res.status(404).json({ error: 'Supplier not found' });
@@ -248,19 +247,29 @@ const createRawMaterialPurchase = async (req, res) => {
     const processedItems = [];
     
     for (const item of items) {
-      // Validate raw material exists
-      const material = await RawMaterial.findById(item.rawMaterialId);
-      if (!material) {
-        return res.status(404).json({ error: `Raw material not found: ${item.rawMaterialId}` });
-      }
+      const code = await generateId('RM', RawMaterial);
+      const material = await RawMaterial.create({
+        id: code,
+        name: item.name || 'Unnamed Material',
+        code,
+        category: item.category || 'Other',
+        unit: item.unit || 'piece',
+        quantity: 0,
+        minimumStock: 10,
+        unitPrice: Number(item.unitPrice) || 0,
+        totalPrice: 0,
+        supplier: supplierId,
+        supplierName: supplier
+      });
 
       const qty = Number(item.quantity) || 0;
-      const unitPrice = Number(item.unitPrice) || material.unitPrice;
+      const unitPrice = Number(item.unitPrice) || 0;
       const totalPrice = qty * unitPrice;
       totalAmount += totalPrice;
 
       processedItems.push({
-        rawMaterialId: item.rawMaterialId,
+        rawMaterialId: material._id,
+        name: material.name,
         materialCode: material.code,
         materialName: material.name,
         category: material.category,
@@ -270,7 +279,7 @@ const createRawMaterialPurchase = async (req, res) => {
         totalPrice,
         receivedQuantity: 0,
         qualityCheck: {
-          required: material.qualityCheck?.required || false,
+          required: false,
           status: 'Pending'
         }
       });
@@ -298,7 +307,6 @@ const createRawMaterialPurchase = async (req, res) => {
       updatedBy: userId
     });
 
-    // Auto-add stock if status is Delivered
     if (status === 'Delivered') {
       for (const item of processedItems) {
         const material = await RawMaterial.findById(item.rawMaterialId);
@@ -372,6 +380,17 @@ const updateRawMaterialPurchase = async (req, res) => {
     if (!purchase) return res.status(404).json({ error: 'Raw material purchase not found' });
 
     const payload = { ...req.body, updatedBy: req.user?._id };
+    
+    if (payload.items && Array.isArray(payload.items)) {
+      for (const item of payload.items) {
+        if (!item.name && item.rawMaterialId) {
+          const material = await RawMaterial.findById(item.rawMaterialId);
+          if (material) {
+            item.name = material.name;
+          }
+        }
+      }
+    }
     
     // Handle delivery - update stock quantities
     if (req.body.status === 'Delivered' && purchase.status !== 'Delivered') {

@@ -251,16 +251,22 @@ export const customersApi = {
   getById: (id) => api.get(`/customers/${id}`),
   getModuleData: (id) => api.get(`/customers/${id}/modules`),
   create: (data, imageFile) => {
-    const formData = createFormData(data, imageFile ? { image: imageFile } : {});
-    return api.post('/customers', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    if (imageFile) {
+      const formData = createFormData(data, { image: imageFile });
+      return api.post('/customers', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    }
+    return api.post('/customers', data);
   },
   update: (id, data, imageFile) => {
-    const formData = createFormData(data, imageFile ? { image: imageFile } : {});
-    return api.put(`/customers/${id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    if (imageFile) {
+      const formData = createFormData(data, { image: imageFile });
+      return api.put(`/customers/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    }
+    return api.put(`/customers/${id}`, data);
   },
   remove: (id) => api.delete(`/customers/${id}`),
   updatePurchase: (id, amount, purchaseCount = 1) =>
@@ -289,16 +295,22 @@ export const suppliersApi = {
   addProduct: (id, data) => api.post(`/suppliers/${id}/products`, data),
   removeProduct: (id, productId, data = {}) => api.delete(`/suppliers/${id}/products/${productId}`, { data }),
   create: (data, imageFile) => {
-    const formData = createFormData(data, imageFile ? { image: imageFile } : {});
-    return api.post('/suppliers', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    if (imageFile) {
+      const formData = createFormData(data, { image: imageFile });
+      return api.post('/suppliers', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    }
+    return api.post('/suppliers', data);
   },
   update: (id, data, imageFile) => {
-    const formData = createFormData(data, imageFile ? { image: imageFile } : {});
-    return api.put(`/suppliers/${id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    if (imageFile) {
+      const formData = createFormData(data, { image: imageFile });
+      return api.put(`/suppliers/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    }
+    return api.put(`/suppliers/${id}`, data);
   },
   remove: (id) => api.delete(`/suppliers/${id}`),
 };

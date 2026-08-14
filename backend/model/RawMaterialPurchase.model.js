@@ -33,7 +33,10 @@ const rawMaterialPurchaseSchema = new mongoose.Schema({
   items: [{
     rawMaterialId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'rawMaterial',
+      ref: 'rawMaterial'
+    },
+    name: {
+      type: String,
       required: true
     },
     materialCode: String,

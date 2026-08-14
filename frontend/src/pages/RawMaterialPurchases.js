@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { MdAdd, MdDelete, MdShoppingCart, MdVisibility } from 'react-icons/md';
+import { MdAdd, MdShoppingCart, MdVisibility, MdDelete } from 'react-icons/md';
 import Modal from '../components/Modal';
 import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
-import { rawMaterialPurchasesApi, rawMaterialsApi, suppliersApi } from '../utils/api';
+import { rawMaterialPurchasesApi, suppliersApi } from '../utils/api';
 
 const statusClass = {
   Pending: 'd_warning',
@@ -20,14 +20,13 @@ const blankForm = {
   purchaseDate: '',
   expectedDelivery: '',
   status: 'Delivered',
-  items: [{ rawMaterialId: '', quantity: 1, unitPrice: 0 }],
+  items: [{ id: '', name: '', category: 'Metal', unit: 'piece', quantity: 1, unitPrice: 0 }],
   paymentTerms: '',
   notes: ''
 };
 
 const RawMaterialPurchases = () => {
   const [purchases, setPurchases] = useState([]);
-  const [materials, setMaterials] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
@@ -45,15 +44,15 @@ const RawMaterialPurchases = () => {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [purchaseRes, materialRes, supplierRes] = await Promise.all([
+      const [purchaseRes, supplierRes] = await Promise.all([
         rawMaterialPurchasesApi.getAll(),
-        rawMaterialsApi.getAll(),
         suppliersApi.getAll()
       ]);
       setPurchases(purchaseRes.data || []);
-      setMaterials(materialRes.data || []);
       setSuppliers(supplierRes.data || []);
+      console.log('Suppliers loaded:', supplierRes.data);
     } catch (err) {
+      console.error('Error loading data:', err);
       toast.error(err.response?.data?.error || 'Failed to load raw material purchases');
     } finally {
       setLoading(false);
@@ -74,7 +73,7 @@ const RawMaterialPurchases = () => {
     setForm({
       ...blankForm,
       purchaseDate: new Date().toISOString().split('T')[0],
-      items: [{ rawMaterialId: '', quantity: 1, unitPrice: 0 }]
+      items: [{ id: Date.now().toString(), name: '', category: 'Metal', unit: 'piece', quantity: 1, unitPrice: 0 }]
     });
     setErrors({});
     setModal(true);
@@ -90,7 +89,7 @@ const RawMaterialPurchases = () => {
   const addItem = () => {
     setForm((prev) => ({
       ...prev,
-      items: [...prev.items, { rawMaterialId: '', quantity: 1, unitPrice: 0 }]
+      items: [...prev.items, { id: Date.now().toString(), name: '', category: 'Metal', unit: 'piece', quantity: 1, unitPrice: 0 }]
     }));
   };
 
@@ -107,7 +106,7 @@ const RawMaterialPurchases = () => {
     if (!form.purchaseDate) nextErrors.purchaseDate = 'Purchase date is required';
     if (!form.items.length) nextErrors.items = 'At least one item is required';
     form.items.forEach((item, index) => {
-      if (!item.rawMaterialId) nextErrors[`item_${index}_material`] = 'Material is required';
+      if (!item.name?.trim()) nextErrors[`item_${index}_name`] = 'Material name is required';
       if (!item.quantity || Number(item.quantity) <= 0) nextErrors[`item_${index}_quantity`] = 'Qty must be greater than 0';
       if (item.unitPrice === '' || Number(item.unitPrice) < 0) nextErrors[`item_${index}_price`] = 'Price is required';
     });
@@ -126,7 +125,9 @@ const RawMaterialPurchases = () => {
       const payload = {
         ...form,
         items: form.items.map((item) => ({
-          rawMaterialId: item.rawMaterialId,
+          name: item.name.trim(),
+          category: item.category,
+          unit: item.unit,
           quantity: Number(item.quantity) || 0,
           unitPrice: Number(item.unitPrice) || 0
         }))
@@ -143,16 +144,6 @@ const RawMaterialPurchases = () => {
     }
   };
 
-  const handleDelete = async (purchase) => {
-    try {
-      await rawMaterialPurchasesApi.remove(purchase._id);
-      toast.success('Purchase deleted successfully');
-      fetchAll();
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to delete purchase');
-    }
-  };
-
   const calculateTotal = () => {
     return form.items.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)), 0);
   };
@@ -166,7 +157,7 @@ const RawMaterialPurchases = () => {
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <h1 className="d_page_title">Raw Material Purchases</h1>
-          <p className="d_page_subtitle">Manual purchase report for raw materials</p>
+          <p className="d_page_subtitle">Purchase history for raw materials</p>
         </div>
         <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> Add Purchase</button>
       </div>
@@ -229,7 +220,6 @@ const RawMaterialPurchases = () => {
                         <td>
                           <div className="d_action_btns">
                             <button className="d_icon_btn d_view" onClick={() => { setSelectedPurchase(purchase); setViewModal(true); }}><MdVisibility /></button>
-                            <button className="d_icon_btn d_del" onClick={() => handleDelete(purchase)}><MdDelete /></button>
                           </div>
                         </td>
                       </tr>
@@ -252,7 +242,11 @@ const RawMaterialPurchases = () => {
               setErrors((prev) => ({ ...prev, supplierId: '' }));
             }}>
               <option value="">Select Supplier</option>
-              {suppliers.map((supplier) => <option key={supplier._id} value={supplier._id}>{supplier.name}</option>)}
+              {suppliers.length === 0 ? (
+                <option disabled>No suppliers available</option>
+              ) : (
+                suppliers.map((supplier) => <option key={supplier._id} value={supplier._id}>{supplier.name}</option>)
+              )}
             </select>
             <Err field="supplierId" />
           </div>
@@ -285,22 +279,46 @@ const RawMaterialPurchases = () => {
           <table className="d_table">
             <thead>
               <tr>
-                <th>Raw Material</th>
+                <th>Material Name</th>
+                <th>Category</th>
+                <th>Unit</th>
                 <th>Qty</th>
                 <th>Unit Price (₹)</th>
-                <th>Total (₹)</th>
+                {/* <th>Total (₹)</th> */}
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {form.items.map((item, index) => (
-                <tr key={index}>
+                <tr key={item.id || index}>
                   <td>
-                    <select className="d_form_control" value={item.rawMaterialId} onChange={(e) => updateItem(index, 'rawMaterialId', e.target.value)}>
-                      <option value="">Select Material</option>
-                      {materials.map((material) => <option key={material._id} value={material._id}>{material.code} - {material.name}</option>)}
+                    <input className="d_form_control" type="text" placeholder="Enter material name" value={item.name} onChange={(e) => updateItem(index, 'name', e.target.value)} />
+                    <Err field={`item_${index}_name`} />
+                  </td>
+                  <td>
+                    <select className="d_form_control" value={item.category} onChange={(e) => updateItem(index, 'category', e.target.value)}>
+                      <option>Metal</option>
+                      <option>Plastic</option>
+                      <option>Chemical</option>
+                      <option>Fabric</option>
+                      <option>Electronics</option>
+                      <option>Packaging</option>
+                      <option>Other</option>
                     </select>
-                    <Err field={`item_${index}_material`} />
+                  </td>
+                  <td>
+                    <select className="d_form_control" value={item.unit} onChange={(e) => updateItem(index, 'unit', e.target.value)}>
+                      <option>kg</option>
+                      <option>g</option>
+                      <option>litre</option>
+                      <option>ml</option>
+                      <option>meter</option>
+                      <option>cm</option>
+                      <option>piece</option>
+                      <option>box</option>
+                      <option>roll</option>
+                      <option>bag</option>
+                    </select>
                   </td>
                   <td>
                     <input className="d_form_control" type="number" min={1} value={item.quantity} onChange={(e) => updateItem(index, 'quantity', e.target.value)} />
@@ -310,7 +328,7 @@ const RawMaterialPurchases = () => {
                     <input className="d_form_control" type="number" min={0} step="0.01" value={item.unitPrice} onChange={(e) => updateItem(index, 'unitPrice', e.target.value)} />
                     <Err field={`item_${index}_price`} />
                   </td>
-                  <td><strong>₹{((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toLocaleString('en-IN')}</strong></td>
+                  {/* <td><strong>₹{((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toLocaleString('en-IN')}</strong></td> */}
                   <td><button className="d_icon_btn d_del" onClick={() => removeItem(index)}><MdDelete /></button></td>
                 </tr>
               ))}
@@ -343,6 +361,7 @@ const RawMaterialPurchases = () => {
               <thead>
                 <tr>
                   <th>Material</th>
+                  <th>Category</th>
                   <th>Qty</th>
                   <th>Unit</th>
                   <th>Unit Price (₹)</th>
@@ -352,7 +371,8 @@ const RawMaterialPurchases = () => {
               <tbody>
                 {(selectedPurchase.items || []).map((item, index) => (
                   <tr key={index}>
-                    <td>{item.materialCode} - {item.materialName}</td>
+                    <td>{item.materialName || item.name}</td>
+                    <td>{item.category}</td>
                     <td>{item.quantity}</td>
                     <td>{item.unit}</td>
                     <td>₹{(item.unitPrice || 0).toLocaleString('en-IN')}</td>
