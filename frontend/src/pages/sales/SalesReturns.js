@@ -7,7 +7,6 @@ import api from '../../utils/api';
 const blankReturn = {
     customer: '',
     invoice: '',
-    salesOrder: '',
     returnDate: new Date().toISOString().split('T')[0],
     returnMethod: 'Refund',
     items: [],
@@ -41,7 +40,6 @@ export default function SalesReturns() {
     const [returns, setReturns] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [invoices, setInvoices] = useState([]);
-    const [salesOrders, setSalesOrders] = useState([]);
     const [spareParts, setSpareParts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -59,17 +57,15 @@ export default function SalesReturns() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [returnsRes, customersRes, invoicesRes, salesOrdersRes, sparePartsRes] = await Promise.all([
+            const [returnsRes, customersRes, invoicesRes, sparePartsRes] = await Promise.all([
                 api.get('/sales-returns'),
                 api.get('/customers'),
                 api.get('/invoices'),
-                api.get('/sales-orders'),
                 api.get('/spare-parts')
             ]);
             setReturns(returnsRes.data || []);
             setCustomers(customersRes.data || []);
             setInvoices(invoicesRes.data || []);
-            setSalesOrders(salesOrdersRes.data || []);
             setSpareParts(sparePartsRes.data || []);
             setError(null);
         } catch (err) {
@@ -93,7 +89,6 @@ export default function SalesReturns() {
         setForm({
             customer: returnItem.customer?._id || returnItem.customer,
             invoice: returnItem.invoice?._id || returnItem.invoice || '',
-            salesOrder: returnItem.salesOrder?._id || returnItem.salesOrder || '',
             returnDate: returnItem.returnDate?.split('T')[0] || new Date().toISOString().split('T')[0],
             returnMethod: returnItem.returnMethod || 'Refund',
             items: returnItem.items || [],
@@ -116,25 +111,6 @@ export default function SalesReturns() {
                 customer: invoice.customer?._id || invoice.customer,
                 salesOrder: invoice.salesOrder?._id || invoice.salesOrder || '',
                 items: invoice.items?.map(item => ({
-                    sparePart: item.sparePart,
-                    quantity: item.quantity,
-                    rate: item.rate,
-                    gstRate: item.gstRate,
-                    returnReason: 'Damaged Part',
-                    condition: 'Damaged'
-                })) || []
-            }));
-        }
-    };
-
-    const handleSalesOrderSelect = (salesOrderId) => {
-        const salesOrder = salesOrders.find(so => so._id === salesOrderId);
-        if (salesOrder) {
-            setForm(p => ({
-                ...p,
-                customer: salesOrder.customer?._id || salesOrder.customer,
-                invoice: '',
-                items: salesOrder.items?.map(item => ({
                     sparePart: item.sparePart,
                     quantity: item.quantity,
                     rate: item.rate,
@@ -384,7 +360,7 @@ export default function SalesReturns() {
             </div>
 
             <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Sales Return' : 'New Sales Return'} size="xl">
-                <div className="d_form_row cols-2">
+                <div className="d_form_row cols-1">
                     <div className="d_form_group">
                         <label className="d_form_label">Invoice <span className="d_req">*</span></label>
                         <select className="d_form_control" {...f('invoice')} onChange={(e) => {
@@ -397,18 +373,6 @@ export default function SalesReturns() {
                             ))}
                         </select>
                         {errors.invoice && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.invoice}</span>}
-                    </div>
-                    <div className="d_form_group">
-                        <label className="d_form_label">Sales Order (Optional)</label>
-                        <select className="d_form_control" {...f('salesOrder')} onChange={(e) => {
-                            f('salesOrder').onChange(e);
-                            if (e.target.value) handleSalesOrderSelect(e.target.value);
-                        }}>
-                            <option value="">Select Sales Order</option>
-                            {salesOrders.map(so => (
-                                <option key={so._id} value={so._id}>{so.salesOrderNumber} - {so.customer?.name}</option>
-                            ))}
-                        </select>
                     </div>
                 </div>
 

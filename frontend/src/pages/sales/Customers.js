@@ -110,9 +110,13 @@ export default function Customers({ setActiveMenu }) {
         if (!form.companyName.trim()) e.companyName = 'Company name is required';
         if (!form.email.trim()) e.email = 'Email is required';
         if (!form.phone.trim()) e.phone = 'Phone is required';
+        else if (!/^[6-9]\d{9}$/.test(form.phone)) e.phone = 'Phone must be 10 digits starting with 6-9';
         if (!form.city.trim()) e.city = 'City is required';
         if (!form.state.trim()) e.state = 'State is required';
         if (!form.pincode.trim()) e.pincode = 'Pincode is required';
+        if (form.gstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstNumber)) {
+            e.gstNumber = 'Invalid GST format (e.g., 22AAAAA0000A1Z5)';
+        }
         if (form.creditLimit < 0 || form.creditLimit > 10000000) e.creditLimit = 'Credit limit must be between 0 and 10,000,000';
         if (form.openingBalance < 0 || form.openingBalance > 10000000) e.openingBalance = 'Opening balance must be between 0 and 10,000,000';
         return e;

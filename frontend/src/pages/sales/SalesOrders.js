@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MdAdd, MdEdit, MdDelete, MdVisibility, MdSearch, MdShoppingBag, MdCheck, MdClose, MdInventory, MdWarning } from 'react-icons/md';
+import { MdAdd, MdEdit, MdDelete, MdVisibility, MdSearch, MdShoppingBag, MdCheck, MdClose, MdInventory, MdWarning, MdReceipt } from 'react-icons/md';
 import Modal from '../../components/Modal';
 import ConfirmModal from '../../components/ConfirmModal';
 import api from '../../utils/api';
@@ -41,12 +41,13 @@ const blankItem = {
 const statusBadge = s => {
     if (s === 'Completed') return 'd_success';
     if (s === 'Cancelled') return 'd_danger';
-    if (s === 'Confirmed') return 'd_info';
-    if (s === 'In Progress') return 'd_primary';
+    if (s === 'Confirmed' || s === 'Stock Reserved') return 'd_info';
+    if (s === 'Processing' || s === 'Ready for Dispatch' || s === 'Dispatched') return 'd_primary';
+    if (s === 'On Hold') return 'd_warning';
     return 'd_warning';
 };
 
-const tabs = ['All', 'Pending', 'Confirmed', 'In Progress', 'Completed', 'Cancelled'];
+const tabs = ['All', 'Draft', 'Confirmed', 'Stock Reserved', 'Processing', 'Ready for Dispatch', 'Dispatched', 'Completed', 'On Hold', 'Cancelled'];
 
 export default function SalesOrders() {
     const [orders, setOrders] = useState([]);
@@ -94,7 +95,7 @@ export default function SalesOrders() {
     const filtered = orders.filter(r =>
         activeTab === 'All' || r.status === activeTab
     ).filter(r =>
-        r.salesOrderNumber?.toLowerCase().includes(search.toLowerCase()) ||
+        r.orderNumber?.toLowerCase().includes(search.toLowerCase()) ||
         r.customer?.name?.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -410,6 +411,37 @@ export default function SalesOrders() {
         }
     };
 
+    const handleGenerateInvoice = async (salesOrder) => {
+        try {
+            const customer = customers.find(c => c._id === salesOrder.customer._id);
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + (customer?.creditDays || 30));
+
+            const invoicePayload = {
+                customer: salesOrder.customer._id,
+                salesOrder: salesOrder._id,
+                invoiceDate: new Date().toISOString().split('T')[0],
+                dueDate: dueDate.toISOString().split('T')[0],
+                billingAddress: salesOrder.billingAddress || customer?.billingAddress || '',
+                shippingAddress: salesOrder.shippingAddress || customer?.shippingAddress || '',
+                paymentTerms: salesOrder.paymentTerms || customer?.paymentTerms || '30 Days',
+                items: salesOrder.items.map(item => ({
+                    sparePart: item.sparePart._id || item.sparePart,
+                    quantity: item.quantity,
+                    rate: item.rate,
+                    discount: item.discount,
+                    gstRate: item.gstRate
+                }))
+            };
+
+            await api.post('/invoices', invoicePayload);
+            alert(`Invoice generated successfully for Sales Order ${salesOrder.orderNumber}`);
+            fetchData();
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to generate invoice');
+        }
+    };
+
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
@@ -485,7 +517,7 @@ export default function SalesOrders() {
                                 )}
                                 {filtered.map(r => (
                                     <tr key={r._id}>
-                                        <td><strong>{r.salesOrderNumber}</strong></td>
+                                        <td><strong>{r.orderNumber}</strong></td>
                                         <td>{r.customer?.name || r.customer}</td>
                                         <td>{new Date(r.orderDate).toLocaleDateString('en-IN')}</td>
                                         <td>{r.expectedDeliveryDate ? new Date(r.expectedDeliveryDate).toLocaleDateString('en-IN') : '-'}</td>
@@ -497,7 +529,7 @@ export default function SalesOrders() {
                                             <div className="d_action_btns">
                                                 <button className="d_icon_btn d_view" onClick={() => openEdit(r)}><MdVisibility /></button>
                                                 <button className="d_icon_btn d_edit" onClick={() => openEdit(r)}><MdEdit /></button>
-                                                {r.status === 'Pending' && (
+                                                {r.status === 'Draft' && (
                                                     <>
                                                         <button className="d_icon_btn d_success" onClick={() => handleStatusChange(r._id, 'confirm')} title="Confirm"><MdCheck /></button>
                                                         <button className="d_icon_btn d_danger" onClick={() => handleStatusChange(r._id, 'cancel')} title="Cancel"><MdClose /></button>
@@ -505,6 +537,9 @@ export default function SalesOrders() {
                                                 )}
                                                 {r.status === 'Confirmed' && !r.stockReserved && (
                                                     <button className="d_icon_btn d_info" onClick={() => handleStatusChange(r._id, 'reserve-stock')} title="Reserve Stock"><MdInventory /></button>
+                                                )}
+                                                {(r.status === 'Confirmed' || r.status === 'Stock Reserved') && !r.invoiceGenerated && (
+                                                    <button className="d_icon_btn d_primary" onClick={() => handleGenerateInvoice(r)} title="Generate Invoice"><MdReceipt /></button>
                                                 )}
                                                 <button className="d_icon_btn d_del" onClick={() => handleDelete(r._id)}><MdDelete /></button>
                                             </div>
@@ -587,8 +622,18 @@ export default function SalesOrders() {
                         </select>
                     </div>
                     <div className="d_form_group">
-                        <label className="d_form_label">Delivery Terms</label>
-                        <input className="d_form_control" {...f('deliveryTerms')} />
+                        <label className="d_form_label">Status</label>
+                        <select className="d_form_control" {...f('status')}>
+                            <option value="Draft">Draft</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Stock Reserved">Stock Reserved</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Ready for Dispatch">Ready for Dispatch</option>
+                            <option value="Dispatched">Dispatched</option>
+                            <option value="Completed">Completed</option>
+                            <option value="On Hold">On Hold</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
                     </div>
                 </div>
 

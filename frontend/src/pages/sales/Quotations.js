@@ -437,6 +437,28 @@ export default function Quotations() {
                         <label className="d_form_label">Payment Terms</label>
                         <select className="d_form_control" {...f('paymentTerms')}>
                             <option value="Cash">Cash</option>
+                            <option value="30 Days">30 Days</option>
+                            <option value="45 Days">45 Days</option>
+                            <option value="60 Days">60 Days</option>
+                            <option value="90 Days">90 Days</option>
+                        </select>
+                    </div>
+                    <div className="d_form_group">
+                        <label className="d_form_label">Status</label>
+                        <select className="d_form_control" {...f('status')}>
+                            <option value="Draft">Draft</option>
+                            <option value="Sent">Sent</option>
+                            <option value="Accepted">Accepted</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Converted">Converted</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="d_form_row cols-1">
+                    <div className="d_form_group">
+                        <label className="d_form_label">Delivery Terms</label>
+                        <select className="d_form_control" {...f('deliveryTerms')}>
                             <option value="Immediate">Immediate</option>
                             <option value="7 Days">7 Days</option>
                             <option value="15 Days">15 Days</option>
@@ -444,10 +466,6 @@ export default function Quotations() {
                             <option value="45 Days">45 Days</option>
                             <option value="60 Days">60 Days</option>
                         </select>
-                    </div>
-                    <div className="d_form_group">
-                        <label className="d_form_label">Delivery Terms</label>
-                        <input className="d_form_control" {...f('deliveryTerms')} />
                     </div>
                 </div>
 

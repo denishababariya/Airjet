@@ -282,6 +282,7 @@ exports.updateQuotation = async (req, res) => {
         if (req.body.notes) quotation.notes = req.body.notes;
         if (req.body.terms) quotation.terms = req.body.terms;
         if (req.body.status) quotation.status = req.body.status;
+        quotation.updatedBy = req.user?._id;
         
         await quotation.save();
         
@@ -302,10 +303,6 @@ exports.deleteQuotation = async (req, res) => {
         
         if (!quotation) {
             return res.status(404).json({ error: 'Quotation not found' });
-        }
-        
-        if (quotation.status === 'Converted') {
-            return res.status(400).json({ error: 'Cannot delete converted quotation' });
         }
         
         await Quotation.findByIdAndDelete(req.params.id);
