@@ -41,11 +41,7 @@ const menuConfig = [
     items: [
       {
         label: 'Purchase', icon: <MdShoppingCart />, id: 'purchase',
-        children: ['Suppliers', 'Purchase Orders', 'GRN', 'Returns'],
-        module: 'Purchase',
-      },
-      {
-        label: 'Raw Material Purchases', icon: <MdShoppingCart />, id: 'Raw Material Purchases',
+        children: ['Suppliers', 'Raw Material Purchases', 'Purchase Orders', 'GRN', 'Returns'],
         module: 'Purchase',
       },
       {
@@ -166,8 +162,8 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
                 if (item.id === 'Role Management' && !hasAdminPanelAccess) return null;
 
                 const hasChildren = item.children && item.children.length > 0;
-                const isOpen      = openMenu === item.id;   // ← single open check
-                const isActive    = activeMenu === item.id;
+                const isOpen = openMenu === item.id;   // ← single open check
+                const isActive = activeMenu === item.id;
 
                 return (
                   <div key={item.id} className="d_nav_item">
@@ -175,7 +171,7 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
                       className={[
                         'd_nav_link',
                         isActive ? 'd_active' : '',
-                        isOpen   ? 'd_open'   : '',
+                        isOpen ? 'd_open' : '',
                       ].filter(Boolean).join(' ')}
                       onClick={() => handleItemClick(item.id, hasChildren)}
                       title={collapsed ? item.label : ''}
