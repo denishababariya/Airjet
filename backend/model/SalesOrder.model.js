@@ -96,7 +96,8 @@ const salesOrderSchema = new mongoose.Schema({
         required: true
     },
     salesPerson: {
-        type: String
+        type: String,
+        required: true
     },
     billingAddress: {
         type: String

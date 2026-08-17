@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdVisibility, MdReceipt, MdDownload, MdAttachMoney, MdCheck, MdClose } from 'react-icons/md';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
 import api from '../../utils/api';
 
 const blankInvoice = {
@@ -56,10 +57,11 @@ export default function Invoices() {
     const [modal, setModal] = useState(false);
     const [paymentModal, setPaymentModal] = useState(false);
     const [form, setForm] = useState(blankInvoice);
-    const [paymentForm, setPaymentForm] = useState({ amount: 0, paymentMethod: 'Cash', reference: '', notes: '' });
+    const [paymentForm, setPaymentForm] = useState({ amount: 0, paymentMode: 'Cash', transactionReference: '', notes: '' });
     const [editId, setEditId] = useState(null);
     const [paymentInvoiceId, setPaymentInvoiceId] = useState(null);
     const [errors, setErrors] = useState({});
+    const [confirmModal, setConfirmModal] = useState({ open: false, onConfirm: null, title: '', message: '' });
 
     useEffect(() => {
         fetchData();
@@ -76,7 +78,7 @@ export default function Invoices() {
             ]);
             setInvoices(invoicesRes.data || []);
             setCustomers(customersRes.data || []);
-            setSalesOrders(salesOrdersRes.data?.filter(so => so.status === 'Completed' && !so.invoiced) || []);
+            setSalesOrders(salesOrdersRes.data || []);
             setSpareParts(sparePartsRes.data || []);
             setError(null);
         } catch (err) {
@@ -306,13 +308,21 @@ export default function Invoices() {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this invoice?')) return;
-        try {
-            await api.delete(`/invoices/${id}`);
-            fetchData();
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to delete invoice');
-        }
+        const invoice = invoices.find(i => i._id === id);
+        setConfirmModal({
+            open: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/invoices/${id}`);
+                    fetchData();
+                    setConfirmModal({ open: false, onConfirm: null, title: '', message: '' });
+                } catch (err) {
+                    setError(err.response?.data?.error || 'Failed to delete invoice');
+                }
+            },
+            title: 'Delete Invoice',
+            message: `Are you sure you want to delete invoice ${invoice?.invoiceNumber || 'this invoice'}? This action cannot be undone.`
+        });
     };
 
     const handleStatusChange = async (id, action) => {
@@ -328,8 +338,8 @@ export default function Invoices() {
         setPaymentInvoiceId(invoice._id);
         setPaymentForm({
             amount: invoice.balanceAmount || 0,
-            paymentMethod: 'Cash',
-            reference: '',
+            paymentMode: 'Cash',
+            transactionReference: '',
             notes: ''
         });
         setPaymentModal(true);
@@ -686,7 +696,7 @@ export default function Invoices() {
                 <div className="d_form_row cols-1">
                     <div className="d_form_group">
                         <label className="d_form_label">Payment Method</label>
-                        <select className="d_form_control" {...pf('paymentMethod')}>
+                        <select className="d_form_control" {...pf('paymentMode')}>
                             <option value="Cash">Cash</option>
                             <option value="Bank Transfer">Bank Transfer</option>
                             <option value="Cheque">Cheque</option>
@@ -699,7 +709,7 @@ export default function Invoices() {
                 <div className="d_form_row cols-1">
                     <div className="d_form_group">
                         <label className="d_form_label">Reference No.</label>
-                        <input className="d_form_control" {...pf('reference')} placeholder="Transaction/Reference number" />
+                        <input className="d_form_control" {...pf('transactionReference')} placeholder="Transaction/Reference number" />
                     </div>
                 </div>
 
@@ -715,6 +725,17 @@ export default function Invoices() {
                     <button className="d_btn d_btn_primary" onClick={handleAddPayment}><MdAttachMoney /> Add Payment</button>
                 </div>
             </Modal>
+
+            <ConfirmModal
+                open={confirmModal.open}
+                onClose={() => setConfirmModal({ open: false, onConfirm: null, title: '', message: '' })}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+            />
         </div>
     );
 }

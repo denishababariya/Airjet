@@ -93,6 +93,17 @@ exports.getSalesReturnById = async (req, res) => {
 // Create sales return
 exports.createSalesReturn = async (req, res) => {
     try {
+        // Validate required fields
+        if (!req.body.invoice) {
+            return res.status(400).json({ error: 'Invoice is required' });
+        }
+        if (!req.body.items || !Array.isArray(req.body.items) || req.body.items.length === 0) {
+            return res.status(400).json({ error: 'At least one item is required' });
+        }
+        if (!req.body.returnDate) {
+            return res.status(400).json({ error: 'Return date is required' });
+        }
+
         const returnNumber = await generateReturnNumber();
         
         // Validate invoice
@@ -175,7 +186,7 @@ exports.createSalesReturn = async (req, res) => {
             refundAmount: req.body.refundAmount || total,
             notes: req.body.notes,
             status: req.body.status || 'Pending',
-            createdBy: req.user?.id
+            createdBy: req.user?._id
         });
         
         await salesReturn.save();
@@ -273,7 +284,7 @@ exports.updateSalesReturn = async (req, res) => {
         if (req.body.returnDate) salesReturn.returnDate = req.body.returnDate;
         if (req.body.notes) salesReturn.notes = req.body.notes;
         if (req.body.status) salesReturn.status = req.body.status;
-        salesReturn.updatedBy = req.user?.id;
+        salesReturn.updatedBy = req.user?._id;
         
         await salesReturn.save();
         
@@ -322,9 +333,9 @@ exports.approveSalesReturn = async (req, res) => {
         }
         
         salesReturn.status = 'Approved';
-        salesReturn.approvedBy = req.user?.id;
+        salesReturn.approvedBy = req.user?._id;
         salesReturn.approvedDate = new Date();
-        salesReturn.updatedBy = req.user?.id;
+        salesReturn.updatedBy = req.user?._id;
         await salesReturn.save();
         
         res.json({ message: 'Sales return approved successfully', salesReturn });
@@ -373,7 +384,7 @@ exports.processSalesReturn = async (req, res) => {
         }
         
         salesReturn.status = 'Processed';
-        salesReturn.updatedBy = req.user?.id;
+        salesReturn.updatedBy = req.user?._id;
         await salesReturn.save();
         
         res.json({ message: 'Sales return processed successfully', salesReturn });
@@ -396,7 +407,7 @@ exports.rejectSalesReturn = async (req, res) => {
         }
         
         salesReturn.status = 'Rejected';
-        salesReturn.updatedBy = req.user?.id;
+        salesReturn.updatedBy = req.user?._id;
         await salesReturn.save();
         
         res.json({ message: 'Sales return rejected successfully', salesReturn });

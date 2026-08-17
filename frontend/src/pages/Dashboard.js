@@ -207,7 +207,7 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
               </h2>
               <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('Sales Orders')}>View All</button>
             </div>
-            <div className="d_card_body p-0">
+            <div className="d_card_body p-2">
               <div className="d_table_wrap">
                 <table className="d_table">
                   <thead>
@@ -240,7 +240,7 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
               </h2>
               <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('Purchase Orders')}>View All</button>
             </div>
-            <div className="d_card_body p-0">
+            <div className="d_card_body p-2">
               <div className="d_table_wrap">
                 <table className="d_table">
                   <thead>
@@ -276,7 +276,7 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
               </h2>
               <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('Service Tickets')}>View All</button>
             </div>
-            <div className="d_card_body p-0">
+            <div className="d_card_body p-2">
               <div className="d_table_wrap">
                 <table className="d_table">
                   <thead>
@@ -335,7 +335,7 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
           </h2>
           <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('Part Number')}>View All</button>
         </div>
-        <div className="d_card_body p-0">
+        <div className="d_card_body p-2">
           <div className="d_table_wrap">
             <table className="d_table">
               <thead>

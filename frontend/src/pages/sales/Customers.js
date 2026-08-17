@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdVisibility, MdSearch, MdPeople } from 'react-icons/md';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
+import CustomerDetail from './CustomerDetail';
 import api from '../../utils/api';
 
 const blankCustomer = {
@@ -27,7 +29,7 @@ const blankCustomer = {
     notes: ''
 };
 
-export default function Customers() {
+export default function Customers({ setActiveMenu }) {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -36,6 +38,9 @@ export default function Customers() {
     const [form, setForm] = useState(blankCustomer);
     const [editId, setEditId] = useState(null);
     const [errors, setErrors] = useState({});
+    const [viewModal, setViewModal] = useState(false);
+    const [viewCustomer, setViewCustomer] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ open: false, onConfirm: null, title: '', message: '' });
 
     useEffect(() => {
         fetchCustomers();
@@ -101,10 +106,15 @@ export default function Customers() {
     const validate = () => {
         const e = {};
         if (!form.name.trim()) e.name = 'Customer name is required';
+        if (!form.contactPerson.trim()) e.contactPerson = 'Contact person is required';
+        if (!form.companyName.trim()) e.companyName = 'Company name is required';
         if (!form.email.trim()) e.email = 'Email is required';
         if (!form.phone.trim()) e.phone = 'Phone is required';
         if (!form.city.trim()) e.city = 'City is required';
         if (!form.state.trim()) e.state = 'State is required';
+        if (!form.pincode.trim()) e.pincode = 'Pincode is required';
+        if (form.creditLimit < 0 || form.creditLimit > 10000000) e.creditLimit = 'Credit limit must be between 0 and 10,000,000';
+        if (form.openingBalance < 0 || form.openingBalance > 10000000) e.openingBalance = 'Opening balance must be between 0 and 10,000,000';
         return e;
     };
 
@@ -129,13 +139,26 @@ export default function Customers() {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this customer?')) return;
-        try {
-            await api.delete(`/customers/${id}`);
-            fetchCustomers();
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to delete customer');
-        }
+        const customer = customers.find(c => c._id === id);
+        setConfirmModal({
+            open: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/customers/${id}`);
+                    fetchCustomers();
+                    setConfirmModal({ open: false, onConfirm: null, title: '', message: '' });
+                } catch (err) {
+                    setError(err.response?.data?.error || 'Failed to delete customer');
+                }
+            },
+            title: 'Delete Customer',
+            message: `Are you sure you want to delete ${customer?.name || 'this customer'}? This action cannot be undone.`
+        });
+    };
+
+    const handleView = (customer) => {
+        setViewCustomer(customer);
+        setViewModal(true);
     };
 
     const f = (field) => ({
@@ -225,7 +248,7 @@ export default function Customers() {
                                         <td><span className={`d_badge ${c.status === 'Active' ? 'd_success' : 'd_danger'}`}>{c.status}</span></td>
                                         <td>
                                             <div className="d_action_btns">
-                                                <button className="d_icon_btn d_view" onClick={() => openEdit(c)}><MdVisibility /></button>
+                                                <button className="d_icon_btn d_view" onClick={() => handleView(c)}><MdVisibility /></button>
                                                 <button className="d_icon_btn d_edit" onClick={() => openEdit(c)}><MdEdit /></button>
                                                 <button className="d_icon_btn d_del" onClick={() => handleDelete(c._id)}><MdDelete /></button>
                                             </div>
@@ -242,23 +265,25 @@ export default function Customers() {
                 <div className="d_form_row cols-2">
                     <div className="d_form_group">
                         <label className="d_form_label">Customer Name <span className="d_req">*</span></label>
-                        <input className="d_form_control" {...f('name')} />
+                        <input className="d_form_control" {...f('name')} placeholder="Enter customer name" />
                         {errors.name && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.name}</span>}
                     </div>
                     <div className="d_form_group">
-                        <label className="d_form_label">Company Name</label>
-                        <input className="d_form_control" {...f('companyName')} />
+                        <label className="d_form_label">Company Name <span className="d_req">*</span></label>
+                        <input className="d_form_control" {...f('companyName')} placeholder="Enter company name" />
+                        {errors.companyName && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.companyName}</span>}
                     </div>
                 </div>
 
                 <div className="d_form_row cols-2">
                     <div className="d_form_group">
-                        <label className="d_form_label">Contact Person</label>
-                        <input className="d_form_control" {...f('contactPerson')} />
+                        <label className="d_form_label">Contact Person <span className="d_req">*</span></label>
+                        <input className="d_form_control" {...f('contactPerson')} placeholder="Enter contact person name" />
+                        {errors.contactPerson && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.contactPerson}</span>}
                     </div>
                     <div className="d_form_group">
                         <label className="d_form_label">Email <span className="d_req">*</span></label>
-                        <input type="email" className="d_form_control" {...f('email')} />
+                        <input type="email" className="d_form_control" {...f('email')} placeholder="Enter email address" />
                         {errors.email && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.email}</span>}
                     </div>
                 </div>
@@ -285,17 +310,18 @@ export default function Customers() {
                 <div className="d_form_row cols-3">
                     <div className="d_form_group">
                         <label className="d_form_label">City <span className="d_req">*</span></label>
-                        <input className="d_form_control" {...f('city')} />
+                        <input className="d_form_control" {...f('city')} placeholder="Enter city" />
                         {errors.city && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.city}</span>}
                     </div>
                     <div className="d_form_group">
                         <label className="d_form_label">State <span className="d_req">*</span></label>
-                        <input className="d_form_control" {...f('state')} />
+                        <input className="d_form_control" {...f('state')} placeholder="Enter state" />
                         {errors.state && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.state}</span>}
                     </div>
                     <div className="d_form_group">
-                        <label className="d_form_label">Pincode</label>
-                        <input className="d_form_control" {...f('pincode')} />
+                        <label className="d_form_label">Pincode <span className="d_req">*</span></label>
+                        <input className="d_form_control" {...f('pincode')} placeholder="Enter pincode" />
+                        {errors.pincode && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.pincode}</span>}
                     </div>
                 </div>
 
@@ -335,7 +361,8 @@ export default function Customers() {
                 <div className="d_form_row cols-2">
                     <div className="d_form_group">
                         <label className="d_form_label">Credit Limit (₹)</label>
-                        <input type="number" className="d_form_control" {...f('creditLimit')} min="0" />
+                        <input type="number" className="d_form_control" {...f('creditLimit')} min="0" max="10000000" placeholder="Max: 10,000,000" />
+                        {errors.creditLimit && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.creditLimit}</span>}
                     </div>
                     <div className="d_form_group">
                         <label className="d_form_label">Credit Days</label>
@@ -358,7 +385,8 @@ export default function Customers() {
                     </div>
                     <div className="d_form_group">
                         <label className="d_form_label">Opening Balance (₹)</label>
-                        <input type="number" className="d_form_control" {...f('openingBalance')} min="0" />
+                        <input type="number" className="d_form_control" {...f('openingBalance')} min="0" max="10000000" placeholder="Max: 10,000,000" />
+                        {errors.openingBalance && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.openingBalance}</span>}
                     </div>
                 </div>
 
@@ -388,6 +416,152 @@ export default function Customers() {
                     <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Customer' : 'Create Customer'}</button>
                 </div>
             </Modal>
+
+            {/* View Customer Modal */}
+            <Modal open={viewModal} onClose={() => setViewModal(false)} title="Customer Details" size="xl">
+                {viewCustomer && (
+                    <div>
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Customer Name</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewCustomer.name}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Company Name</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewCustomer.companyName}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Contact Person</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewCustomer.contactPerson}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Email</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewCustomer.email}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Phone</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewCustomer.phone}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Alternate Phone</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewCustomer.alternPhone || '-'}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-1">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Address</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewCustomer.address || '-'}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-3">
+                            <div className="d_form_group">
+                                <label className="d_form_label">City</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewCustomer.city}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">State</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewCustomer.state}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Pincode</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewCustomer.pincode}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">GST Number</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', fontFamily: 'monospace' }}>{viewCustomer.gstNumber || '-'}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">PAN Number</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', fontFamily: 'monospace' }}>{viewCustomer.panNumber || '-'}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Customer Type</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewCustomer.customerType}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Status</label>
+                                <span className={`d_badge ${viewCustomer.status === 'Active' ? 'd_success' : viewCustomer.status === 'Inactive' ? 'd_warning' : 'd_danger'}`}>
+                                    {viewCustomer.status}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Credit Limit (₹)</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold', color: 'var(--d-primary)' }}>
+                                    {new Intl.NumberFormat('en-IN').format(viewCustomer.creditLimit || 0)}
+                                </div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Credit Days</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewCustomer.creditDays || 30}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Payment Terms</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewCustomer.paymentTerms}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Opening Balance (₹)</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold', color: 'var(--d-info)' }}>
+                                    {new Intl.NumberFormat('en-IN').format(viewCustomer.openingBalance || 0)}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-1">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Billing Address</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewCustomer.billingAddress || '-'}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-1">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Shipping Address</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewCustomer.shippingAddress || '-'}</div>
+                            </div>
+                        </div>
+
+                        {viewCustomer.notes && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Notes</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewCustomer.notes}</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </Modal>
+
+            <ConfirmModal
+                open={confirmModal.open}
+                onClose={() => setConfirmModal({ open: false, onConfirm: null, title: '', message: '' })}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+            />
         </div>
     );
 }

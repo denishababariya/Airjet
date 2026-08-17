@@ -114,6 +114,19 @@ exports.getInvoiceById = async (req, res) => {
 // Create invoice
 exports.createInvoice = async (req, res) => {
     try {
+        console.log('Creating invoice with body:', JSON.stringify(req.body, null, 2));
+        
+        // Validate required fields
+        if (!req.body.customer) {
+            return res.status(400).json({ error: 'Customer is required' });
+        }
+        if (!req.body.items || !Array.isArray(req.body.items) || req.body.items.length === 0) {
+            return res.status(400).json({ error: 'At least one item is required' });
+        }
+        if (!req.body.invoiceDate) {
+            return res.status(400).json({ error: 'Invoice date is required' });
+        }
+
         const invoiceNumber = await generateInvoiceNumber();
         
         // Validate customer
@@ -204,8 +217,8 @@ exports.createInvoice = async (req, res) => {
             invoiceDate,
             dueDate,
             salesPerson: req.body.salesPerson || salesOrderData?.salesPerson,
-            billingAddress: req.body.billingAddress || customer.billingAddress || customer.address,
-            shippingAddress: req.body.shippingAddress || customer.shippingAddress || customer.address,
+            billingAddress: req.body.billingAddress || customer.billingAddress || customer.address || '',
+            shippingAddress: req.body.shippingAddress || customer.shippingAddress || customer.address || '',
             paymentTerms,
             items,
             subtotal,
@@ -221,7 +234,7 @@ exports.createInvoice = async (req, res) => {
             paymentStatus: 'Unpaid',
             status: req.body.status || 'Draft',
             notes: req.body.notes,
-            createdBy: req.user?.id
+            createdBy: req.user?._id
         });
         
         await invoice.save();
@@ -241,6 +254,8 @@ exports.createInvoice = async (req, res) => {
         
         res.status(201).json(savedInvoice);
     } catch (error) {
+        console.error('Error creating invoice:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({ error: error.message });
     }
 };
@@ -323,7 +338,7 @@ exports.updateInvoice = async (req, res) => {
             invoice.igst = totalIGST;
             invoice.roundOff = roundOff;
             invoice.grandTotal = finalTotal;
-            invoice.pendingAmount = finalTotal - invoice.paidAmount;
+            invoice.pendingAmount = finalTotal - Number(invoice.paidAmount || 0);
         }
         
         if (req.body.customer) invoice.customer = req.body.customer;
@@ -341,7 +356,7 @@ exports.updateInvoice = async (req, res) => {
         }
         if (req.body.notes) invoice.notes = req.body.notes;
         if (req.body.status) invoice.status = req.body.status;
-        invoice.updatedBy = req.user?.id;
+        invoice.updatedBy = req.user?._id;
         
         await invoice.save();
         
@@ -402,7 +417,7 @@ exports.issueInvoice = async (req, res) => {
         }
         
         invoice.status = 'Issued';
-        invoice.updatedBy = req.user?.id;
+        invoice.updatedBy = req.user?._id;
         await invoice.save();
         
         res.json({ message: 'Invoice issued successfully', invoice });
@@ -425,7 +440,7 @@ exports.cancelInvoice = async (req, res) => {
         }
         
         invoice.status = 'Cancelled';
-        invoice.updatedBy = req.user?.id;
+        invoice.updatedBy = req.user?._id;
         await invoice.save();
         
         res.json({ message: 'Invoice cancelled successfully', invoice });
@@ -485,15 +500,15 @@ exports.addPayment = async (req, res) => {
             transactionReference,
             bank,
             notes,
-            receivedBy: req.user?.id,
+            receivedBy: req.user?._id,
             status: 'Completed'
         });
         
         await payment.save();
         
         // Update invoice payment status
-        invoice.paidAmount += amount;
-        invoice.updatedBy = req.user?.id;
+        invoice.paidAmount = Number(invoice.paidAmount || 0) + Number(amount);
+        invoice.updatedBy = req.user?._id;
         await invoice.save();
         
         // Update customer balance

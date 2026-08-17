@@ -25,6 +25,7 @@ import Purchase         from './pages/Purchase';
 import Sales            from './pages/Sales';
 import SalesDashboard   from './pages/sales/SalesDashboard';
 import Customers        from './pages/sales/Customers';
+import CustomerDetail   from './pages/sales/CustomerDetail';
 import Quotations       from './pages/sales/Quotations';
 import SalesOrders      from './pages/sales/SalesOrders';
 import Invoices         from './pages/sales/Invoices';
@@ -108,6 +109,7 @@ const PAGE_MAP = {
   'Payments':          { component: Payments },
   'Sales Returns':     { component: SalesReturns },
   'Sales Reports':     { component: SalesReports },
+  'Customer Detail':   { component: CustomerDetail },
 
   // ── Spare Parts ────────────────────────────────────────────
   spareparts:          { component: SpareParts, defaultTab: 'parts' },

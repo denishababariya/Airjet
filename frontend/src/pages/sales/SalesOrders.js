@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdVisibility, MdSearch, MdShoppingBag, MdCheck, MdClose, MdInventory, MdWarning } from 'react-icons/md';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
 import api from '../../utils/api';
 
 const blankOrder = {
     customer: '',
     quotation: '',
     orderDate: new Date().toISOString().split('T')[0],
-    expectedDelivery: '',
+    expectedDeliveryDate: '',
     warehouse: '',
     salesPerson: '',
     billingAddress: '',
@@ -22,7 +23,7 @@ const blankOrder = {
     sgst: 0,
     igst: 0,
     grandTotal: 0,
-    status: 'Pending',
+    status: 'Draft',
     notes: '',
     terms: ''
 };
@@ -61,6 +62,7 @@ export default function SalesOrders() {
     const [editId, setEditId] = useState(null);
     const [errors, setErrors] = useState({});
     const [creditCheck, setCreditCheck] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ open: false, onConfirm: null, title: '', message: '' });
     const [stockCheck, setStockCheck] = useState([]);
 
     useEffect(() => {
@@ -78,7 +80,7 @@ export default function SalesOrders() {
             ]);
             setOrders(ordersRes.data || []);
             setCustomers(customersRes.data || []);
-            setQuotations(quotationsRes.data?.filter(q => q.status === 'Accepted' && !q.convertedToSalesOrder) || []);
+            setQuotations(quotationsRes.data || []);
             setSpareParts(sparePartsRes.data || []);
             setError(null);
         } catch (err) {
@@ -110,7 +112,7 @@ export default function SalesOrders() {
             customer: order.customer?._id || order.customer,
             quotation: order.quotation?._id || order.quotation || '',
             orderDate: order.orderDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-            expectedDelivery: order.expectedDelivery?.split('T')[0] || '',
+            expectedDeliveryDate: order.expectedDeliveryDate?.split('T')[0] || '',
             warehouse: order.warehouse || '',
             salesPerson: order.salesPerson || '',
             billingAddress: order.billingAddress || '',
@@ -299,6 +301,8 @@ export default function SalesOrders() {
         const e = {};
         if (!form.customer) e.customer = 'Customer is required';
         if (!form.orderDate) e.orderDate = 'Order date is required';
+        if (!form.expectedDeliveryDate) e.expectedDeliveryDate = 'Expected delivery date is required';
+        if (!form.salesPerson) e.salesPerson = 'Sales person is required';
         if (!form.items || form.items.length === 0) e.items = 'At least one item is required';
         return e;
     };
@@ -380,13 +384,21 @@ export default function SalesOrders() {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this sales order?')) return;
-        try {
-            await api.delete(`/sales-orders/${id}`);
-            fetchData();
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to delete sales order');
-        }
+        const order = orders.find(o => o._id === id);
+        setConfirmModal({
+            open: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/sales-orders/${id}`);
+                    fetchData();
+                    setConfirmModal({ open: false, onConfirm: null, title: '', message: '' });
+                } catch (err) {
+                    setError(err.response?.data?.error || 'Failed to delete sales order');
+                }
+            },
+            title: 'Delete Sales Order',
+            message: `Are you sure you want to delete sales order ${order?.orderNumber || 'this order'}? This action cannot be undone.`
+        });
     };
 
     const handleStatusChange = async (id, action) => {
@@ -476,7 +488,7 @@ export default function SalesOrders() {
                                         <td><strong>{r.salesOrderNumber}</strong></td>
                                         <td>{r.customer?.name || r.customer}</td>
                                         <td>{new Date(r.orderDate).toLocaleDateString('en-IN')}</td>
-                                        <td>{r.expectedDelivery ? new Date(r.expectedDelivery).toLocaleDateString('en-IN') : '-'}</td>
+                                        <td>{r.expectedDeliveryDate ? new Date(r.expectedDeliveryDate).toLocaleDateString('en-IN') : '-'}</td>
                                         <td>{r.items?.length || 0}</td>
                                         <td>{formatCurrency(r.grandTotal)}</td>
                                         <td>{r.stockReserved ? <span className="d_badge d_success">Yes</span> : <span className="d_badge d_warning">No</span>}</td>
@@ -538,8 +550,9 @@ export default function SalesOrders() {
                         {errors.orderDate && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.orderDate}</span>}
                     </div>
                     <div className="d_form_group">
-                        <label className="d_form_label">Expected Delivery</label>
-                        <input type="date" className="d_form_control" {...f('expectedDelivery')} />
+                        <label className="d_form_label">Expected Delivery <span className="d_req">*</span></label>
+                        <input type="date" className="d_form_control" {...f('expectedDeliveryDate')} min={form.orderDate} />
+                        {errors.expectedDeliveryDate && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.expectedDeliveryDate}</span>}
                     </div>
                 </div>
 
@@ -554,8 +567,9 @@ export default function SalesOrders() {
                         </select>
                     </div>
                     <div className="d_form_group">
-                        <label className="d_form_label">Sales Person</label>
-                        <input className="d_form_control" {...f('salesPerson')} />
+                        <label className="d_form_label">Sales Person <span className="d_req">*</span></label>
+                        <input className="d_form_control" {...f('salesPerson')} placeholder="Enter sales person name" />
+                        {errors.salesPerson && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.salesPerson}</span>}
                     </div>
                 </div>
 
@@ -772,6 +786,17 @@ export default function SalesOrders() {
                     <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Sales Order' : 'Create Sales Order'}</button>
                 </div>
             </Modal>
+
+            <ConfirmModal
+                open={confirmModal.open}
+                onClose={() => setConfirmModal({ open: false, onConfirm: null, title: '', message: '' })}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+            />
         </div>
     );
 }

@@ -8,6 +8,38 @@ const generateCustomerId = async () => {
 
 const createCustomer = async (req, res) => {
     try {
+        // Validate required fields
+        if (!req.body.name) {
+            return res.status(400).json({ error: 'Customer name is required' });
+        }
+        if (!req.body.contactPerson) {
+            return res.status(400).json({ error: 'Contact person is required' });
+        }
+        if (!req.body.companyName) {
+            return res.status(400).json({ error: 'Company name is required' });
+        }
+        if (!req.body.email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+        if (!req.body.phone) {
+            return res.status(400).json({ error: 'Phone number is required' });
+        }
+        if (!req.body.city) {
+            return res.status(400).json({ error: 'City is required' });
+        }
+        if (!req.body.state) {
+            return res.status(400).json({ error: 'State is required' });
+        }
+        if (!req.body.pincode) {
+            return res.status(400).json({ error: 'Pincode is required' });
+        }
+        if (req.body.creditLimit < 0 || req.body.creditLimit > 10000000) {
+            return res.status(400).json({ error: 'Credit limit must be between 0 and 10,000,000' });
+        }
+        if (req.body.openingBalance < 0 || req.body.openingBalance > 10000000) {
+            return res.status(400).json({ error: 'Opening balance must be between 0 and 10,000,000' });
+        }
+
         const body = { ...req.body };
         if (req.file) {
             body.image = `/uploads/${req.file.filename}`;
@@ -138,11 +170,31 @@ const getCustomerModuleData = async (req, res) => {
             return res.status(404).json({ error: 'Customer not found' });
         }
         
-        const moduleData = await getEntityFromAllModules(req.params.id, 'customer');
+        const SalesOrder = require('../model/SalesOrder.model');
+        const Payment = require('../model/Payment.model');
+        
+        // Get sales summary
+        const salesOrders = await SalesOrder.find({ customer: req.params.id });
+        const totalOrders = salesOrders.length;
+        const totalPurchased = salesOrders.reduce((sum, order) => sum + (order.grandTotal || 0), 0);
+        
+        const payments = await Payment.find({ customer: req.params.id });
+        const totalPaid = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+        
+        const lastPurchaseDate = salesOrders.length > 0 
+            ? salesOrders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))[0].orderDate
+            : null;
+        
+        const salesSummary = {
+            totalOrders,
+            totalPurchased,
+            totalPaid,
+            lastPurchaseDate
+        };
         
         res.status(200).json({
             customer,
-            moduleData
+            salesSummary
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

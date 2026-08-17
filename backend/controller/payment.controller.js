@@ -54,6 +54,17 @@ exports.createPayment = async (req, res) => {
     try {
         const { customer, invoice, amount, paymentMode, paymentDate, transactionReference, bank, notes } = req.body;
         
+        // Validate required fields
+        if (!invoice) {
+            return res.status(400).json({ error: 'Invoice is required' });
+        }
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ error: 'Valid payment amount is required' });
+        }
+        if (!paymentMode) {
+            return res.status(400).json({ error: 'Payment mode is required' });
+        }
+        
         // Validate invoice
         const invoiceData = await Invoice.findById(invoice);
         if (!invoiceData) {
@@ -96,15 +107,15 @@ exports.createPayment = async (req, res) => {
             transactionReference,
             bank,
             notes,
-            receivedBy: req.user?.id,
+            receivedBy: req.user?._id,
             status: 'Completed'
         });
         
         await payment.save();
         
         // Update invoice payment status
-        invoiceData.paidAmount += amount;
-        invoiceData.updatedBy = req.user?.id;
+        invoiceData.paidAmount = Number(invoiceData.paidAmount || 0) + Number(amount);
+        invoiceData.updatedBy = req.user?._id;
         await invoiceData.save();
         
         // Update customer balance
@@ -164,8 +175,20 @@ exports.deletePayment = async (req, res) => {
             return res.status(404).json({ error: 'Payment not found' });
         }
         
-        if (payment.status === 'Completed') {
-            return res.status(400).json({ error: 'Cannot delete completed payment' });
+        // If payment is completed, revert the invoice paidAmount and customer balance
+        if (payment.status === 'Completed' && payment.invoice) {
+            const invoiceData = await Invoice.findById(payment.invoice);
+            if (invoiceData) {
+                invoiceData.paidAmount = Number(invoiceData.paidAmount || 0) - Number(payment.amount);
+                invoiceData.updatedBy = req.user?._id;
+                await invoiceData.save();
+            }
+            
+            if (payment.customer) {
+                await Customer.findByIdAndUpdate(payment.customer, {
+                    $inc: { currentBalance: Number(payment.amount) }
+                });
+            }
         }
         
         await Payment.findByIdAndDelete(req.params.id);

@@ -108,6 +108,23 @@ exports.getSalesOrderById = async (req, res) => {
 // Create sales order
 exports.createSalesOrder = async (req, res) => {
     try {
+        // Validate required fields
+        if (!req.body.customer) {
+            return res.status(400).json({ error: 'Customer is required' });
+        }
+        if (!req.body.items || !Array.isArray(req.body.items) || req.body.items.length === 0) {
+            return res.status(400).json({ error: 'At least one item is required' });
+        }
+        if (!req.body.orderDate) {
+            return res.status(400).json({ error: 'Order date is required' });
+        }
+        if (!req.body.expectedDeliveryDate) {
+            return res.status(400).json({ error: 'Expected delivery date is required' });
+        }
+        if (!req.body.salesPerson) {
+            return res.status(400).json({ error: 'Sales person is required' });
+        }
+
         const orderNumber = await generateOrderNumber();
         
         // Validate customer
@@ -194,7 +211,7 @@ exports.createSalesOrder = async (req, res) => {
         const salesOrder = new SalesOrder({
             orderNumber,
             customer: req.body.customer,
-            quotation: req.body.quotation,
+            quotation: req.body.quotation || null,
             orderDate: req.body.orderDate || new Date(),
             expectedDeliveryDate: req.body.expectedDeliveryDate,
             salesPerson: req.body.salesPerson || quotationData?.salesPerson,
@@ -213,8 +230,7 @@ exports.createSalesOrder = async (req, res) => {
             notes: req.body.notes,
             status: req.body.status || 'Draft',
             creditLimitChecked: true,
-            creditLimitExceeded: creditCheck.exceeded,
-            createdBy: req.user?.id
+            creditLimitExceeded: creditCheck.exceeded
         });
         
         await salesOrder.save();
@@ -321,7 +337,6 @@ exports.updateSalesOrder = async (req, res) => {
         if (req.body.deliveryTerms) salesOrder.deliveryTerms = req.body.deliveryTerms;
         if (req.body.notes) salesOrder.notes = req.body.notes;
         if (req.body.status) salesOrder.status = req.body.status;
-        salesOrder.updatedBy = req.user?.id;
         
         await salesOrder.save();
         
@@ -370,8 +385,8 @@ exports.confirmSalesOrder = async (req, res) => {
         }
         
         salesOrder.status = 'Confirmed';
-        salesOrder.confirmedBy = req.user?.id;
-        salesOrder.updatedBy = req.user?.id;
+        salesOrder.confirmedBy = req.user?._id;
+        salesOrder.updatedBy = req.user?._id;
         await salesOrder.save();
         
         res.json({ message: 'Sales order confirmed successfully', salesOrder });
@@ -405,7 +420,7 @@ exports.cancelSalesOrder = async (req, res) => {
         }
         
         salesOrder.status = 'Cancelled';
-        salesOrder.updatedBy = req.user?.id;
+        salesOrder.updatedBy = req.user?._id;
         await salesOrder.save();
         
         res.json({ message: 'Sales order cancelled successfully', salesOrder });
@@ -446,7 +461,7 @@ exports.reserveStock = async (req, res) => {
         }
         
         salesOrder.status = 'Stock Reserved';
-        salesOrder.updatedBy = req.user?.id;
+        salesOrder.updatedBy = req.user?._id;
         await salesOrder.save();
         
         res.json({ message: 'Stock reserved successfully', salesOrder });

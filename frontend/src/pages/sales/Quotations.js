@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdVisibility, MdDescription, MdDelete, MdSend, MdCheck, MdClose, MdRefresh } from 'react-icons/md';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
 import api from '../../utils/api';
 
 const blankQuotation = {
@@ -48,6 +49,9 @@ export default function Quotations() {
     const [form, setForm] = useState(blankQuotation);
     const [editId, setEditId] = useState(null);
     const [errors, setErrors] = useState({});
+    const [viewModal, setViewModal] = useState(false);
+    const [viewQuotation, setViewQuotation] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ open: false, onConfirm: null, title: '', message: '' });
 
     useEffect(() => {
         fetchData();
@@ -189,7 +193,9 @@ export default function Quotations() {
     const validate = () => {
         const e = {};
         if (!form.customer) e.customer = 'Customer is required';
+        if (!form.quotationDate) e.quotationDate = 'Quotation date is required';
         if (!form.validUntil) e.validUntil = 'Valid until date is required';
+        if (!form.salesPerson) e.salesPerson = 'Sales person is required';
         if (!form.items || form.items.length === 0) e.items = 'At least one item is required';
         return e;
     };
@@ -260,13 +266,21 @@ export default function Quotations() {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this quotation?')) return;
-        try {
-            await api.delete(`/quotations/${id}`);
-            fetchData();
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to delete quotation');
-        }
+        const quotation = quotations.find(q => q._id === id);
+        setConfirmModal({
+            open: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/quotations/${id}`);
+                    fetchData();
+                    setConfirmModal({ open: false, onConfirm: null, title: '', message: '' });
+                } catch (err) {
+                    setError(err.response?.data?.error || 'Failed to delete quotation');
+                }
+            },
+            title: 'Delete Quotation',
+            message: `Are you sure you want to delete quotation ${quotation?.quotationNumber || 'this quotation'}? This action cannot be undone.`
+        });
     };
 
     const handleStatusChange = async (id, action) => {
@@ -276,6 +290,11 @@ export default function Quotations() {
         } catch (err) {
             setError(err.response?.data?.error || `Failed to ${action} quotation`);
         }
+    };
+
+    const handleView = (quotation) => {
+        setViewQuotation(quotation);
+        setViewModal(true);
     };
 
     const formatCurrency = (amount) => {
@@ -357,7 +376,7 @@ export default function Quotations() {
                                         <td><span className={`d_badge ${statusBadge(q.status)}`}>{q.status}</span></td>
                                         <td>
                                             <div className="d_action_btns">
-                                                <button className="d_icon_btn d_view" onClick={() => openEdit(q)}><MdVisibility /></button>
+                                                <button className="d_icon_btn d_view" onClick={() => handleView(q)}><MdVisibility /></button>
                                                 <button className="d_icon_btn d_edit" onClick={() => openEdit(q)}><MdEdit /></button>
                                                 {q.status === 'Draft' && (
                                                     <button className="d_icon_btn d_info" onClick={() => handleStatusChange(q._id, 'send')} title="Send"><MdSend /></button>
@@ -407,8 +426,9 @@ export default function Quotations() {
                         {errors.validUntil && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.validUntil}</span>}
                     </div>
                     <div className="d_form_group">
-                        <label className="d_form_label">Sales Person</label>
-                        <input className="d_form_control" {...f('salesPerson')} />
+                        <label className="d_form_label">Sales Person <span className="d_req">*</span></label>
+                        <input className="d_form_control" {...f('salesPerson')} placeholder="Enter sales person name" />
+                        {errors.salesPerson && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.salesPerson}</span>}
                     </div>
                 </div>
 
@@ -575,6 +595,163 @@ export default function Quotations() {
                     <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Quotation' : 'Create Quotation'}</button>
                 </div>
             </Modal>
+
+            {/* View Quotation Modal */}
+            <Modal open={viewModal} onClose={() => setViewModal(false)} title="Quotation Details" size="xl">
+                {viewQuotation && (
+                    <div>
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Quotation Number</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{viewQuotation.quotationNumber}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Status</label>
+                                <span className={`d_badge ${viewQuotation.status === 'Accepted' ? 'd_success' : viewQuotation.status === 'Rejected' ? 'd_danger' : viewQuotation.status === 'Sent' ? 'd_info' : 'd_warning'}`}>
+                                    {viewQuotation.status}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Customer</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewQuotation.customer?.name}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Company</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewQuotation.customer?.companyName || '-'}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Quotation Date</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{new Date(viewQuotation.quotationDate).toLocaleDateString('en-IN')}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Valid Until</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', color: new Date(viewQuotation.validUntil) < new Date() ? 'var(--d-danger)' : 'var(--d-success)' }}>
+                                    {new Date(viewQuotation.validUntil).toLocaleDateString('en-IN')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Sales Person</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewQuotation.salesPerson}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Payment Terms</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewQuotation.paymentTerms}</div>
+                            </div>
+                        </div>
+
+                        {viewQuotation.billingAddress && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Billing Address</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewQuotation.billingAddress}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {viewQuotation.shippingAddress && viewQuotation.shippingAddress !== viewQuotation.billingAddress && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Shipping Address</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewQuotation.shippingAddress}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="d_form_row cols-1">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Items</label>
+                                <table className="d_table">
+                                    <thead>
+                                        <tr>
+                                            <th>Part Number</th>
+                                            <th>Description</th>
+                                            <th>Qty</th>
+                                            <th>Rate</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {viewQuotation.items?.map((item, index) => (
+                                            <tr key={index}>
+                                                <td>{item.partNumber}</td>
+                                                <td>{item.description}</td>
+                                                <td>{item.quantity}</td>
+                                                <td>{formatCurrency(item.rate)}</td>
+                                                <td>{formatCurrency(item.total)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>Subtotal:</span>
+                                <strong>{formatCurrency(viewQuotation.subtotal)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>Discount:</span>
+                                <strong>{formatCurrency(viewQuotation.totalDiscount)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>CGST:</span>
+                                <strong>{formatCurrency(viewQuotation.cgst)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>SGST:</span>
+                                <strong>{formatCurrency(viewQuotation.sgst)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>IGST:</span>
+                                <strong>{formatCurrency(viewQuotation.igst)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1em', borderTop: '1px solid #ddd', paddingTop: '10px', marginTop: '10px' }}>
+                                <span>Grand Total:</span>
+                                <strong style={{ color: 'var(--d-primary)' }}>{formatCurrency(viewQuotation.grandTotal)}</strong>
+                            </div>
+                        </div>
+
+                        {viewQuotation.notes && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Notes</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewQuotation.notes}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {viewQuotation.terms && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Terms & Conditions</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewQuotation.terms}</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </Modal>
+
+            <ConfirmModal
+                open={confirmModal.open}
+                onClose={() => setConfirmModal({ open: false, onConfirm: null, title: '', message: '' })}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+            />
         </div>
     );
 }

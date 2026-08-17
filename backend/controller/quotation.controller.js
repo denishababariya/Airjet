@@ -88,6 +88,20 @@ exports.getQuotationById = async (req, res) => {
 // Create quotation
 exports.createQuotation = async (req, res) => {
     try {
+        // Validate required fields
+        if (!req.body.customer) {
+            return res.status(400).json({ error: 'Customer is required' });
+        }
+        if (!req.body.items || !Array.isArray(req.body.items) || req.body.items.length === 0) {
+            return res.status(400).json({ error: 'At least one item is required' });
+        }
+        if (!req.body.quotationDate) {
+            return res.status(400).json({ error: 'Quotation date is required' });
+        }
+        if (!req.body.salesPerson) {
+            return res.status(400).json({ error: 'Sales person is required' });
+        }
+
         const quotationNumber = await generateQuotationNumber();
         
         // Validate customer
@@ -167,8 +181,7 @@ exports.createQuotation = async (req, res) => {
             grandTotal,
             notes: req.body.notes,
             terms: req.body.terms,
-            status: req.body.status || 'Draft',
-            createdBy: req.user?.id
+            status: req.body.status || 'Draft'
         });
         
         await quotation.save();
@@ -269,7 +282,6 @@ exports.updateQuotation = async (req, res) => {
         if (req.body.notes) quotation.notes = req.body.notes;
         if (req.body.terms) quotation.terms = req.body.terms;
         if (req.body.status) quotation.status = req.body.status;
-        quotation.updatedBy = req.user?.id;
         
         await quotation.save();
         
@@ -313,7 +325,7 @@ exports.sendQuotation = async (req, res) => {
         }
         
         quotation.status = 'Sent';
-        quotation.updatedBy = req.user?.id;
+        quotation.updatedBy = req.user?._id;
         await quotation.save();
         
         res.json({ message: 'Quotation sent successfully', quotation });
@@ -332,7 +344,7 @@ exports.acceptQuotation = async (req, res) => {
         }
         
         quotation.status = 'Accepted';
-        quotation.updatedBy = req.user?.id;
+        quotation.updatedBy = req.user?._id;
         await quotation.save();
         
         res.json({ message: 'Quotation accepted successfully', quotation });
@@ -351,7 +363,7 @@ exports.rejectQuotation = async (req, res) => {
         }
         
         quotation.status = 'Rejected';
-        quotation.updatedBy = req.user?.id;
+        quotation.updatedBy = req.user?._id;
         await quotation.save();
         
         res.json({ message: 'Quotation rejected successfully', quotation });
@@ -378,7 +390,7 @@ exports.convertToSalesOrder = async (req, res) => {
         }
         
         quotation.status = 'Converted';
-        quotation.updatedBy = req.user?.id;
+        quotation.updatedBy = req.user?._id;
         await quotation.save();
         
         res.json({ 

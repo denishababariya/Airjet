@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdVisibility, MdReceipt, MdSearch, MdFilterList } from 'react-icons/md';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
 import api from '../../utils/api';
 
 const blankPayment = {
@@ -8,25 +9,22 @@ const blankPayment = {
     customer: '',
     paymentDate: new Date().toISOString().split('T')[0],
     amount: 0,
-    paymentMethod: 'Cash',
-    reference: '',
-    bankName: '',
-    accountNumber: '',
-    chequeNumber: '',
-    chequeDate: '',
+    paymentMode: 'Cash',
+    transactionReference: '',
+    bank: '',
     notes: '',
-    status: 'Received'
+    status: 'Completed'
 };
 
 const statusBadge = s => {
-    if (s === 'Received') return 'd_success';
+    if (s === 'Completed') return 'd_success';
     if (s === 'Pending') return 'd_warning';
-    if (s === 'Bounced') return 'd_danger';
+    if (s === 'Failed') return 'd_danger';
     if (s === 'Cancelled') return 'd_danger';
     return 'd_info';
 };
 
-const tabs = ['All', 'Received', 'Pending', 'Bounced', 'Cancelled'];
+const tabs = ['All', 'Completed', 'Pending', 'Failed', 'Cancelled'];
 
 export default function Payments() {
     const [payments, setPayments] = useState([]);
@@ -42,6 +40,7 @@ export default function Payments() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCustomer, setFilterCustomer] = useState('');
     const [filterMethod, setFilterMethod] = useState('');
+    const [confirmModal, setConfirmModal] = useState({ open: false, onConfirm: null, title: '', message: '' });
 
     useEffect(() => {
         fetchData();
@@ -74,7 +73,7 @@ export default function Payments() {
             p.invoice?.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCustomer = filterCustomer === '' || p.customer?._id === filterCustomer;
-        const matchesMethod = filterMethod === '' || p.paymentMethod === filterMethod;
+        const matchesMethod = filterMethod === '' || p.paymentMode === filterMethod;
         return matchesTab && matchesSearch && matchesCustomer && matchesMethod;
     });
 
@@ -91,14 +90,11 @@ export default function Payments() {
             customer: payment.customer?._id || payment.customer || '',
             paymentDate: payment.paymentDate?.split('T')[0] || new Date().toISOString().split('T')[0],
             amount: payment.amount || 0,
-            paymentMethod: payment.paymentMethod || 'Cash',
-            reference: payment.reference || '',
-            bankName: payment.bankName || '',
-            accountNumber: payment.accountNumber || '',
-            chequeNumber: payment.chequeNumber || '',
-            chequeDate: payment.chequeDate?.split('T')[0] || '',
+            paymentMode: payment.paymentMode || 'Cash',
+            transactionReference: payment.transactionReference || '',
+            bank: payment.bank || '',
             notes: payment.notes || '',
-            status: payment.status || 'Received'
+            status: payment.status || 'Completed'
         });
         setEditId(payment._id);
         setErrors({});
@@ -111,7 +107,7 @@ export default function Payments() {
             setForm(p => ({
                 ...p,
                 customer: invoice.customer?._id || invoice.customer,
-                amount: invoice.balanceAmount || 0,
+                amount: invoice.pendingAmount || 0,
                 invoice: invoiceId
             }));
         }
@@ -123,18 +119,7 @@ export default function Payments() {
         if (!form.customer) e.customer = 'Customer is required';
         if (!form.paymentDate) e.paymentDate = 'Payment date is required';
         if (!form.amount || form.amount <= 0) e.amount = 'Amount is required';
-        if (!form.paymentMethod) e.paymentMethod = 'Payment method is required';
-        
-        if (form.paymentMethod === 'Cheque' && !form.chequeNumber) {
-            e.chequeNumber = 'Cheque number is required for cheque payments';
-        }
-        if (form.paymentMethod === 'Cheque' && !form.chequeDate) {
-            e.chequeDate = 'Cheque date is required for cheque payments';
-        }
-        if (form.paymentMethod === 'Bank Transfer' && !form.reference) {
-            e.reference = 'Reference number is required for bank transfer';
-        }
-        
+        if (!form.paymentMode) e.paymentMode = 'Payment method is required';
         return e;
     };
 
@@ -161,22 +146,21 @@ export default function Payments() {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this payment?')) return;
-        try {
-            await api.delete(`/payments/${id}`);
-            fetchData();
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to delete payment');
-        }
-    };
-
-    const handleStatusChange = async (id, status) => {
-        try {
-            await api.put(`/payments/${id}`, { status });
-            fetchData();
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to update payment status');
-        }
+        const payment = payments.find(p => p._id === id);
+        setConfirmModal({
+            open: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/payments/${id}`);
+                    fetchData();
+                    setConfirmModal({ open: false, onConfirm: null, title: '', message: '' });
+                } catch (err) {
+                    setError(err.response?.data?.error || 'Failed to delete payment');
+                }
+            },
+            title: 'Delete Payment',
+            message: `Are you sure you want to delete payment ${payment?.paymentId || 'this payment'}? This action cannot be undone.`
+        });
     };
 
     const formatCurrency = (amount) => {
@@ -254,8 +238,8 @@ export default function Payments() {
                             <option value="">All Methods</option>
                             <option value="Cash">Cash</option>
                             <option value="Bank Transfer">Bank Transfer</option>
-                            <option value="Cheque">Cheque</option>
                             <option value="UPI">UPI</option>
+                            <option value="Cheque">Cheque</option>
                             <option value="Card">Card</option>
                         </select>
                     </div>
@@ -288,20 +272,14 @@ export default function Payments() {
                                         <td>{p.invoice?.invoiceNumber || p.invoice}</td>
                                         <td>{p.customer?.name || p.customer}</td>
                                         <td>{new Date(p.paymentDate).toLocaleDateString('en-IN')}</td>
-                                        <td>{p.paymentMethod}</td>
+                                        <td>{p.paymentMode}</td>
                                         <td style={{ color: 'var(--d-success)', fontWeight: 'bold' }}>{formatCurrency(p.amount)}</td>
-                                        <td>{p.reference || p.chequeNumber || '-'}</td>
+                                        <td>{p.transactionReference || '-'}</td>
                                         <td><span className={`d_badge ${statusBadge(p.status)}`}>{p.status}</span></td>
                                         <td>
                                             <div className="d_action_btns">
                                                 <button className="d_icon_btn d_view" onClick={() => openEdit(p)}><MdVisibility /></button>
                                                 <button className="d_icon_btn d_edit" onClick={() => openEdit(p)}><MdEdit /></button>
-                                                {p.status === 'Received' && (
-                                                    <button className="d_icon_btn d_danger" onClick={() => handleStatusChange(p._id, 'Bounced')} title="Mark as Bounced">B</button>
-                                                )}
-                                                {p.status === 'Bounced' && (
-                                                    <button className="d_icon_btn d_success" onClick={() => handleStatusChange(p._id, 'Received')} title="Mark as Received">R</button>
-                                                )}
                                                 <button className="d_icon_btn d_del" onClick={() => handleDelete(p._id)}><MdDelete /></button>
                                             </div>
                                         </td>
@@ -322,8 +300,8 @@ export default function Payments() {
                             if (e.target.value) handleInvoiceSelect(e.target.value);
                         }}>
                             <option value="">Select Invoice</option>
-                            {invoices.filter(i => i.balanceAmount > 0).map(i => (
-                                <option key={i._id} value={i._id}>{i.invoiceNumber} - Balance: {formatCurrency(i.balanceAmount)}</option>
+                            {invoices.filter(i => i.pendingAmount > 0).map(i => (
+                                <option key={i._id} value={i._id}>{i.invoiceNumber} - Balance: {formatCurrency(i.pendingAmount)}</option>
                             ))}
                         </select>
                         {errors.invoice && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.invoice}</span>}
@@ -356,78 +334,53 @@ export default function Payments() {
                 <div className="d_form_row cols-2">
                     <div className="d_form_group">
                         <label className="d_form_label">Payment Method <span className="d_req">*</span></label>
-                        <select className="d_form_control" {...f('paymentMethod')}>
+                        <select className="d_form_control" {...f('paymentMode')}>
                             <option value="Cash">Cash</option>
                             <option value="Bank Transfer">Bank Transfer</option>
-                            <option value="Cheque">Cheque</option>
                             <option value="UPI">UPI</option>
+                            <option value="Cheque">Cheque</option>
                             <option value="Card">Card</option>
                         </select>
-                        {errors.paymentMethod && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.paymentMethod}</span>}
+                        {errors.paymentMode && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.paymentMode}</span>}
                     </div>
                     <div className="d_form_group">
                         <label className="d_form_label">Status</label>
                         <select className="d_form_control" {...f('status')}>
-                            <option value="Received">Received</option>
+                            <option value="Completed">Completed</option>
                             <option value="Pending">Pending</option>
-                            <option value="Bounced">Bounced</option>
+                            <option value="Failed">Failed</option>
                             <option value="Cancelled">Cancelled</option>
                         </select>
                     </div>
                 </div>
 
-                {form.paymentMethod === 'Bank Transfer' && (
+                {form.paymentMode === 'Bank Transfer' && (
                     <div className="d_form_row cols-2">
                         <div className="d_form_group">
                             <label className="d_form_label">Bank Name</label>
-                            <input className="d_form_control" {...f('bankName')} />
+                            <input className="d_form_control" {...f('bank')} />
                         </div>
                         <div className="d_form_group">
-                            <label className="d_form_label">Account Number</label>
-                            <input className="d_form_control" {...f('accountNumber')} />
+                            <label className="d_form_label">Reference/Transaction No.</label>
+                            <input className="d_form_control" {...f('transactionReference')} placeholder="Enter transaction reference" />
                         </div>
                     </div>
                 )}
 
-                {form.paymentMethod === 'Bank Transfer' && (
-                    <div className="d_form_row cols-1">
-                        <div className="d_form_group">
-                            <label className="d_form_label">Reference/Transaction No. <span className="d_req">*</span></label>
-                            <input className="d_form_control" {...f('reference')} placeholder="Enter transaction reference" />
-                            {errors.reference && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.reference}</span>}
-                        </div>
-                    </div>
-                )}
-
-                {form.paymentMethod === 'Cheque' && (
-                    <div className="d_form_row cols-2">
-                        <div className="d_form_group">
-                            <label className="d_form_label">Cheque Number <span className="d_req">*</span></label>
-                            <input className="d_form_control" {...f('chequeNumber')} />
-                            {errors.chequeNumber && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.chequeNumber}</span>}
-                        </div>
-                        <div className="d_form_group">
-                            <label className="d_form_label">Cheque Date <span className="d_req">*</span></label>
-                            <input type="date" className="d_form_control" {...f('chequeDate')} />
-                            {errors.chequeDate && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.chequeDate}</span>}
-                        </div>
-                    </div>
-                )}
-
-                {form.paymentMethod === 'Cheque' && (
-                    <div className="d_form_row cols-1">
-                        <div className="d_form_group">
-                            <label className="d_form_label">Bank Name</label>
-                            <input className="d_form_control" {...f('bankName')} />
-                        </div>
-                    </div>
-                )}
-
-                {form.paymentMethod === 'UPI' && (
+                {form.paymentMode === 'UPI' && (
                     <div className="d_form_row cols-1">
                         <div className="d_form_group">
                             <label className="d_form_label">UPI Transaction ID</label>
-                            <input className="d_form_control" {...f('reference')} placeholder="Enter UPI transaction ID" />
+                            <input className="d_form_control" {...f('transactionReference')} placeholder="Enter UPI transaction ID" />
+                        </div>
+                    </div>
+                )}
+
+                {form.paymentMode === 'Cheque' && (
+                    <div className="d_form_row cols-1">
+                        <div className="d_form_group">
+                            <label className="d_form_label">Bank Name</label>
+                            <input className="d_form_control" {...f('bank')} />
                         </div>
                     </div>
                 )}
@@ -444,6 +397,17 @@ export default function Payments() {
                     <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Payment' : 'Record Payment'}</button>
                 </div>
             </Modal>
+
+            <ConfirmModal
+                open={confirmModal.open}
+                onClose={() => setConfirmModal({ open: false, onConfirm: null, title: '', message: '' })}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+            />
         </div>
     );
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdVisibility, MdAssignmentReturn, MdCheck, MdClose, MdWarning } from 'react-icons/md';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
 import api from '../../utils/api';
 
 const blankReturn = {
@@ -8,7 +9,6 @@ const blankReturn = {
     invoice: '',
     salesOrder: '',
     returnDate: new Date().toISOString().split('T')[0],
-    reason: '',
     returnMethod: 'Refund',
     items: [],
     subtotal: 0,
@@ -23,8 +23,8 @@ const blankItem = {
     quantity: 1,
     rate: 0,
     gstRate: 18,
-    reason: 'Damaged',
-    condition: 'Used'
+    returnReason: 'Damaged Part',
+    condition: 'Damaged'
 };
 
 const statusBadge = s => {
@@ -50,6 +50,7 @@ export default function SalesReturns() {
     const [form, setForm] = useState(blankReturn);
     const [editId, setEditId] = useState(null);
     const [errors, setErrors] = useState({});
+    const [confirmModal, setConfirmModal] = useState({ open: false, onConfirm: null, title: '', message: '' });
 
     useEffect(() => {
         fetchData();
@@ -94,7 +95,6 @@ export default function SalesReturns() {
             invoice: returnItem.invoice?._id || returnItem.invoice || '',
             salesOrder: returnItem.salesOrder?._id || returnItem.salesOrder || '',
             returnDate: returnItem.returnDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-            reason: returnItem.reason || '',
             returnMethod: returnItem.returnMethod || 'Refund',
             items: returnItem.items || [],
             subtotal: returnItem.subtotal || 0,
@@ -120,8 +120,8 @@ export default function SalesReturns() {
                     quantity: item.quantity,
                     rate: item.rate,
                     gstRate: item.gstRate,
-                    reason: 'Damaged',
-                    condition: 'Used'
+                    returnReason: 'Damaged Part',
+                    condition: 'Damaged'
                 })) || []
             }));
         }
@@ -139,8 +139,8 @@ export default function SalesReturns() {
                     quantity: item.quantity,
                     rate: item.rate,
                     gstRate: item.gstRate,
-                    reason: 'Damaged',
-                    condition: 'Used'
+                    returnReason: 'Damaged Part',
+                    condition: 'Damaged'
                 })) || []
             }));
         }
@@ -202,9 +202,9 @@ export default function SalesReturns() {
 
     const validate = () => {
         const e = {};
+        if (!form.invoice) e.invoice = 'Invoice is required';
         if (!form.customer) e.customer = 'Customer is required';
         if (!form.returnDate) e.returnDate = 'Return date is required';
-        if (!form.reason) e.reason = 'Return reason is required';
         if (!form.items || form.items.length === 0) e.items = 'At least one item is required';
         return e;
     };
@@ -254,13 +254,21 @@ export default function SalesReturns() {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this sales return?')) return;
-        try {
-            await api.delete(`/sales-returns/${id}`);
-            fetchData();
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to delete sales return');
-        }
+        const returnItem = returns.find(r => r._id === id);
+        setConfirmModal({
+            open: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/sales-returns/${id}`);
+                    fetchData();
+                    setConfirmModal({ open: false, onConfirm: null, title: '', message: '' });
+                } catch (err) {
+                    setError(err.response?.data?.error || 'Failed to delete sales return');
+                }
+            },
+            title: 'Delete Sales Return',
+            message: `Are you sure you want to delete sales return ${returnItem?.returnNumber || 'this return'}? This action cannot be undone.`
+        });
     };
 
     const handleStatusChange = async (id, action) => {
@@ -330,7 +338,6 @@ export default function SalesReturns() {
                                     <th>Invoice/SO</th>
                                     <th>Items</th>
                                     <th>Amount (₹)</th>
-                                    <th>Reason</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -338,7 +345,7 @@ export default function SalesReturns() {
                             <tbody>
                                 {filtered.length === 0 && (
                                     <tr className="d_empty">
-                                        <td colSpan={9}>No sales returns found.</td>
+                                        <td colSpan={8}>No sales returns found.</td>
                                     </tr>
                                 )}
                                 {filtered.map(r => (
@@ -351,7 +358,6 @@ export default function SalesReturns() {
                                         </td>
                                         <td>{r.items?.length || 0}</td>
                                         <td style={{ color: 'var(--d-danger)', fontWeight: 'bold' }}>{formatCurrency(r.totalAmount)}</td>
-                                        <td>{r.reason}</td>
                                         <td><span className={`d_badge ${statusBadge(r.status)}`}>{r.status}</span></td>
                                         <td>
                                             <div className="d_action_btns">
@@ -380,7 +386,7 @@ export default function SalesReturns() {
             <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Sales Return' : 'New Sales Return'} size="xl">
                 <div className="d_form_row cols-2">
                     <div className="d_form_group">
-                        <label className="d_form_label">Invoice (Optional)</label>
+                        <label className="d_form_label">Invoice <span className="d_req">*</span></label>
                         <select className="d_form_control" {...f('invoice')} onChange={(e) => {
                             f('invoice').onChange(e);
                             if (e.target.value) handleInvoiceSelect(e.target.value);
@@ -390,6 +396,7 @@ export default function SalesReturns() {
                                 <option key={i._id} value={i._id}>{i.invoiceNumber} - {i.customer?.name}</option>
                             ))}
                         </select>
+                        {errors.invoice && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.invoice}</span>}
                     </div>
                     <div className="d_form_group">
                         <label className="d_form_label">Sales Order (Optional)</label>
@@ -431,19 +438,6 @@ export default function SalesReturns() {
                             <option value="Credit Note">Credit Note</option>
                             <option value="Replacement">Replacement</option>
                         </select>
-                    </div>
-                    <div className="d_form_group">
-                        <label className="d_form_label">Reason <span className="d_req">*</span></label>
-                        <select className="d_form_control" {...f('reason')}>
-                            <option value="">Select Reason</option>
-                            <option value="Damaged">Damaged</option>
-                            <option value="Defective">Defective</option>
-                            <option value="Wrong Item">Wrong Item</option>
-                            <option value="Not as Described">Not as Described</option>
-                            <option value="No Longer Needed">No Longer Needed</option>
-                            <option value="Other">Other</option>
-                        </select>
-                        {errors.reason && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.reason}</span>}
                     </div>
                 </div>
 
@@ -520,14 +514,15 @@ export default function SalesReturns() {
                                         <td>
                                             <select
                                                 className="d_form_control"
-                                                value={item.reason}
-                                                onChange={(e) => updateItem(index, 'reason', e.target.value)}
+                                                value={item.returnReason}
+                                                onChange={(e) => updateItem(index, 'returnReason', e.target.value)}
                                                 style={{ width: '120px' }}
                                             >
-                                                <option value="Damaged">Damaged</option>
-                                                <option value="Defective">Defective</option>
-                                                <option value="Wrong Item">Wrong Item</option>
-                                                <option value="Not as Described">Not as Described</option>
+                                                <option value="Damaged Part">Damaged Part</option>
+                                                <option value="Wrong Part">Wrong Part</option>
+                                                <option value="Defective Part">Defective Part</option>
+                                                <option value="Customer Rejection">Customer Rejection</option>
+                                                <option value="Excess Quantity">Excess Quantity</option>
                                                 <option value="Other">Other</option>
                                             </select>
                                         </td>
@@ -538,17 +533,10 @@ export default function SalesReturns() {
                                                 onChange={(e) => updateItem(index, 'condition', e.target.value)}
                                                 style={{ width: '100px' }}
                                             >
-                                                <option value="New">New</option>
-                                                <option value="Used">Used</option>
+                                                <option value="Good">Good</option>
                                                 <option value="Damaged">Damaged</option>
-                                                <option value="Repairable">Repairable</option>
+                                                <option value="Defective">Defective</option>
                                             </select>
-                                        </td>
-                                        <td>{formatCurrency(
-                                            (item.quantity * item.rate) * (1 + item.gstRate / 100)
-                                        )}</td>
-                                        <td>
-                                            <button className="d_icon_btn d_delete" onClick={() => removeItem(index)}><MdDelete /></button>
                                         </td>
                                     </tr>
                                 ))}
@@ -586,6 +574,17 @@ export default function SalesReturns() {
                     <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Return' : 'Create Return'}</button>
                 </div>
             </Modal>
+
+            <ConfirmModal
+                open={confirmModal.open}
+                onClose={() => setConfirmModal({ open: false, onConfirm: null, title: '', message: '' })}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+            />
         </div>
     );
 }

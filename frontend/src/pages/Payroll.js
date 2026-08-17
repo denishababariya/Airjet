@@ -20,6 +20,7 @@ const Payroll = ({ defaultTab = 'dashboard' }) => {
   useEffect(() => {
     if (defaultTab) {
       setActiveTab(defaultTab);
+      
       setViewMode('list');
       setSelectedSalaryId(null);
     }

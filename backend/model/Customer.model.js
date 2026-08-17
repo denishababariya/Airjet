@@ -23,16 +23,20 @@ const customerSchema = new mongoose.Schema({
         type: String
     },
     city: {
-        type: String
+        type: String,
+        required: true
     },
     state: {
-        type: String
+        type: String,
+        required: true
     },
     pincode: {
-        type: String
+        type: String,
+        required: true
     },
     companyName: {
-        type: String
+        type: String,
+        required: true
     },
     gstNumber: {
         type: String
@@ -92,7 +96,8 @@ const customerSchema = new mongoose.Schema({
         type: String
     },
     contactPerson: {
-        type: String
+        type: String,
+        required: true
     },
     alternatePhone: {
         type: String
