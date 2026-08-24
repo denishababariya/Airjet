@@ -6,6 +6,7 @@ module.exports = {
   ...require("./stock.controller.js"),
   ...require("./income.controller.js"),
   ...require("./spareParts.controller.js"),
+  ...require("./category.controller.js"),
   ...require("./customer.controller.js"),
   ...require("./hr.controller.js"),
   ...require("./attendance.controller.js"),

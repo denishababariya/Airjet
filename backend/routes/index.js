@@ -203,6 +203,15 @@ router.delete('/spare-parts/:id', authenticate, authorize('Admin'), controller.d
 router.patch('/spare-parts/:id/quantity', authenticate, authorizeByLevel(2), controller.updateSparePartQuantity);
 
 // ──────────────────────────────────────────────────────────────
+// Category Routes
+// ──────────────────────────────────────────────────────────────
+router.get('/categories', authenticate, controller.getAllCategories);
+router.get('/categories/:id', authenticate, controller.getCategoryById);
+router.post('/categories', authenticate, authorize('Admin'), controller.createCategory);
+router.put('/categories/:id', authenticate, authorize('Admin'), controller.updateCategory);
+router.delete('/categories/:id', authenticate, authorize('Admin'), controller.deleteCategory);
+
+// ──────────────────────────────────────────────────────────────
 // Raw Material Routes
 // ──────────────────────────────────────────────────────────────
 router.post('/raw-materials', authenticate, authorizeByLevel(2), controller.createRawMaterial);

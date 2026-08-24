@@ -59,6 +59,7 @@ export default function SalesOrders() {
     const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState('All');
     const [modal, setModal] = useState(false);
+    const [viewMode, setViewMode] = useState(false);
     const [form, setForm] = useState(blankOrder);
     const [editId, setEditId] = useState(null);
     const [errors, setErrors] = useState({});
@@ -105,6 +106,39 @@ export default function SalesOrders() {
         setErrors({});
         setStockCheck([]);
         setCreditCheck(null);
+        setViewMode(false);
+        setModal(true);
+    };
+
+    const openView = (order) => {
+        setForm({
+            customer: order.customer?._id || order.customer,
+            quotation: order.quotation?._id || order.quotation || '',
+            orderDate: order.orderDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+            expectedDeliveryDate: order.expectedDeliveryDate?.split('T')[0] || '',
+            warehouse: order.warehouse || '',
+            salesPerson: order.salesPerson || '',
+            billingAddress: order.billingAddress || '',
+            shippingAddress: order.shippingAddress || '',
+            paymentTerms: order.paymentTerms || '30 Days',
+            deliveryTerms: order.deliveryTerms || '',
+            items: order.items || [],
+            subtotal: order.subtotal || 0,
+            totalDiscount: order.totalDiscount || 0,
+            taxableAmount: order.taxableAmount || 0,
+            cgst: order.cgst || 0,
+            sgst: order.sgst || 0,
+            igst: order.igst || 0,
+            grandTotal: order.grandTotal || 0,
+            status: order.status || 'Pending',
+            notes: order.notes || '',
+            terms: order.terms || ''
+        });
+        setEditId(order._id);
+        setErrors({});
+        setStockCheck([]);
+        setCreditCheck(null);
+        setViewMode(true);
         setModal(true);
     };
 
@@ -136,6 +170,7 @@ export default function SalesOrders() {
         setErrors({});
         setStockCheck([]);
         setCreditCheck(null);
+        setViewMode(false);
         setModal(true);
     };
 
@@ -527,7 +562,7 @@ export default function SalesOrders() {
                                         <td><span className={`d_badge ${statusBadge(r.status)}`}>{r.status}</span></td>
                                         <td>
                                             <div className="d_action_btns">
-                                                <button className="d_icon_btn d_view" onClick={() => openEdit(r)}><MdVisibility /></button>
+                                                <button className="d_icon_btn d_view" onClick={() => openView(r)}><MdVisibility /></button>
                                                 <button className="d_icon_btn d_edit" onClick={() => openEdit(r)}><MdEdit /></button>
                                                 {r.status === 'Draft' && (
                                                     <>
@@ -552,11 +587,11 @@ export default function SalesOrders() {
                 </div>
             </div>
 
-            <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Sales Order' : 'New Sales Order'} size="xl">
+            <Modal open={modal} onClose={() => setModal(false)} title={viewMode ? 'View Sales Order' : (editId ? 'Edit Sales Order' : 'New Sales Order')} size="xl">
                 <div className="d_form_row cols-2">
                     <div className="d_form_group">
                         <label className="d_form_label">Quotation (Optional)</label>
-                        <select className="d_form_control" {...f('quotation')} onChange={(e) => {
+                        <select className="d_form_control" {...f('quotation')} disabled={viewMode} onChange={(e) => {
                             f('quotation').onChange(e);
                             if (e.target.value) handleQuotationSelect(e.target.value);
                         }}>
@@ -568,7 +603,7 @@ export default function SalesOrders() {
                     </div>
                     <div className="d_form_group">
                         <label className="d_form_label">Customer <span className="d_req">*</span></label>
-                        <select className="d_form_control" {...f('customer')}>
+                        <select className="d_form_control" {...f('customer')} disabled={viewMode}>
                             <option value="">Select Customer</option>
                             {customers.map(c => (
                                 <option key={c._id} value={c._id}>{c.name} {c.companyName ? `(${c.companyName})` : ''}</option>
@@ -581,12 +616,12 @@ export default function SalesOrders() {
                 <div className="d_form_row cols-2">
                     <div className="d_form_group">
                         <label className="d_form_label">Order Date <span className="d_req">*</span></label>
-                        <input type="date" className="d_form_control" {...f('orderDate')} />
+                        <input type="date" className="d_form_control" {...f('orderDate')} disabled={viewMode} />
                         {errors.orderDate && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.orderDate}</span>}
                     </div>
                     <div className="d_form_group">
                         <label className="d_form_label">Expected Delivery <span className="d_req">*</span></label>
-                        <input type="date" className="d_form_control" {...f('expectedDeliveryDate')} min={form.orderDate} />
+                        <input type="date" className="d_form_control" {...f('expectedDeliveryDate')} min={form.orderDate} disabled={viewMode} />
                         {errors.expectedDeliveryDate && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.expectedDeliveryDate}</span>}
                     </div>
                 </div>
@@ -594,7 +629,7 @@ export default function SalesOrders() {
                 <div className="d_form_row cols-2">
                     <div className="d_form_group">
                         <label className="d_form_label">Warehouse</label>
-                        <select className="d_form_control" {...f('warehouse')}>
+                        <select className="d_form_control" {...f('warehouse')} disabled={viewMode}>
                             <option value="">Select Warehouse</option>
                             <option value="Main Warehouse">Main Warehouse</option>
                             <option value="Store A">Store A</option>
@@ -603,7 +638,7 @@ export default function SalesOrders() {
                     </div>
                     <div className="d_form_group">
                         <label className="d_form_label">Sales Person <span className="d_req">*</span></label>
-                        <input className="d_form_control" {...f('salesPerson')} placeholder="Enter sales person name" />
+                        <input className="d_form_control" {...f('salesPerson')} placeholder="Enter sales person name" disabled={viewMode} />
                         {errors.salesPerson && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.salesPerson}</span>}
                     </div>
                 </div>
@@ -611,7 +646,7 @@ export default function SalesOrders() {
                 <div className="d_form_row cols-2">
                     <div className="d_form_group">
                         <label className="d_form_label">Payment Terms</label>
-                        <select className="d_form_control" {...f('paymentTerms')}>
+                        <select className="d_form_control" {...f('paymentTerms')} disabled={viewMode}>
                             <option value="Cash">Cash</option>
                             <option value="Immediate">Immediate</option>
                             <option value="7 Days">7 Days</option>
@@ -623,7 +658,7 @@ export default function SalesOrders() {
                     </div>
                     <div className="d_form_group">
                         <label className="d_form_label">Status</label>
-                        <select className="d_form_control" {...f('status')}>
+                        <select className="d_form_control" {...f('status')} disabled={viewMode}>
                             <option value="Draft">Draft</option>
                             <option value="Confirmed">Confirmed</option>
                             <option value="Stock Reserved">Stock Reserved</option>
@@ -655,73 +690,95 @@ export default function SalesOrders() {
                                     <th>Discount (₹)</th>
                                     <th>GST %</th>
                                     <th>Total (₹)</th>
-                                    <th>Action</th>
+                                    {!viewMode && <th>Action</th>}
                                 </tr>
                             </thead>
                             <tbody>
                                 {form.items.map((item, index) => (
                                     <tr key={index}>
                                         <td>
-                                            <select
-                                                className="d_form_control"
-                                                value={item.sparePart}
-                                                onChange={(e) => updateItem(index, 'sparePart', e.target.value)}
-                                            >
-                                                {spareParts.map(s => (
-                                                    <option key={s._id} value={s._id}>{s.partNumber} - {s.partName} (Stock: {s.quantity})</option>
-                                                ))}
-                                            </select>
+                                            {viewMode ? (
+                                                <span>{spareParts.find(s => s._id === item.sparePart)?.partNumber || item.sparePart} - {spareParts.find(s => s._id === item.sparePart)?.partName || ''}</span>
+                                            ) : (
+                                                <select
+                                                    className="d_form_control"
+                                                    value={item.sparePart}
+                                                    onChange={(e) => updateItem(index, 'sparePart', e.target.value)}
+                                                >
+                                                    {spareParts.map(s => (
+                                                        <option key={s._id} value={s._id}>{s.partNumber} - {s.partName} (Stock: {s.quantity})</option>
+                                                    ))}
+                                                </select>
+                                            )}
                                         </td>
                                         <td>
-                                            <input
-                                                type="number"
-                                                className="d_form_control"
-                                                value={item.quantity}
-                                                onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                                                min="1"
-                                                style={{ width: '80px' }}
-                                            />
+                                            {viewMode ? (
+                                                <span>{item.quantity}</span>
+                                            ) : (
+                                                <input
+                                                    type="number"
+                                                    className="d_form_control"
+                                                    value={item.quantity}
+                                                    onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                                                    min="1"
+                                                    style={{ width: '80px' }}
+                                                />
+                                            )}
                                         </td>
                                         <td>
-                                            <input
-                                                type="number"
-                                                className="d_form_control"
-                                                value={item.rate}
-                                                onChange={(e) => updateItem(index, 'rate', parseFloat(e.target.value) || 0)}
-                                                min="0"
-                                                style={{ width: '100px' }}
-                                            />
+                                            {viewMode ? (
+                                                <span>{formatCurrency(item.rate)}</span>
+                                            ) : (
+                                                <input
+                                                    type="number"
+                                                    className="d_form_control"
+                                                    value={item.rate}
+                                                    onChange={(e) => updateItem(index, 'rate', parseFloat(e.target.value) || 0)}
+                                                    min="0"
+                                                    style={{ width: '100px' }}
+                                                />
+                                            )}
                                         </td>
                                         <td>
-                                            <input
-                                                type="number"
-                                                className="d_form_control"
-                                                value={item.discount}
-                                                onChange={(e) => updateItem(index, 'discount', parseFloat(e.target.value) || 0)}
-                                                min="0"
-                                                style={{ width: '80px' }}
-                                            />
+                                            {viewMode ? (
+                                                <span>{formatCurrency(item.discount)}</span>
+                                            ) : (
+                                                <input
+                                                    type="number"
+                                                    className="d_form_control"
+                                                    value={item.discount}
+                                                    onChange={(e) => updateItem(index, 'discount', parseFloat(e.target.value) || 0)}
+                                                    min="0"
+                                                    style={{ width: '80px' }}
+                                                />
+                                            )}
                                         </td>
                                         <td>
-                                            <select
-                                                className="d_form_control"
-                                                value={item.gstRate}
-                                                onChange={(e) => updateItem(index, 'gstRate', parseFloat(e.target.value))}
-                                                style={{ width: '80px' }}
-                                            >
-                                                <option value="0">0%</option>
-                                                <option value="5">5%</option>
-                                                <option value="12">12%</option>
-                                                <option value="18">18%</option>
-                                                <option value="28">28%</option>
-                                            </select>
+                                            {viewMode ? (
+                                                <span>{item.gstRate}%</span>
+                                            ) : (
+                                                <select
+                                                    className="d_form_control"
+                                                    value={item.gstRate}
+                                                    onChange={(e) => updateItem(index, 'gstRate', parseFloat(e.target.value))}
+                                                    style={{ width: '80px' }}
+                                                >
+                                                    <option value="0">0%</option>
+                                                    <option value="5">5%</option>
+                                                    <option value="12">12%</option>
+                                                    <option value="18">18%</option>
+                                                    <option value="28">28%</option>
+                                                </select>
+                                            )}
                                         </td>
                                         <td>{formatCurrency(
                                             ((item.quantity * item.rate - item.discount) * (1 + item.gstRate / 100))
                                         )}</td>
-                                        <td>
-                                            <button className="d_icon_btn d_delete" onClick={() => removeItem(index)}><MdDelete /></button>
-                                        </td>
+                                        {!viewMode && (
+                                            <td>
+                                                <button className="d_icon_btn d_delete" onClick={() => removeItem(index)}><MdDelete /></button>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
@@ -729,9 +786,13 @@ export default function SalesOrders() {
                     </div>
                 )}
 
-                <button className="d_btn d_btn_outline" onClick={addItem} style={{ marginBottom: '15px' }}><MdAdd /> Add Item</button>
-                <button className="d_btn d_btn_info" onClick={checkStockAvailability} style={{ marginBottom: '15px', marginLeft: '10px' }}><MdInventory /> Check Stock Availability</button>
-                <button className="d_btn d_btn_warning" onClick={checkCreditLimit} style={{ marginBottom: '15px', marginLeft: '10px' }}><MdWarning /> Check Credit Limit</button>
+                {!viewMode && (
+                    <>
+                        <button className="d_btn d_btn_outline" onClick={addItem} style={{ marginBottom: '15px' }}><MdAdd /> Add Item</button>
+                        <button className="d_btn d_btn_info" onClick={checkStockAvailability} style={{ marginBottom: '15px', marginLeft: '10px' }}><MdInventory /> Check Stock Availability</button>
+                        <button className="d_btn d_btn_warning" onClick={checkCreditLimit} style={{ marginBottom: '15px', marginLeft: '10px' }}><MdWarning /> Check Credit Limit</button>
+                    </>
+                )}
 
                 {stockCheck.length > 0 && (
                     <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
@@ -815,20 +876,20 @@ export default function SalesOrders() {
                 <div className="d_form_row cols-1">
                     <div className="d_form_group">
                         <label className="d_form_label">Notes</label>
-                        <textarea className="d_form_control" rows="2" {...f('notes')} />
+                        <textarea className="d_form_control" rows="2" {...f('notes')} disabled={viewMode} />
                     </div>
                 </div>
 
                 <div className="d_form_row cols-1">
                     <div className="d_form_group">
                         <label className="d_form_label">Terms & Conditions</label>
-                        <textarea className="d_form_control" rows="2" {...f('terms')} />
+                        <textarea className="d_form_control" rows="2" {...f('terms')} disabled={viewMode} />
                     </div>
                 </div>
 
                 <div className="d_form_actions">
                     <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
-                    <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Sales Order' : 'Create Sales Order'}</button>
+                    {!viewMode && <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Sales Order' : 'Create Sales Order'}</button>}
                 </div>
             </Modal>
 

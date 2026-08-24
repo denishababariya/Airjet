@@ -9,11 +9,12 @@ import { sparePartsApi } from '../utils/api';
 import { V, validate } from '../utils/validators';
 
 const statusClass = { 'In Stock': 'd_success', 'Low Stock': 'd_warning', 'Out of Stock': 'd_danger' };
-const blank = { name: '', cat: '', brand: '', model: '', stock: '', minStock: '', price: '', status: 'In Stock', images: [] };
+const blank = { name: '', cat: '', brand: '', model: '', stock: '', minStock: '', price: '', warrantyPeriod: '', warrantyUnit: 'Months', status: 'In Stock', images: [] };
 
 const SpareParts = ({ defaultTab = 'parts' }) => {
   const [tab, setTab]     = useState(defaultTab);
   const [data, setData]   = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState('');
   const [modal, setModal]     = useState(false);
@@ -37,7 +38,24 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchParts(); }, []);
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/categories', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      setCategories(data || []);
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+    }
+  };
+
+  useEffect(() => { 
+    fetchParts(); 
+    fetchCategories();
+  }, []);
 
   const derivedCategories = useMemo(() => {
     const map = {};
@@ -89,7 +107,8 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
       name: part.partName || '', cat: part.category || '', brand: part.brand || '',
       model: (part.compatibility || []).join(', '),
       stock: String(part.quantity ?? ''), minStock: String(part.minimumStock ?? ''),
-      price: String(part.unitPrice ?? ''), status: part.status || 'In Stock',
+      price: String(part.unitPrice ?? ''), warrantyPeriod: String(part.warrantyPeriod ?? ''),
+      warrantyUnit: part.warrantyUnit || 'Months', status: part.status || 'In Stock',
       images: part.images || [],
     });
     setEditId(part._id);
@@ -120,16 +139,37 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
     if (Object.keys(e).length) { setErrors(e); return; }
     setSaving(true);
     try {
+      const categoryName = form.cat.trim();
+      
+      // Check if category exists in API categories, if not create it
+      const existingCategory = categories.find(c => c.name === categoryName);
+      if (!existingCategory && categoryName && categoryName !== 'Custom') {
+        try {
+          await fetch('http://localhost:5000/api/categories', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ name: categoryName, status: 'Active' })
+          });
+          fetchCategories(); // Refresh categories
+        } catch (err) {
+          console.error('Failed to create category:', err);
+        }
+      }
+      
       const payload = {
-        partName: form.name.trim(), category: form.cat.trim(), brand: form.brand.trim(),
+        partName: form.name.trim(), category: categoryName, brand: form.brand.trim(),
         compatibility: form.model ? form.model.split(',').map(s => s.trim()).filter(Boolean) : [],
         quantity: parseInt(form.stock) || 0, minimumStock: parseInt(form.minStock) || 0,
         unitPrice: parseFloat(form.price) || 0, sellingPrice: parseFloat(form.price) || 0,
+        warrantyPeriod: parseInt(form.warrantyPeriod) || 0, warrantyUnit: form.warrantyUnit || 'Months',
       };
       if (editId) {
         await sparePartsApi.update(editId, payload, imageFiles);
       } else {
-        payload.partNumber = `AJ-${form.cat.toUpperCase().slice(0,3)}-${String(data.length+1).padStart(3,'0')}`;
+        payload.partNumber = `AJ-${categoryName.toUpperCase().slice(0,3)}-${String(data.length+1).padStart(3,'0')}`;
         await sparePartsApi.create(payload, imageFiles);
       }
       setModal(false);
@@ -217,7 +257,10 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
 
       {tab === 'category' && (
         <div className="d_card">
-          <div className="d_card_header"><h2 className="d_card_title"><MdInventory2 className="d_card_icon" /> Categories ({derivedCategories.length})</h2></div>
+          <div className="d_card_header flex-wrap gap-2">
+            <h2 className="d_card_title"><MdInventory2 className="d_card_icon" /> Categories ({derivedCategories.length})</h2>
+            <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> Add Part</button>
+          </div>
           <div className="d_card_body p-0"><div className="d_table_wrap"><table className="d_table">
             <thead><tr><th>Cat ID</th><th>Category Name</th><th>No. of Parts</th><th>Status</th></tr></thead>
             <tbody>
@@ -263,7 +306,21 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
           </div>
           <div className="d_form_group">
             <label className="d_form_label">Category <span className="d_req">*</span></label>
-            <input className="d_form_control" placeholder="e.g. Valve, Nozzle, Sensor" {...f('cat')} />
+            <select className="d_form_control" {...f('cat')}>
+              <option value="">Select Category</option>
+              {categories.map(c => (
+                <option key={c._id} value={c.name}>{c.name}</option>
+              ))}
+              <option value="Custom">+ Add Custom Category</option>
+            </select>
+            {form.cat === 'Custom' && (
+              <input 
+                className="d_form_control" 
+                placeholder="Enter custom category" 
+                style={{ marginTop: '5px' }}
+                onChange={(e) => setForm(p => ({ ...p, cat: e.target.value }))}
+              />
+            )}
             <Err field="cat" />
           </div>
         </div>
@@ -293,6 +350,20 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
             <label className="d_form_label">Unit Price (₹) <span className="d_req">*</span></label>
             <input type="number" className="d_form_control" placeholder="e.g. 500" min={0} {...f('price')} />
             <Err field="price" />
+          </div>
+        </div>
+        <div className="d_form_row cols-2">
+          <div className="d_form_group">
+            <label className="d_form_label">Warranty Period</label>
+            <input type="number" className="d_form_control" placeholder="e.g. 12" min={0} {...f('warrantyPeriod')} />
+          </div>
+          <div className="d_form_group">
+            <label className="d_form_label">Warranty Unit</label>
+            <select className="d_form_control" {...f('warrantyUnit')}>
+              <option value="Days">Days</option>
+              <option value="Months">Months</option>
+              <option value="Years">Years</option>
+            </select>
           </div>
         </div>
         <div className="d_form_row cols-1">

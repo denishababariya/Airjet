@@ -107,7 +107,7 @@ export default function Payments() {
             setForm(p => ({
                 ...p,
                 customer: invoice.customer?._id || invoice.customer,
-                amount: invoice.pendingAmount || 0,
+                amount: invoice.pendingAmount || invoice.grandTotal || 0,
                 invoice: invoiceId
             }));
         }

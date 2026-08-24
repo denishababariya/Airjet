@@ -6,6 +6,7 @@ module.exports = {
   ...require("./Payroll.model.js"),
   ...require("./Customer.model.js"),
   ...require("./SpareParts.model.js"),
+  ...require("./Category.model.js"),
   ...require("./Quotation.model.js"),
   ...require("./SalesOrder.model.js"),
   ...require("./Invoice.model.js"),
