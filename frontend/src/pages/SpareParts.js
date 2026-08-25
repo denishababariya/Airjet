@@ -8,8 +8,9 @@ import useConfirm from '../hooks/useConfirm';
 import { sparePartsApi } from '../utils/api';
 import { V, validate } from '../utils/validators';
 
-const statusClass = { 'In Stock': 'd_success', 'Low Stock': 'd_warning', 'Out of Stock': 'd_danger' };
-const blank = { name: '', cat: '', brand: '', model: '', stock: '', minStock: '', price: '', warrantyPeriod: '', warrantyUnit: 'Months', status: 'In Stock', images: [] };
+const statusClass = { 'Available': 'd_success', 'Low Stock': 'd_warning', 'Out of Stock': 'd_danger', 'Discontinued': 'd_danger' };
+const blank = { name: '', cat: '', brand: '', model: '', stock: '', minStock: '', price: '', warrantyPeriod: '', warrantyUnit: 'Months', status: 'Available', images: [] };
+const blankCategory = { name: '', desc: '', status: 'Active' };
 
 const SpareParts = ({ defaultTab = 'parts' }) => {
   const [tab, setTab]     = useState(defaultTab);
@@ -24,6 +25,11 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
   const [saving, setSaving]   = useState(false);
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [categoryModal, setCategoryModal] = useState(false);
+  const [categoryForm, setCategoryForm] = useState(blankCategory);
+  const [categoryEditId, setCategoryEditId] = useState(null);
+  const [categoryErrors, setCategoryErrors] = useState({});
+  const [savingCategory, setSavingCategory] = useState(false);
 
   const { toasts, toast, removeToast }         = useToast();
   const { confirmState, confirm, closeConfirm } = useConfirm();
@@ -56,6 +62,36 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
     fetchParts(); 
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    // Handle URL parameters for editing
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    
+    if (tabParam) {
+      setTab(tabParam);
+    }
+  }, []);
+
+  useEffect(() => {
+    const editId = new URLSearchParams(window.location.search).get('edit');
+    const tabParam = new URLSearchParams(window.location.search).get('tab');
+    
+    if (editId && tabParam === 'category' && categories.length > 0) {
+      // Find and open the category for editing
+      const categoryToEdit = categories.find(c => (c._id || c.id) === editId);
+      if (categoryToEdit) {
+        setCategoryForm({
+          name: categoryToEdit.name || '',
+          desc: categoryToEdit.desc || categoryToEdit.description || '',
+          status: categoryToEdit.status || 'Active'
+        });
+        setCategoryEditId(categoryToEdit._id || categoryToEdit.id);
+        setCategoryErrors({});
+        setCategoryModal(true);
+      }
+    }
+  }, [categories]);
 
   const derivedCategories = useMemo(() => {
     const map = {};
@@ -108,7 +144,7 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
       model: (part.compatibility || []).join(', '),
       stock: String(part.quantity ?? ''), minStock: String(part.minimumStock ?? ''),
       price: String(part.unitPrice ?? ''), warrantyPeriod: String(part.warrantyPeriod ?? ''),
-      warrantyUnit: part.warrantyUnit || 'Months', status: part.status || 'In Stock',
+      warrantyUnit: part.warrantyUnit || 'Months', status: part.status || 'Available',
       images: part.images || [],
     });
     setEditId(part._id);
@@ -165,6 +201,7 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
         quantity: parseInt(form.stock) || 0, minimumStock: parseInt(form.minStock) || 0,
         unitPrice: parseFloat(form.price) || 0, sellingPrice: parseFloat(form.price) || 0,
         warrantyPeriod: parseInt(form.warrantyPeriod) || 0, warrantyUnit: form.warrantyUnit || 'Months',
+        status: form.status || 'Available',
       };
       if (editId) {
         await sparePartsApi.update(editId, payload, imageFiles);
@@ -191,6 +228,94 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
       },
     });
   };
+
+  const openAddCategory = () => {
+    setCategoryForm(blankCategory);
+    setCategoryEditId(null);
+    setCategoryErrors({});
+    setCategoryModal(true);
+  };
+
+  const openEditCategory = (category) => {
+    setCategoryForm({
+      name: category.name || '',
+      desc: category.desc || category.description || '',
+      status: category.status || 'Active'
+    });
+    setCategoryEditId(category._id || category.id);
+    setCategoryErrors({});
+    setCategoryModal(true);
+  };
+
+  const handleCategorySave = async () => {
+    const e = {};
+    if (!categoryForm.name.trim()) e.name = 'Category name is required';
+    if (Object.keys(e).length) { setCategoryErrors(e); return; }
+    
+    setSavingCategory(true);
+    try {
+      const payload = {
+        name: categoryForm.name.trim(),
+        description: categoryForm.desc.trim(),
+        status: categoryForm.status
+      };
+      
+      if (categoryEditId) {
+        await fetch(`http://localhost:5000/api/categories/${categoryEditId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(payload)
+        });
+        toast.success('Category updated!');
+      } else {
+        await fetch('http://localhost:5000/api/categories', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(payload)
+        });
+        toast.success('Category added!');
+      }
+      setCategoryModal(false);
+      fetchCategories();
+    } catch (err) {
+      toast.error(err.displayMessage || 'Failed to save category');
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  const handleCategoryDelete = (id, name) => {
+    confirm({
+      title: 'Delete Category', message: `Delete category "${name}"?`,
+      confirmLabel: 'Delete', variant: 'danger',
+      onConfirm: async () => {
+        closeConfirm();
+        try {
+          await fetch(`http://localhost:5000/api/categories/${id}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          toast.success('Category deleted.');
+          fetchCategories();
+        } catch (err) {
+          toast.error(err.displayMessage || 'Failed to delete category');
+        }
+      },
+    });
+  };
+
+  const cf = (field) => ({
+    value: categoryForm[field] ?? '',
+    onChange: (e) => { setCategoryForm(p => ({ ...p, [field]: e.target.value })); setCategoryErrors(p => ({ ...p, [field]: '' })); },
+  });
 
   return (
     <div>
@@ -258,14 +383,27 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
       {tab === 'category' && (
         <div className="d_card">
           <div className="d_card_header flex-wrap gap-2">
-            <h2 className="d_card_title"><MdInventory2 className="d_card_icon" /> Categories ({derivedCategories.length})</h2>
-            <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> Add Part</button>
+            <h2 className="d_card_title"><MdInventory2 className="d_card_icon" /> Categories ({categories.length})</h2>
+            <button className="d_btn d_btn_primary" onClick={openAddCategory}><MdAdd /> Add Category</button>
           </div>
           <div className="d_card_body p-0"><div className="d_table_wrap"><table className="d_table">
-            <thead><tr><th>Cat ID</th><th>Category Name</th><th>No. of Parts</th><th>Status</th></tr></thead>
+            <thead><tr><th>Cat ID</th><th>Category Name</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {derivedCategories.length === 0 && <tr className="d_empty"><td colSpan={4}>No categories yet.</td></tr>}
-              {derivedCategories.map(c => <tr key={c.id}><td><code>{String(c.id)}</code></td><td><strong>{String(c.name)}</strong></td><td><span className="d_badge d_info">{String(c.parts)}</span></td><td><span className="d_badge d_success">{String(c.status)}</span></td></tr>)}
+              {categories.length === 0 && <tr className="d_empty"><td colSpan={5}>No categories yet.</td></tr>}
+              {categories.map(c => (
+                <tr key={c._id || c.id}>
+                  <td><code>{String(c._id || c.id)}</code></td>
+                  <td><strong>{String(c.name)}</strong></td>
+                  <td style={{ maxWidth: 300, fontSize: '0.88rem', color: 'var(--d-text-muted)' }}>{String(c.description || c.desc || '-')}</td>
+                  <td><span className={`d_badge ${c.status === 'Active' ? 'd_success' : 'd_danger'}`}>{String(c.status)}</span></td>
+                  <td>
+                    <div className="d_action_btns">
+                      <button className="d_icon_btn d_edit" onClick={() => openEditCategory(c)}><MdEdit /></button>
+                      <button className="d_icon_btn d_del" onClick={() => handleCategoryDelete(c._id || c.id, c.name)}><MdDelete /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table></div></div>
         </div>
@@ -308,7 +446,7 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
             <label className="d_form_label">Category <span className="d_req">*</span></label>
             <select className="d_form_control" {...f('cat')}>
               <option value="">Select Category</option>
-              {categories.map(c => (
+              {categories.filter(c => c.status === 'Active').map(c => (
                 <option key={c._id} value={c.name}>{c.name}</option>
               ))}
               <option value="Custom">+ Add Custom Category</option>
@@ -368,6 +506,17 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
         </div>
         <div className="d_form_row cols-1">
           <div className="d_form_group">
+            <label className="d_form_label">Status</label>
+            <select className="d_form_control" {...f('status')}>
+              <option value="Available">Available</option>
+              <option value="Low Stock">Low Stock</option>
+              <option value="Out of Stock">Out of Stock</option>
+              <option value="Discontinued">Discontinued</option>
+            </select>
+          </div>
+        </div>
+        <div className="d_form_row cols-1">
+          <div className="d_form_group">
             <label className="d_form_label">Images</label>
             <input
               type="file"
@@ -399,6 +548,37 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
           <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
           <button className="d_btn d_btn_primary" onClick={handleSave} disabled={saving}>
             {saving ? 'Saving…' : editId ? 'Update Part' : 'Save Part'}
+          </button>
+        </div>
+      </Modal>
+
+      <Modal open={categoryModal} onClose={() => setCategoryModal(false)} title={categoryEditId ? 'Edit Category' : 'Add Category'} size="md">
+        <div className="d_form_row cols-1">
+          <div className="d_form_group">
+            <label className="d_form_label">Category Name <span className="d_req">*</span></label>
+            <input className="d_form_control" placeholder="e.g. Nozzle & Air System" {...cf('name')} />
+            {categoryErrors.name && <span className="d_field_error">{categoryErrors.name}</span>}
+          </div>
+        </div>
+        <div className="d_form_row cols-1">
+          <div className="d_form_group">
+            <label className="d_form_label">Description</label>
+            <textarea className="d_form_control" placeholder="Enter category description" rows="3" {...cf('desc')} />
+          </div>
+        </div>
+        <div className="d_form_row cols-1">
+          <div className="d_form_group">
+            <label className="d_form_label">Status</label>
+            <select className="d_form_control" {...cf('status')}>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div className="d_form_actions">
+          <button className="d_btn d_btn_outline" onClick={() => setCategoryModal(false)}>Cancel</button>
+          <button className="d_btn d_btn_primary" onClick={handleCategorySave} disabled={savingCategory}>
+            {savingCategory ? 'Saving…' : categoryEditId ? 'Update Category' : 'Save Category'}
           </button>
         </div>
       </Modal>

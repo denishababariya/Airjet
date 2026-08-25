@@ -1,22 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdVisibility, MdSearch, MdBuild } from 'react-icons/md';
+import { sparePartsApi } from '../../utils/api';
 
-const parts = [
-  { no: 'AJ-NZ-001', name: 'Main Nozzle Assembly', category: 'Nozzle', brand: 'Picanol', uom: 'Pcs', price: 4850, hsn: '84483200', status: 'Active' },
-  { no: 'AJ-SN-002', name: 'Sub Nozzle Set (10 pcs)', category: 'Nozzle', brand: 'Tsudakoma', uom: 'Set', price: 2200, hsn: '84483200', status: 'Active' },
-  { no: 'AJ-RP-003', name: 'Reed Profile 44" 600 Dents', category: 'Reed', brand: 'Grob Horgen', uom: 'Pcs', price: 8900, hsn: '84483100', status: 'Active' },
-  { no: 'AJ-HB-004', name: 'Heald Frame Complete', category: 'Shedding', brand: 'Staubli', uom: 'Set', price: 15500, hsn: '84483300', status: 'Active' },
-  { no: 'AJ-WB-005', name: 'Warp Beam Bearing Set', category: 'Bearing', brand: 'SKF', uom: 'Set', price: 3400, hsn: '84821010', status: 'Active' },
-  { no: 'AJ-TC-006', name: 'Tension Controller Spring', category: 'Tension System', brand: 'Dornier', uom: 'Pcs', price: 780, hsn: '73209090', status: 'Inactive' },
-];
+const statusClass = { 'Available': 'd_success', 'Low Stock': 'd_warning', 'Out of Stock': 'd_danger', 'Discontinued': 'd_danger' };
 
 export default function PartNumber() {
   const [search, setSearch] = useState('');
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
 
-  const filtered = parts.filter(p =>
-    p.no.toLowerCase().includes(search.toLowerCase()) ||
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.category.toLowerCase().includes(search.toLowerCase())
+  const fetchParts = async () => {
+    setLoading(true);
+    try {
+      const { data: list } = await sparePartsApi.getAll();
+      setData(list);
+    } catch (err) {
+      console.error('Failed to load spare parts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/categories', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      setCategories(data || []);
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchParts();
+    fetchCategories();
+  }, []);
+
+  const filtered = data.filter(p =>
+    (p.partNumber || '').toLowerCase().includes(search.toLowerCase()) ||
+    (p.partName || '').toLowerCase().includes(search.toLowerCase()) ||
+    (p.category || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -26,7 +54,7 @@ export default function PartNumber() {
           <div className="d_page_title">Part Number Master</div>
           <div className="d_page_subtitle">Manage airjet loom spare part numbers and details</div>
         </div>
-        <button className="d_btn d_btn_primary"><MdAdd /> Add Part</button>
+        <button className="d_btn d_btn_primary" onClick={() => window.location.href = '/spare-parts'}><MdAdd /> Add Part</button>
       </div>
 
       <div className="d_card">
@@ -46,28 +74,30 @@ export default function PartNumber() {
                   <th>Part Name</th>
                   <th>Category</th>
                   <th>Brand</th>
-                  <th>UOM</th>
+                  <th>Stock</th>
                   <th>Unit Price (₹)</th>
-                  <th>HSN Code</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(p => (
-                  <tr key={p.no}>
-                    <td><strong>{String(p.no)}</strong></td>
-                    <td>{String(p.name)}</td>
+                {loading ? (
+                  <tr><td colSpan={8} className="text-center py-4">Loading…</td></tr>
+                ) : filtered.length === 0 ? (
+                  <tr className="d_empty"><td colSpan={8}>No parts found.</td></tr>
+                ) : filtered.map(p => (
+                  <tr key={p._id}>
+                    <td><strong><code>{String(p.partNumber)}</code></strong></td>
+                    <td>{String(p.partName)}</td>
                     <td><span className="d_badge d_info">{String(p.category)}</span></td>
                     <td>{String(p.brand)}</td>
-                    <td>{String(p.uom)}</td>
-                    <td>₹{p.price.toLocaleString('en-IN')}</td>
-                    <td><code>{String(p.hsn)}</code></td>
-                    <td><span className={`d_badge ${p.status === 'Active' ? 'd_success' : 'd_danger'}`}>{String(p.status)}</span></td>
+                    <td><strong>{String(p.quantity)}</strong></td>
+                    <td>₹{(p.unitPrice || 0).toLocaleString('en-IN')}</td>
+                    <td><span className={`d_badge ${statusClass[p.status] || 'd_info'}`}>{String(p.status)}</span></td>
                     <td>
                       <div className="d_action_btns">
                         <button className="d_icon_btn d_view"><MdVisibility /></button>
-                        <button className="d_icon_btn d_edit"><MdEdit /></button>
+                        <button className="d_icon_btn d_edit" onClick={() => window.location.href = `/spare-parts?edit=${p._id}`}><MdEdit /></button>
                         <button className="d_icon_btn d_del"><MdDelete /></button>
                       </div>
                     </td>

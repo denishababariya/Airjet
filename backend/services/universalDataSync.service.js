@@ -271,7 +271,7 @@ const generateStockRecordData = (data, module, baseData) => {
         location: location || '',
         from: supplier || '',
         to: '',
-        status: data.status || 'In Stock'
+        status: data.status || 'Available'
       };
     case 'purchase':
       return {

@@ -4,7 +4,7 @@ import { payrollApi } from '../../utils/api';
 import Modal from '../../components/Modal';
 import SalaryPayment from './SalaryPayment';
 
-const statusClass = { Draft:'d_info', Generated:'d_primary', Approved:'d_success', Paid:'d_success', Cancelled:'d_danger' };
+const statusClass = { Draft: 'd_info', Generated: 'd_primary', Approved: 'd_success', Paid: 'd_success', Cancelled: 'd_danger' };
 
 export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
   const [salary, setSalary] = useState(null);
@@ -102,8 +102,8 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
           <div className="d_card_body">
             {employee.image && (
               <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                <img 
-                  src={employee.image} 
+                <img
+                  src={employee.image}
                   alt={salary.employeeName}
                   style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover' }}
                 />
@@ -241,14 +241,14 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
       )}
 
       {/* Payment Modal */}
-      <Modal 
-        open={showPaymentModal} 
-        onClose={() => setShowPaymentModal(false)} 
+      <Modal
+        open={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
         title="Process Salary Payment"
         size="md"
       >
-        <SalaryPayment 
-          salaryId={salaryId} 
+        <SalaryPayment
+          salaryId={salaryId}
           netSalary={salary.netSalary}
           onComplete={handlePaymentComplete}
           onCancel={() => setShowPaymentModal(false)}

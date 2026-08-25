@@ -1,9 +1,18 @@
 const SpareParts = require('../model/SpareParts.model');
+const mongoose = require('mongoose');
 const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModules } = require('../services/universalDataSync.service');
+const fs = require('fs');
+const path = require('path');
 
 const createSparePart = async (req, res) => {
     try {
         const body = { ...req.body };
+        
+        // Generate unique id if not provided
+        if (!body.id) {
+            body.id = new mongoose.Types.ObjectId().toString();
+        }
+        
         if (req.files && req.files.length > 0) {
             body.images = req.files.map(file => `/uploads/${file.filename}`);
         }
@@ -49,13 +58,29 @@ const getSparePartById = async (req, res) => {
 const updateSparePart = async (req, res) => {
     try {
         const body = { ...req.body };
-        if (req.files && req.files.length > 0) {
-            body.images = req.files.map(file => `/uploads/${file.filename}`);
-        }
-        const sparePart = await SpareParts.findByIdAndUpdate(req.params.id, body, { new: true });
-        if (!sparePart) {
+        
+        // Get existing spare part to check for old images
+        const existingPart = await SpareParts.findById(req.params.id);
+        if (!existingPart) {
             return res.status(404).json({ error: 'Spare part not found' });
         }
+        
+        // If new images are uploaded, delete old images
+        if (req.files && req.files.length > 0) {
+            // Delete old image files from uploads directory
+            if (existingPart.images && existingPart.images.length > 0) {
+                existingPart.images.forEach(imagePath => {
+                    const fullPath = path.join(__dirname, '..', imagePath);
+                    if (fs.existsSync(fullPath)) {
+                        fs.unlinkSync(fullPath);
+                    }
+                });
+            }
+            // Set new images
+            body.images = req.files.map(file => `/uploads/${file.filename}`);
+        }
+        
+        const sparePart = await SpareParts.findByIdAndUpdate(req.params.id, body, { new: true });
         
         // Sync updated spare part data across relevant modules
         await syncEntityAcrossModules(sparePart, 'spareparts', 'update');
@@ -68,10 +93,23 @@ const updateSparePart = async (req, res) => {
 
 const deleteSparePart = async (req, res) => {
     try {
-        const sparePart = await SpareParts.findByIdAndDelete(req.params.id);
+        const sparePart = await SpareParts.findById(req.params.id);
         if (!sparePart) {
             return res.status(404).json({ error: 'Spare part not found' });
         }
+        
+        // Delete image files from uploads directory
+        if (sparePart.images && sparePart.images.length > 0) {
+            sparePart.images.forEach(imagePath => {
+                const fullPath = path.join(__dirname, '..', imagePath);
+                if (fs.existsSync(fullPath)) {
+                    fs.unlinkSync(fullPath);
+                }
+            });
+        }
+        
+        // Delete the spare part document
+        await SpareParts.findByIdAndDelete(req.params.id);
         
         // Delete spare part data from all modules
         await deleteEntityFromModules(req.params.id, 'spareparts');
