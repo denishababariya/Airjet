@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdVisibility, MdConfirmationNumber, MdAttachFile } from 'react-icons/md';
 import Modal from '../../components/Modal';
-import { useErpRecords } from '../../utils/useErpRecords';
 import api from '../../utils/api';
 
 const STATUS_OPTIONS = ['Open', 'Verified', 'Assigned', 'In Progress', 'Waiting Parts', 'Completed', 'Closed', 'Cancelled'];
@@ -30,8 +29,8 @@ const generateTicketNo = () => {
 };
 
 const blank = {
-  ticketNo: '',
-  salesOrderNo: '',
+  requestNumber: '',
+  salesOrderNumber: '',
   customer: '',
   machine: '',
   machineSerialNo: '',
@@ -39,6 +38,7 @@ const blank = {
   priority: 'Medium',
   status: 'Open',
   createdDate: new Date().toISOString().split('T')[0],
+  serviceType: 'Paid',
   warranty: 'No',
   warrantyExpiryDate: '',
   warrantyStatus: 'N/A',
@@ -46,63 +46,84 @@ const blank = {
 };
 
 export default function ServiceTickets() {
-  const { data, loading, error, setError, save, remove } = useErpRecords('service', 'ticket');
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(blank);
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
   const [salesOrders, setSalesOrders] = useState([]);
+  const [customers, setCustomers] = useState([]);
 
   useEffect(() => {
-    const fetchSalesOrders = async () => {
-      try {
-        const response = await api.get('/erp', { params: { module: 'sales', recordType: 'order' } });
-        setSalesOrders(response.data || []);
-      } catch (err) {
-        console.error('Failed to fetch sales orders:', err);
-      }
-    };
-    fetchSalesOrders();
+    fetchData();
   }, []);
 
-  const checkWarrantyStatus = (warrantyExpiryDate) => {
-    if (!warrantyExpiryDate) return { status: 'N/A', isValid: false };
-    const today = new Date();
-    const expiry = new Date(warrantyExpiryDate);
-    const isValid = today <= expiry;
-    return { status: isValid ? 'Active' : 'Expired', isValid };
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [serviceRes, salesRes, customersRes] = await Promise.all([
+        api.get('/service-requests'),
+        api.get('/sales-orders'),
+        api.get('/customers')
+      ]);
+      setData(serviceRes.data || []);
+      setSalesOrders(salesRes.data || []);
+      setCustomers(customersRes.data || []);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load data');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSalesOrderChange = async (soNumber) => {
-    setForm(p => ({ ...p, salesOrderNo: soNumber }));
-    if (!soNumber) {
-      setForm(p => ({ ...p, warranty: 'No', warrantyExpiryDate: '', warrantyStatus: 'N/A' }));
+  const checkWarrantyStatus = async (salesOrderNumber) => {
+    if (!salesOrderNumber) {
+      setForm(p => ({ ...p, warranty: 'No', warrantyExpiryDate: '', warrantyStatus: 'N/A', serviceType: 'Paid' }));
       return;
     }
 
-    const selectedOrder = salesOrders.find(o => o.so === soNumber);
-    if (selectedOrder) {
-      setForm(p => ({ ...p, customer: selectedOrder.customer }));
-
-      try {
-        const response = await api.get(`/erp/warranty/check/${soNumber}`);
+    try {
+      const response = await api.get('/warranties/check', { 
+        params: { salesOrderNumber } 
+      });
+      
+      if (response.data.hasWarranty && response.data.warranties.length > 0) {
+        const warranty = response.data.warranties[0];
         setForm(p => ({
           ...p,
-          warranty: response.data.isWarrantyValid ? 'Yes' : 'No',
-          warrantyExpiryDate: response.data.warrantyExpiryDate || '',
-          warrantyStatus: response.data.warrantyStatus
+          warranty: 'Yes',
+          warrantyExpiryDate: warranty.warrantyEndDate ? warranty.warrantyEndDate.split('T')[0] : '',
+          warrantyStatus: warranty.warrantyStatus,
+          serviceType: 'Warranty'
         }));
-      } catch (err) {
-        console.error('Failed to check warranty:', err);
-        const { status: warrantyStatus, isValid } = checkWarrantyStatus(selectedOrder.warrantyExpiryDate);
+      } else {
         setForm(p => ({
           ...p,
-          warranty: isValid ? 'Yes' : 'No',
-          warrantyExpiryDate: selectedOrder.warrantyExpiryDate || '',
-          warrantyStatus
+          warranty: 'No',
+          warrantyExpiryDate: '',
+          warrantyStatus: 'Expired',
+          serviceType: 'Paid'
         }));
       }
+    } catch (err) {
+      console.error('Failed to check warranty:', err);
+      setForm(p => ({ ...p, warranty: 'No', warrantyExpiryDate: '', warrantyStatus: 'N/A', serviceType: 'Paid' }));
     }
+  };
+
+  const handleSalesOrderChange = async (soNumber) => {
+    setForm(p => ({ ...p, salesOrderNumber: soNumber }));
+    
+    const selectedOrder = salesOrders.find(o => o.orderNumber === soNumber);
+    if (selectedOrder) {
+      setForm(p => ({ ...p, customer: selectedOrder.customer?._id || selectedOrder.customer }));
+    }
+    
+    await checkWarrantyStatus(soNumber);
   };
 
   const counts = {
@@ -114,7 +135,7 @@ export default function ServiceTickets() {
   };
 
   const openAdd = () => {
-    setForm({ ...blank, ticketNo: generateTicketNo() });
+    setForm({ ...blank, requestNumber: generateTicketNo() });
     setEditId(null);
     setErrors({});
     setModal(true);
@@ -122,18 +143,19 @@ export default function ServiceTickets() {
 
   const openEdit = (t) => {
     setForm({
-      ticketNo: t.ticketNo || '',
-      salesOrderNo: t.salesOrderNo || '',
-      customer: t.customer || '',
+      requestNumber: t.requestNumber || '',
+      salesOrderNumber: t.salesOrder?.orderNumber || '',
+      customer: t.customer?._id || t.customer,
       machine: t.machine || '',
-      machineSerialNo: t.machineSerialNo || '',
+      machineSerialNo: t.machineSerialNumber || '',
       complaint: t.complaint || '',
       priority: t.priority || 'Medium',
       status: t.status || 'Open',
-      createdDate: t.createdDate || new Date().toISOString().split('T')[0],
-      warranty: t.warranty || 'No',
-      warrantyExpiryDate: t.warrantyExpiryDate || '',
-      warrantyStatus: t.warrantyStatus || 'N/A',
+      createdDate: t.requestDate ? t.requestDate.split('T')[0] : new Date().toISOString().split('T')[0],
+      serviceType: t.serviceType || 'Paid',
+      warranty: t.warranty ? 'Yes' : 'No',
+      warrantyExpiryDate: t.warranty?.warrantyEndDate ? t.warranty.warrantyEndDate.split('T')[0] : '',
+      warrantyStatus: t.warranty?.warrantyStatus || 'N/A',
       attachment: t.attachment || ''
     });
     setEditId(t._id);
@@ -143,7 +165,7 @@ export default function ServiceTickets() {
 
   const validate = () => {
     const e = {};
-    if (!form.customer.trim()) e.customer = 'Customer is required';
+    if (!form.customer) e.customer = 'Customer is required';
     if (!form.machine.trim()) e.machine = 'Machine is required';
     if (!form.complaint.trim()) e.complaint = 'Complaint description is required';
     return e;
@@ -152,17 +174,41 @@ export default function ServiceTickets() {
   const handleSave = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
+    
     try {
-      await save(form, editId);
+      const payload = {
+        customer: form.customer,
+        salesOrderNumber: form.salesOrderNumber,
+        machine: form.machine,
+        machineSerialNumber: form.machineSerialNumber,
+        complaint: form.complaint,
+        priority: form.priority,
+        status: form.status,
+        scheduledDate: form.scheduledDate,
+        attachment: form.attachment
+      };
+
+      if (editId) {
+        await api.put(`/service-requests/${editId}`, payload);
+      } else {
+        await api.post('/service-requests', payload);
+      }
+      
       setModal(false);
+      fetchData();
     } catch (err) {
-      setError(err.displayMessage || 'Failed to save ticket');
+      setError(err.response?.data?.error || 'Failed to save ticket');
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this ticket?')) return;
-    try { await remove(id); } catch (err) { setError(err.displayMessage || 'Failed to delete'); }
+    try { 
+      await api.delete(`/service-requests/${id}`); 
+      fetchData();
+    } catch (err) { 
+      setError(err.response?.data?.error || 'Failed to delete'); 
+    }
   };
 
   const f = (field) => ({
@@ -199,10 +245,10 @@ export default function ServiceTickets() {
             <div className="text-center py-4">Loading tickets…</div>
           ) : (
             <div className="d_table_wrap">
-              <table className="d_table" style={{ minWidth: 1000 }}>
+              <table className="d_table" style={{ minWidth: 1200 }}>
                 <thead>
                   <tr>
-                    <th>Ticket No</th>
+                    <th>Request No</th>
                     <th>Sales Order</th>
                     <th>Customer</th>
                     <th>Machine</th>
@@ -210,29 +256,35 @@ export default function ServiceTickets() {
                     <th>Complaint</th>
                     <th>Priority</th>
                     <th>Status</th>
+                    <th>Service Type</th>
                     <th>Warranty</th>
                     <th>Warranty Expiry</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.length === 0 && <tr className="d_empty"><td colSpan={11}>No service tickets found.</td></tr>}
+                  {data.length === 0 && <tr className="d_empty"><td colSpan={12}>No service tickets found.</td></tr>}
                   {data.map(t => (
                     <tr key={t._id}>
-                      <td><strong>{String(t.ticketNo)}</strong></td>
-                      <td><code>{String(t.salesOrderNo || '-')}</code></td>
-                      <td>{String(t.customer)}</td>
+                      <td><strong>{String(t.requestNumber)}</strong></td>
+                      <td><code>{String(t.salesOrder?.orderNumber || '-')}</code></td>
+                      <td>{String(t.customer?.name || t.customer)}</td>
                       <td>{String(t.machine)}</td>
                       <td><code>{String(t.machineSerialNo || '-')}</code></td>
                       <td style={{ fontSize: '0.85rem', maxWidth: 150 }}>{String(t.complaint)}</td>
                       <td><span className={`d_badge ${priorityBadge(t.priority)}`}>{String(t.priority)}</span></td>
                       <td><span className={`d_badge ${statusBadge(t.status)}`}>{String(t.status)}</span></td>
                       <td>
-                        <span className={`d_badge ${t.warranty === 'Yes' ? 'd_success' : 'd_info'}`}>
-                          {String(t.warranty)} {t.warrantyStatus !== 'N/A' && `(${String(t.warrantyStatus)})`}
+                        <span className={`d_badge ${t.serviceType === 'Warranty' ? 'd_success' : 'd_warning'}`}>
+                          {String(t.serviceType)}
                         </span>
                       </td>
-                      <td>{String(t.warrantyExpiryDate || '-')}</td>
+                      <td>
+                        <span className={`d_badge ${t.warranty ? 'd_success' : 'd_info'}`}>
+                          {t.warranty ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                      <td>{String(t.warranty?.warrantyEndDate ? t.warranty.warrantyEndDate.split('T')[0] : '-')}</td>
                       <td>
                         <div className="d_action_btns">
                           <button className="d_icon_btn d_view"><MdVisibility /></button>
@@ -251,15 +303,15 @@ export default function ServiceTickets() {
       <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Service Ticket' : 'New Service Ticket'} size="lg">
         <div className="d_form_row cols-2">
           <div className="d_form_group">
-            <label className="d_form_label">Ticket No</label>
-            <input className="d_form_control" value={form.ticketNo} disabled style={{ background: '#f5f5f5' }} />
+            <label className="d_form_label">Request No</label>
+            <input className="d_form_control" value={form.requestNumber} disabled style={{ background: '#f5f5f5' }} />
           </div>
           <div className="d_form_group">
             <label className="d_form_label">Sales Order (Optional)</label>
-            <select className="d_form_control" value={form.salesOrderNo} onChange={(e) => handleSalesOrderChange(e.target.value)}>
+            <select className="d_form_control" value={form.salesOrderNumber} onChange={(e) => handleSalesOrderChange(e.target.value)}>
               <option value="">Select Sales Order</option>
               {salesOrders.map(o => (
-                <option key={o._id} value={o.so}>{String(o.so)} - {String(o.customer)}</option>
+                <option key={o._id} value={o.orderNumber}>{String(o.orderNumber)} - {String(o.customer?.name)}</option>
               ))}
             </select>
           </div>
@@ -267,12 +319,17 @@ export default function ServiceTickets() {
         <div className="d_form_row cols-2">
           <div className="d_form_group">
             <label className="d_form_label">Customer <span className="d_req">*</span></label>
-            <input className="d_form_control" placeholder="Customer name" {...f('customer')} />
+            <select className="d_form_control" {...f('customer')}>
+              <option value="">Select Customer</option>
+              {customers.map(c => (
+                <option key={c._id} value={c._id}>{String(c.name)} {c.companyName ? `(${String(c.companyName)})` : ''}</option>
+              ))}
+            </select>
             {errors.customer && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.customer}</span>}
           </div>
           <div className="d_form_group">
-            <label className="d_form_label">Warranty Status</label>
-            <input className="d_form_control" value={form.warrantyStatus} disabled style={{ background: '#f5f5f5' }} />
+            <label className="d_form_label">Service Type</label>
+            <input className="d_form_control" value={form.serviceType} disabled style={{ background: '#f5f5f5' }} />
           </div>
         </div>
         <div className="d_form_row cols-2">
@@ -309,15 +366,9 @@ export default function ServiceTickets() {
         </div>
         <div className="d_form_row cols-2">
           <div className="d_form_group">
-            <label className="d_form_label">Created Date</label>
-            <input type="date" className="d_form_control" {...f('createdDate')} />
-          </div>
-          <div className="d_form_group">
             <label className="d_form_label">Warranty</label>
             <input className="d_form_control" value={form.warranty} disabled style={{ background: '#f5f5f5' }} />
           </div>
-        </div>
-        <div className="d_form_row cols-1">
           <div className="d_form_group">
             <label className="d_form_label">Warranty Expiry Date</label>
             <input className="d_form_control" value={form.warrantyExpiryDate || 'N/A'} disabled style={{ background: '#f5f5f5' }} />

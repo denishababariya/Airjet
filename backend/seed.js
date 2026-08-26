@@ -7,6 +7,7 @@ const User = require('./model/User.model');
 const Customer = require('./model/Customer.model');
 const Stock = require('./model/Stock.model');
 const SpareParts = require('./model/SpareParts.model');
+const Category = require('./model/Category.model');
 const Income = require('./model/Income.model');
 const Supplier = require('./model/Supplier.model');
 const ErpRecord = require('./model/ErpRecord.model');
@@ -14,6 +15,10 @@ const Attendance = require('./model/Attendance.model');
 const Role = require('./model/Role.model');
 const Permission = require('./model/Permission.model');
 const RolePermission = require('./model/RolePermission.model');
+const SalesOrder = require('./model/SalesOrder.model');
+const Invoice = require('./model/Invoice.model');
+const Warranty = require('./model/Warranty.model');
+const ServiceRequest = require('./model/ServiceRequest.model');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 
@@ -42,10 +47,18 @@ async function seedDatabase() {
     Customer.deleteMany({}),
     Stock.deleteMany({}),
     SpareParts.deleteMany({}),
+    Category.deleteMany({}),
     Income.deleteMany({}),
     Supplier.deleteMany({}),
     ErpRecord.deleteMany({}),
     Attendance.deleteMany({}),
+    Role.deleteMany({}),
+    Permission.deleteMany({}),
+    RolePermission.deleteMany({}),
+    SalesOrder.deleteMany({}),
+    Invoice.deleteMany({}),
+    Warranty.deleteMany({}),
+    ServiceRequest.deleteMany({}),
   ]);
   console.log('[Seed] Existing data cleared.');
 
@@ -135,6 +148,24 @@ async function seedDatabase() {
       cast: 'SC', bod: new Date('1994-07-07'), age: 32, joiningDate: new Date('2022-01-10'),
       department: depts[5]._id, designation: desigs[10]._id, status: 'Active', qrToken: generateQrToken()
     },
+    {
+      id: 'EMP009', name: 'Rajesh Patel', email: 'rajesh.patel@airjet.in', phoneNo: 9876501009,
+      address: '606, Garden Road, Surat', gender: 'Male', salary: 32000, workShift: 'Day',
+      cast: 'General', bod: new Date('1989-03-20'), age: 37, joiningDate: new Date('2018-05-15'),
+      department: depts[4]._id, designation: desigs[9]._id, status: 'Active', qrToken: generateQrToken()
+    },
+    {
+      id: 'EMP010', name: 'Suresh Kumar', email: 'suresh.kumar@airjet.in', phoneNo: 9876501010,
+      address: '707, City Center, Ahmedabad', gender: 'Male', salary: 30000, workShift: 'Day',
+      cast: 'OBC', bod: new Date('1992-08-12'), age: 34, joiningDate: new Date('2019-09-20'),
+      department: depts[4]._id, designation: desigs[9]._id, status: 'Active', qrToken: generateQrToken()
+    },
+    {
+      id: 'EMP011', name: 'Anita Desai', email: 'anita.desai@airjet.in', phoneNo: 9876501011,
+      address: '808, Ocean View, Vadodara', gender: 'Female', salary: 28500, workShift: 'Day',
+      cast: 'General', bod: new Date('1995-11-25'), age: 31, joiningDate: new Date('2020-03-10'),
+      department: depts[4]._id, designation: desigs[9]._id, status: 'Active', qrToken: generateQrToken()
+    },
   ]);
 
   const hashed = await bcrypt.hash('admin123', 10);
@@ -153,6 +184,7 @@ async function seedDatabase() {
     { id: 'CUS003', name: 'Modi Fabric Industries', email: 'modi@fabric.com', phone: '9876510003', city: 'Mumbai', gstNumber: '27AABCM9012C1Z9', customerType: 'Business', status: 'Active' },
     { id: 'CUS004', name: 'Jai Hind Textiles', email: 'jaihind@textiles.com', phone: '9876510004', city: 'Vadodara', gstNumber: '24AABCJ1234D1Z3', customerType: 'Business', status: 'Active' },
     { id: 'CUS005', name: 'Reliable Looms Pvt Ltd', email: 'reliable@looms.com', phone: '9876510005', city: 'Rajkot', gstNumber: '24AABCK5678E1Z8', customerType: 'Business', status: 'Active' },
+    { id: 'CUS006', name: 'Jiya', email: 'jiya@gmail.com', phone: '9876543212', city: 'Surat', gstNumber: '24AABCU9603R2ZY', customerType: 'Business', status: 'Active', companyName: 'Jiya Enterprises' },
   ]);
 
   await Supplier.insertMany([
@@ -173,12 +205,22 @@ async function seedDatabase() {
   ]);
 
   await SpareParts.insertMany([
-    { id: 'SP001', partName: 'Reed Valve Assembly', partNumber: 'AJ-RV-001', category: 'Valve', brand: 'AirTex', model: 'AT-200', compatibility: ['AT-200', 'AT-300'], quantity: 142, unitPrice: 500, sellingPrice: 650, minimumStock: 20, status: 'Available' },
-    { id: 'SP002', partName: 'Air Jet Nozzle Set', partNumber: 'AJ-NZ-012', category: 'Nozzle', brand: 'JetPro', model: 'JP-150', compatibility: ['JP-150'], quantity: 8, unitPrice: 700, sellingPrice: 850, minimumStock: 15, status: 'Low Stock' },
-    { id: 'SP003', partName: 'Weft Detector Sensor', partNumber: 'AJ-WD-034', category: 'Sensor', brand: 'SenseTech', model: 'ST-400', compatibility: ['ST-400'], quantity: 97, unitPrice: 400, sellingPrice: 550, minimumStock: 10, status: 'Available' },
-    { id: 'SP004', partName: 'Camshaft Assembly', partNumber: 'AJ-CA-005', category: 'Shaft', brand: 'Precision', model: 'PR-500', compatibility: ['PR-500', 'PR-600'], quantity: 35, unitPrice: 4500, sellingPrice: 5800, minimumStock: 10, status: 'Available' },
-    { id: 'SP005', partName: 'Pressure Gauge', partNumber: 'AJ-PG-022', category: 'Gauge', brand: 'MeterMax', model: 'MM-100', compatibility: ['MM-100', 'MM-200'], quantity: 12, unitPrice: 1200, sellingPrice: 1600, minimumStock: 5, status: 'Low Stock' },
-    { id: 'SP006', partName: 'Motor Starter', partNumber: 'AJ-MS-018', category: 'Electrical', brand: 'ElectroPro', model: 'EP-2000', compatibility: ['EP-2000', 'EP-3000'], quantity: 22, unitPrice: 8900, sellingPrice: 11500, minimumStock: 8, status: 'Available' },
+    { id: 'SP001', partName: 'Reed Valve Assembly', partNumber: 'AJ-RV-001', category: 'Valve', brand: 'AirTex', model: 'AT-200', compatibility: ['AT-200', 'AT-300'], quantity: 142, unitPrice: 500, sellingPrice: 650, minimumStock: 20, status: 'Available', warrantyPeriod: 12, warrantyUnit: 'Months' },
+    { id: 'SP002', partName: 'Air Jet Nozzle Set', partNumber: 'AJ-NZ-012', category: 'Nozzle', brand: 'JetPro', model: 'JP-150', compatibility: ['JP-150'], quantity: 8, unitPrice: 700, sellingPrice: 850, minimumStock: 15, status: 'Low Stock', warrantyPeriod: 6, warrantyUnit: 'Months' },
+    { id: 'SP003', partName: 'Weft Detector Sensor', partNumber: 'AJ-WD-034', category: 'Sensor', brand: 'SenseTech', model: 'ST-400', compatibility: ['ST-400'], quantity: 97, unitPrice: 400, sellingPrice: 550, minimumStock: 10, status: 'Available', warrantyPeriod: 18, warrantyUnit: 'Months' },
+    { id: 'SP004', partName: 'Camshaft Assembly', partNumber: 'AJ-CA-005', category: 'Shaft', brand: 'Precision', model: 'PR-500', compatibility: ['PR-500', 'PR-600'], quantity: 35, unitPrice: 4500, sellingPrice: 5800, minimumStock: 10, status: 'Available', warrantyPeriod: 24, warrantyUnit: 'Months' },
+    { id: 'SP005', partName: 'Pressure Gauge', partNumber: 'AJ-PG-022', category: 'Gauge', brand: 'MeterMax', model: 'MM-100', compatibility: ['MM-100', 'MM-200'], quantity: 12, unitPrice: 1200, sellingPrice: 1600, minimumStock: 5, status: 'Low Stock', warrantyPeriod: 12, warrantyUnit: 'Months' },
+    { id: 'SP006', partName: 'Motor Starter', partNumber: 'AJ-MS-018', category: 'Electrical', brand: 'ElectroPro', model: 'EP-2000', compatibility: ['EP-2000', 'EP-3000'], quantity: 22, unitPrice: 8900, sellingPrice: 11500, minimumStock: 8, status: 'Available', warrantyPeriod: 18, warrantyUnit: 'Months' },
+  ]);
+
+  // Categories
+  await Category.insertMany([
+    { name: 'Valve', description: 'Valve components', status: 'Active' },
+    { name: 'Nozzle', description: 'Nozzle components', status: 'Active' },
+    { name: 'Sensor', description: 'Sensor components', status: 'Active' },
+    { name: 'Shaft', description: 'Shaft components', status: 'Active' },
+    { name: 'Gauge', description: 'Gauge components', status: 'Active' },
+    { name: 'Electrical', description: 'Electrical components', status: 'Active' },
   ]);
 
   // Format dates for ErpRecord
@@ -238,8 +280,8 @@ async function seedDatabase() {
     erp('service', 'complaint', { id: 'CMP-001', customer: 'Shree Textile Mills', issue: 'Nozzle blockage repeated', date: formatDate(today), status: 'Open' }),
     erp('service', 'assignment', { id: 'ASG-001', engineer: 'Divya Verma', empId: 'EMP006', assigned: 2, inProgress: 1, resolved: 4, expertise: 'Nozzle, Valve Systems', available: 'Yes' }),
     erp('service', 'assignment', { id: 'ASG-002', engineer: 'Nikhil Rao', empId: 'EMP007', assigned: 2, inProgress: 1, resolved: 5, expertise: 'Sensors, Camshafts', available: 'Yes' }),
-    erp('service', 'report', { id: 'SR-001', ticket: 'SRV-003', customer: 'Modi Fabric Industries', engineer: 'Nikhil Rao', date: formatDate(twoDaysAgo), parts: 'Camshaft Assembly x1', hours: '5h 15m', cost: '₹6,500', status: 'Completed' }),
-    erp('service', 'report', { id: 'SR-002', ticket: 'SRV-002', customer: 'National Weaving Works', engineer: 'Nikhil Rao', date: formatDate(yesterday), parts: 'Weft Detector Sensor x1', hours: '3h 00m', cost: '₹1,800', status: 'In Progress' }),
+    erp('service', 'report', { id: 'SR-001', ticketNo: 'SRV-003', engineer: 'Nikhil Rao', workDone: 'Replaced camshaft assembly and aligned properly', partsUsed: 'Camshaft Assembly x1', workingStatus: 'Running', serviceTime: '5h 15m', completedDate: formatDate(twoDaysAgo), status: 'Completed' }),
+    erp('service', 'report', { id: 'SR-002', ticketNo: 'SRV-002', engineer: 'Nikhil Rao', workDone: 'Replaced weft detector sensor and tested functionality', partsUsed: 'Weft Detector Sensor x1', workingStatus: 'Running', serviceTime: '3h 00m', completedDate: formatDate(yesterday), status: 'In Progress' }),
     // Accounts
     erp('accounts', 'receivable', { id: 'RCV-001', party: 'Shree Textile Mills', type: 'Invoice', amount: 24500, dueDate: formatDate(new Date(today.getTime() + 10 * 24 * 60 * 60 * 1000)), status: 'Pending' }),
     erp('accounts', 'receivable', { id: 'RCV-002', party: 'Modi Fabric Industries', type: 'Invoice', amount: 42000, dueDate: formatDate(yesterday), status: 'Overdue' }),
@@ -267,6 +309,234 @@ async function seedDatabase() {
     { id: 'LVE-002', recordType: 'leave', emp: 'Priya Sharma', empId: 'EMP002', from: formatDateISO(yesterday), to: formatDateISO(yesterday), days: 1, type: 'Casual Leave', reason: 'Personal work', status: 'Approved' },
     { id: 'LVE-003', recordType: 'leave', emp: 'Meera Joshi', empId: 'EMP008', from: formatDateISO(today), to: formatDateISO(today), days: 1, type: 'Sick Leave', reason: 'Headache', status: 'Pending' },
   ]);
+
+  // ──────────────────────────────────────────────────────────────
+  // WARRANTY & SERVICE DATA
+  // ──────────────────────────────────────────────────────────────
+  console.log('[Seed] Seeding Warranty and Service data...');
+
+  // Get spare parts and customers for creating sales orders
+  const sparePartsList = await SpareParts.find({});
+  const customerList = await Customer.find({});
+  const jiyaCustomer = customerList.find(c => c.name === 'Jiya');
+  const shreeCustomer = customerList.find(c => c.name === 'Shree Textile Mills');
+
+  // Create Sales Order for Jiya
+  if (jiyaCustomer && sparePartsList.length >= 2) {
+    const jiyaSalesOrder = await SalesOrder.create({
+      orderNumber: 'SO-0003',
+      customer: jiyaCustomer._id,
+      orderDate: new Date('2024-03-10'),
+      expectedDeliveryDate: new Date('2024-04-10'),
+      salesPerson: 'Priya Sharma',
+      billingAddress: '456 Business Park, Surat, Gujarat',
+      shippingAddress: '456 Business Park, Surat, Gujarat',
+      paymentTerms: '30 Days',
+      deliveryTerms: 'Ex-Works',
+      items: [
+        {
+          sparePart: sparePartsList[0]._id,
+          partNumber: sparePartsList[0].partNumber,
+          description: sparePartsList[0].partName,
+          quantity: 3,
+          unit: 'Nos',
+          rate: sparePartsList[0].sellingPrice,
+          discount: 0,
+          taxableAmount: sparePartsList[0].sellingPrice * 3,
+          gstRate: 18,
+          cgstAmount: (sparePartsList[0].sellingPrice * 3 * 0.09),
+          sgstAmount: (sparePartsList[0].sellingPrice * 3 * 0.09),
+          igstAmount: 0,
+          total: sparePartsList[0].sellingPrice * 3 * 1.18,
+          warrantyPeriod: sparePartsList[0].warrantyPeriod,
+          warrantyUnit: sparePartsList[0].warrantyUnit,
+          warrantyStartDate: new Date('2024-03-10'),
+          warrantyEndDate: new Date('2024-09-10')
+        },
+        {
+          sparePart: sparePartsList[1]._id,
+          partNumber: sparePartsList[1].partNumber,
+          description: sparePartsList[1].partName,
+          quantity: 2,
+          unit: 'Nos',
+          rate: sparePartsList[1].sellingPrice,
+          discount: 0,
+          taxableAmount: sparePartsList[1].sellingPrice * 2,
+          gstRate: 18,
+          cgstAmount: (sparePartsList[1].sellingPrice * 2 * 0.09),
+          sgstAmount: (sparePartsList[1].sellingPrice * 2 * 0.09),
+          igstAmount: 0,
+          total: sparePartsList[1].sellingPrice * 2 * 1.18,
+          warrantyPeriod: sparePartsList[1].warrantyPeriod,
+          warrantyUnit: sparePartsList[1].warrantyUnit,
+          warrantyStartDate: new Date('2024-03-10'),
+          warrantyEndDate: new Date('2024-09-10')
+        }
+      ],
+      subtotal: (sparePartsList[0].sellingPrice * 3) + (sparePartsList[1].sellingPrice * 2),
+      totalDiscount: 0,
+      taxableAmount: (sparePartsList[0].sellingPrice * 3) + (sparePartsList[1].sellingPrice * 2),
+      cgst: ((sparePartsList[0].sellingPrice * 3) + (sparePartsList[1].sellingPrice * 2)) * 0.09,
+      sgst: ((sparePartsList[0].sellingPrice * 3) + (sparePartsList[1].sellingPrice * 2)) * 0.09,
+      igst: 0,
+      grandTotal: ((sparePartsList[0].sellingPrice * 3) + (sparePartsList[1].sellingPrice * 2)) * 1.18,
+      status: 'Completed',
+      invoiceGenerated: false,
+      notes: 'First order from Jiya Enterprises',
+      createdBy: null
+    });
+
+    // Create Invoice for Jiya
+    const jiyaInvoice = await Invoice.create({
+      invoiceNumber: 'INV-0003',
+      customer: jiyaCustomer._id,
+      salesOrder: jiyaSalesOrder._id,
+      invoiceDate: new Date('2024-03-15'),
+      dueDate: new Date('2024-04-15'),
+      salesPerson: 'Priya Sharma',
+      billingAddress: '456 Business Park, Surat, Gujarat',
+      shippingAddress: '456 Business Park, Surat, Gujarat',
+      paymentTerms: '30 Days',
+      items: jiyaSalesOrder.items,
+      subtotal: jiyaSalesOrder.subtotal,
+      totalDiscount: jiyaSalesOrder.totalDiscount,
+      taxableAmount: jiyaSalesOrder.taxableAmount,
+      cgst: jiyaSalesOrder.cgst,
+      sgst: jiyaSalesOrder.sgst,
+      igst: jiyaSalesOrder.igst,
+      roundOff: 0,
+      grandTotal: jiyaSalesOrder.grandTotal,
+      paidAmount: 0,
+      pendingAmount: jiyaSalesOrder.grandTotal,
+      paymentStatus: 'Unpaid',
+      status: 'Issued',
+      notes: 'Invoice for Jiya Enterprises',
+      createdBy: null
+    });
+
+    // Update sales order
+    await SalesOrder.findByIdAndUpdate(jiyaSalesOrder._id, {
+      invoiceGenerated: true,
+      invoice: jiyaInvoice._id
+    });
+
+    // Create Warranty Records for Jiya
+    await Warranty.insertMany([
+      {
+        warrantyNumber: 'WRY-202403-0001',
+        salesOrder: jiyaSalesOrder._id,
+        invoice: jiyaInvoice._id,
+        customer: jiyaCustomer._id,
+        sparePart: sparePartsList[0]._id,
+        partNumber: sparePartsList[0].partNumber,
+        partName: sparePartsList[0].partName,
+        quantity: 3,
+        warrantyPeriod: sparePartsList[0].warrantyPeriod,
+        warrantyUnit: sparePartsList[0].warrantyUnit,
+        warrantyStartDate: new Date('2024-03-15'),
+        warrantyEndDate: new Date('2024-09-15'),
+        warrantyStatus: 'Active',
+        machineSerialNumber: 'PRV-2025',
+        installationDate: new Date('2024-03-15'),
+        terms: 'Standard warranty covers manufacturing defects only',
+        notes: 'Installed at Jiya Enterprises facility',
+        createdBy: null
+      },
+      {
+        warrantyNumber: 'WRY-202403-0002',
+        salesOrder: jiyaSalesOrder._id,
+        invoice: jiyaInvoice._id,
+        customer: jiyaCustomer._id,
+        sparePart: sparePartsList[1]._id,
+        partNumber: sparePartsList[1].partNumber,
+        partName: sparePartsList[1].partName,
+        quantity: 2,
+        warrantyPeriod: sparePartsList[1].warrantyPeriod,
+        warrantyUnit: sparePartsList[1].warrantyUnit,
+        warrantyStartDate: new Date('2024-03-15'),
+        warrantyEndDate: new Date('2024-09-15'),
+        warrantyStatus: 'Active',
+        machineSerialNumber: 'NZL-2025',
+        installationDate: new Date('2024-03-15'),
+        terms: 'Standard warranty covers manufacturing defects only',
+        notes: 'Installed at Jiya Enterprises facility',
+        createdBy: null
+      }
+    ]);
+
+    // Create Service Requests for Jiya
+    const warranties = await Warranty.find({ customer: jiyaCustomer._id });
+    const serviceEngineer = await Employee.findOne({ name: 'Nikhil Rao' });
+
+    await ServiceRequest.insertMany([
+      {
+        requestNumber: 'SRQ-202408-0001',
+        customer: jiyaCustomer._id,
+        salesOrder: jiyaSalesOrder._id,
+        invoice: jiyaInvoice._id,
+        warranty: warranties[0]?._id,
+        machine: 'Hydraulic Press Machine',
+        machineSerialNumber: 'PRV-2025',
+        complaint: 'Reed valve assembly not maintaining proper pressure',
+        priority: 'High',
+        status: 'Completed',
+        serviceType: 'Warranty',
+        estimatedCost: 0,
+        actualCost: 0,
+        requestDate: new Date('2024-08-01'),
+        scheduledDate: new Date('2024-08-02'),
+        completedDate: new Date('2024-08-03'),
+        assignedEngineer: serviceEngineer?._id,
+        assignedDate: new Date('2024-08-01'),
+        resolution: 'Replaced faulty reed valve under warranty. System now working properly.',
+        customerFeedback: 'Excellent warranty service, very satisfied',
+        rating: 5,
+        partsUsed: [],
+        laborHours: 3,
+        laborRate: 500,
+        laborCost: 0,
+        createdBy: null
+      },
+      {
+        requestNumber: 'SRQ-202411-0002',
+        customer: jiyaCustomer._id,
+        salesOrder: jiyaSalesOrder._id,
+        invoice: jiyaInvoice._id,
+        warranty: warranties[1]?._id,
+        machine: 'Industrial Machinery',
+        machineSerialNumber: 'NZL-2025',
+        complaint: 'Air jet nozzle set not spraying properly',
+        priority: 'Medium',
+        status: 'Completed',
+        serviceType: 'Paid',
+        estimatedCost: 15000,
+        actualCost: 18000,
+        requestDate: new Date('2024-11-20'),
+        scheduledDate: new Date('2024-11-21'),
+        completedDate: new Date('2024-11-22'),
+        assignedEngineer: serviceEngineer?._id,
+        assignedDate: new Date('2024-11-20'),
+        resolution: 'Replaced worn-out nozzle set and performed calibration. Spray pattern now correct.',
+        customerFeedback: 'Good service quality, reasonable cost',
+        rating: 4,
+        partsUsed: [
+          {
+            sparePart: sparePartsList[1]._id,
+            partNumber: sparePartsList[1].partNumber,
+            quantity: 1,
+            unitPrice: sparePartsList[1].unitPrice,
+            totalPrice: sparePartsList[1].unitPrice
+          }
+        ],
+        laborHours: 4,
+        laborRate: 500,
+        laborCost: 2000,
+        createdBy: null
+      }
+    ]);
+
+    console.log('[Seed] Warranty and Service data seeded successfully for Jiya');
+  }
 
   // ──────────────────────────────────────────────────────────────
   // RBAC - Seed Roles, Permissions, and RolePermissions

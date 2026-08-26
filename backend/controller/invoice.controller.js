@@ -245,6 +245,16 @@ exports.createInvoice = async (req, res) => {
                 invoiceGenerated: true,
                 invoice: invoice._id
             });
+            
+            // Create warranty records for the sales order
+            try {
+                const Warranty = require('../model/Warranty.model');
+                const warrantyController = require('./warranty.controller');
+                await warrantyController.createWarrantyForSalesOrder(req.body.salesOrder, invoice._id);
+            } catch (warrantyError) {
+                console.error('Error creating warranty records:', warrantyError);
+                // Don't fail invoice creation if warranty creation fails
+            }
         }
         
         const savedInvoice = await Invoice.findById(invoice._id)

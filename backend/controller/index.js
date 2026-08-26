@@ -24,4 +24,6 @@ module.exports = {
   payment: require("./payment.controller.js"),
   salesReturn: require("./salesReturn.controller.js"),
   salesDashboard: require("./salesDashboard.controller.js"),
+  warranty: require("./warranty.controller.js"),
+  serviceRequest: require("./serviceRequest.controller.js"),
 };
