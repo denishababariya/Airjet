@@ -12,4 +12,6 @@ module.exports = {
   ...require("./Invoice.model.js"),
   ...require("./Payment.model.js"),
   ...require("./SalesReturn.model.js"),
+  ...require("./Warranty.model.js"),
+  ...require("./ServiceRequest.model.js"),
 };

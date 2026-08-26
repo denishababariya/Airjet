@@ -56,6 +56,21 @@ const invoiceItemSchema = new mongoose.Schema({
     total: {
         type: Number,
         required: true
+    },
+    // Warranty information per item
+    warrantyPeriod: {
+        type: Number
+    },
+    warrantyUnit: {
+        type: String,
+        enum: ['Days', 'Months', 'Years'],
+        default: 'Months'
+    },
+    warrantyStartDate: {
+        type: Date
+    },
+    warrantyEndDate: {
+        type: Date
     }
 });
 

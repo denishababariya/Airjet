@@ -68,6 +68,21 @@ const salesOrderItemSchema = new mongoose.Schema({
     dispatchedQuantity: {
         type: Number,
         default: 0
+    },
+    // Warranty information per item
+    warrantyPeriod: {
+        type: Number
+    },
+    warrantyUnit: {
+        type: String,
+        enum: ['Days', 'Months', 'Years'],
+        default: 'Months'
+    },
+    warrantyStartDate: {
+        type: Date
+    },
+    warrantyEndDate: {
+        type: Date
     }
 });
 

@@ -452,6 +452,16 @@ export const payrollApi = {
   getPaymentReport: (params = {}) => api.get('/payroll/reports/payments', { params }),
 };
 
+export const warrantiesApi = {
+  getAll: (params = {}) => api.get('/warranties', { params }),
+  getById: (id) => api.get(`/warranties/${id}`),
+  check: (params = {}) => api.get('/warranties/check', { params }),
+  create: (data) => api.post('/warranties', data),
+  update: (id, data) => api.put(`/warranties/${id}`, data),
+  remove: (id) => api.delete(`/warranties/${id}`),
+  createForSalesOrder: (data) => api.post('/warranties/create-for-sales-order', data),
+};
+
 export default api;
 
 

@@ -296,6 +296,24 @@ router.post('/sales-returns/:id/approve', authenticate, authorizeByLevel(2), con
 router.post('/sales-returns/:id/process', authenticate, authorizeByLevel(2), controller.salesReturn.processSalesReturn);
 router.post('/sales-returns/:id/reject', authenticate, authorizeByLevel(2), controller.salesReturn.rejectSalesReturn);
 
+// Warranty Routes
+router.get('/warranties', authenticate, controller.warranty.getAllWarranties);
+router.get('/warranties/:id', authenticate, controller.warranty.getWarrantyById);
+router.get('/warranties/check', authenticate, controller.warranty.checkWarrantyForService);
+router.post('/warranties', authenticate, authorize('Admin'), controller.warranty.createWarranty);
+router.put('/warranties/:id', authenticate, authorize('Admin'), controller.warranty.updateWarranty);
+router.delete('/warranties/:id', authenticate, authorize('Admin'), controller.warranty.deleteWarranty);
+router.post('/warranties/create-for-sales-order', authenticate, authorizeByLevel(2), controller.warranty.createWarrantyForSalesOrder);
+
+// Service Request Routes
+router.get('/service-requests', authenticate, controller.serviceRequest.getAllServiceRequests);
+router.get('/service-requests/:id', authenticate, controller.serviceRequest.getServiceRequestById);
+router.post('/service-requests', authenticate, authorizeByLevel(2), controller.serviceRequest.createServiceRequest);
+router.put('/service-requests/:id', authenticate, authorizeByLevel(2), controller.serviceRequest.updateServiceRequest);
+router.delete('/service-requests/:id', authenticate, authorize('Admin'), controller.serviceRequest.deleteServiceRequest);
+router.post('/service-requests/:id/assign-engineer', authenticate, authorizeByLevel(2), controller.serviceRequest.assignEngineer);
+router.post('/service-requests/:id/complete', authenticate, authorizeByLevel(2), controller.serviceRequest.completeServiceRequest);
+
 // Sales Dashboard & Reports
 router.get('/sales/dashboard/summary', authenticate, controller.salesDashboard.getDashboardSummary);
 router.get('/sales/dashboard/chart', authenticate, controller.salesDashboard.getSalesChartData);
