@@ -47,6 +47,17 @@ const blank = {
 // Designations that get a login account
 const ADMIN_DESIGNATIONS = ["HR", "Admin", "Manager", "Head", "HR Manager"];
 
+// Map designation titles to valid user role enum values
+const mapDesignationToRole = (designationTitle) => {
+  if (!designationTitle) return "User";
+  const title = designationTitle.toLowerCase();
+
+  if (title.includes("admin")) return "Admin";
+  if (title.includes("hr manager") || title.includes("hr")) return "HR";
+
+  return "User";
+};
+
 const statusClass = {
   Active: "d_success",
   Inactive: "d_danger",
@@ -297,7 +308,7 @@ const EmployeeMaster = ({ currentUser }) => {
           const designation = designations.find(
             (d) => (d._id || d.id) === form.designation,
           );
-          const role = designation?.title || "User";
+          const role = mapDesignationToRole(designation?.title);
           await hrApi.createUserWithRole(editId, role, form.password.trim());
         }
       } else {
@@ -318,7 +329,7 @@ const EmployeeMaster = ({ currentUser }) => {
           const designation = designations.find(
             (d) => (d._id || d.id) === form.designation,
           );
-          const role = designation?.title || "User";
+          const role = mapDesignationToRole(designation?.title);
           await hrApi.createUserWithRole(newId, role, form.password.trim());
         }
       }
@@ -790,7 +801,7 @@ const EmployeeMaster = ({ currentUser }) => {
             {form.image && !form.imageFile && (
               <div style={{ marginTop: 8 }}>
                 <img
-                  src={form.image}
+                  src={form.image.startsWith('http') ? form.image : `http://localhost:5000${form.image}`}
                   alt="Profile"
                   style={{
                     width: 80,
@@ -841,7 +852,7 @@ const EmployeeMaster = ({ currentUser }) => {
             {form.docImage && !form.docImageFile && (
               <div style={{ marginTop: 8 }}>
                 <img
-                  src={form.docImage}
+                  src={form.docImage.startsWith('http') ? form.docImage : `http://localhost:5000${form.docImage}`}
                   alt="Document"
                   style={{
                     width: 80,

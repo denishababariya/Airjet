@@ -124,25 +124,39 @@ export default function PayrollReports() {
         <thead>
           <tr>
             <th>Employee</th>
-            <th>Deductions</th>
+            <th>Deduction Type</th>
+            <th>Amount (₹)</th>
             <th>Total Deductions (₹)</th>
             <th>Leave Deduction (₹)</th>
           </tr>
         </thead>
         <tbody>
-          {reportData.length === 0 && <tr className="d_empty"><td colSpan={4}>No deduction data available</td></tr>}
-          {reportData.map((item, idx) => (
-            <tr key={idx}>
-              <td><strong>{item.employeeName}</strong></td>
-              <td>
-                {item.deductions && item.deductions.map((d, i) => (
-                  <div key={i}>{d.name}: ₹{d.amount.toLocaleString('en-IN')}</div>
-                ))}
-              </td>
-              <td style={{ color: 'var(--d-danger)' }}><strong>₹{(item.totalDeduction || 0).toLocaleString('en-IN')}</strong></td>
-              <td>₹{(item.leaveDeduction || 0).toLocaleString('en-IN')}</td>
-            </tr>
-          ))}
+          {reportData.length === 0 && <tr className="d_empty"><td colSpan={5}>No deduction data available</td></tr>}
+          {reportData.map((item, idx) => {
+            const deductionRows = item.deductions && item.deductions.length > 0 ? item.deductions : [{ name: 'No deductions', amount: 0 }];
+            const leaveDeductionAmount = (item.deductions || []).reduce((sum, d) => {
+              const name = (d.name || '').toLowerCase();
+              if (name.includes('leave') || name.includes('absent')) {
+                return sum + (Number(d.amount) || 0);
+              }
+              return sum;
+            }, 0);
+            return deductionRows.map((d, i) => (
+              <tr key={`${idx}-${i}`}>
+                {i === 0 && (
+                  <td rowSpan={deductionRows.length}><strong>{item.employeeName}</strong></td>
+                )}
+                <td>{d.name}</td>
+                <td>₹{d.amount.toLocaleString('en-IN')}</td>
+                {i === 0 && (
+                  <>
+                    <td rowSpan={deductionRows.length} style={{ color: 'var(--d-danger)' }}><strong>₹{(item.totalDeduction || 0).toLocaleString('en-IN')}</strong></td>
+                    <td rowSpan={deductionRows.length}>₹{leaveDeductionAmount.toLocaleString('en-IN')}</td>
+                  </>
+                )}
+              </tr>
+            ));
+          })}
         </tbody>
       </table>
     </div>

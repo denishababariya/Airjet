@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MdInventory, MdSearch, MdRemove } from 'react-icons/md';
+import { MdInventory, MdSearch, MdRemove, MdTrendingUp, MdWarning, MdAttachMoney, MdCategory, MdLocalShipping } from 'react-icons/md';
 import Modal from '../components/Modal';
 import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
@@ -72,7 +72,10 @@ const RawMaterials = () => {
     }
   };
 
-  const money = (value) => `₹${(Number(value) || 0).toLocaleString('en-IN')}`;
+  const money = (value) => {
+    const num = Number(value) || 0;
+    return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  };
 
   const filteredMaterials = materials.filter(m => {
     const matchesSearch = !searchTerm ||
@@ -131,12 +134,43 @@ const RawMaterials = () => {
         </div>
       </div>
 
-      <div className="d_summary_pills mb-3">
-        <span>Total Materials: <strong>{report.summary?.totalMaterials || materials.length}</strong></span>
-        <span>Current Qty: <strong>{report.summary?.currentQuantity || 0}</strong></span>
-        <span>Purchase Value: <strong>{money(report.summary?.purchaseValue)}</strong></span>
-        <span>Current Stock Value: <strong>{money(report.summary?.currentStockValue)}</strong></span>
-        <span>Low Stock: <strong>{report.summary?.lowStock || 0}</strong></span>
+      <div className="row mb-4">
+        <div className="col-md-3 col-sm-6 mb-3">
+          <div className="d_stat_card d_stat_card_primary">
+            <div className="d_stat_icon"><MdInventory /></div>
+            <div className="d_stat_content">
+              <div className="d_stat_label">Total Materials</div>
+              <div className="d_stat_value">{report.summary?.totalMaterials || materials.length}</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 col-sm-6 mb-3">
+          <div className="d_stat_card d_stat_card_success">
+            <div className="d_stat_icon"><MdTrendingUp /></div>
+            <div className="d_stat_content">
+              <div className="d_stat_label">Current Qty</div>
+              <div className="d_stat_value">{report.summary?.currentQuantity || 0}</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 col-sm-6 mb-3">
+          <div className="d_stat_card d_stat_card_warning">
+            <div className="d_stat_icon"><MdWarning /></div>
+            <div className="d_stat_content">
+              <div className="d_stat_label">Low Stock</div>
+              <div className="d_stat_value">{report.summary?.lowStock || 0}</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 col-sm-6 mb-3">
+          <div className="d_stat_card d_stat_card_accent">
+            <div className="d_stat_icon"><MdAttachMoney /></div>
+            <div className="d_stat_content">
+              <div className="d_stat_label">Current Stock Value</div>
+              <div className="d_stat_value">{money(report.summary?.currentStockValue)}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="d_card">

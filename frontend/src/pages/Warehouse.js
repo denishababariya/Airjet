@@ -129,7 +129,16 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
           minimumStock: 0, description: '',
         };
         const oldQty = editId ? warehouses.find(w => w._id === editId)?.quantity || 0 : 0;
-        if (editId) await stockApi.update(editId, payload, imageFiles); else await stockApi.create(payload, imageFiles);
+        if (editId) {
+          // Only send imageFiles if new images were selected
+          if (imageFiles.length > 0) {
+            await stockApi.update(editId, payload, imageFiles);
+          } else {
+            await stockApi.update(editId, payload);
+          }
+        } else {
+          await stockApi.create(payload, imageFiles);
+        }
         
         // Log transaction if quantity changed
         if (editId && qty !== oldQty) {

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { MdAdd, MdShoppingCart, MdVisibility, MdDelete } from 'react-icons/md';
+import { MdAdd, MdShoppingCart, MdVisibility, MdDelete, MdInventory, MdTrendingUp, MdAttachMoney, MdReceipt } from 'react-icons/md';
 import Modal from '../components/Modal';
 import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
@@ -57,6 +57,11 @@ const RawMaterialPurchases = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const money = (value) => {
+    const num = Number(value) || 0;
+    return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
   };
 
   const summary = useMemo(() => {
@@ -162,13 +167,52 @@ const RawMaterialPurchases = () => {
         <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> Add Purchase</button>
       </div>
 
-      <div className="d_summary_pills mb-3">
-        <span>Total Purchases: <strong>{summary.purchases}</strong></span>
-        <span>Total Items: <strong>{summary.items}</strong></span>
-        <span>Total Qty: <strong>{summary.quantity}</strong></span>
-        <span>Purchase Value: <strong>₹{summary.amount.toLocaleString('en-IN')}</strong></span>
-        <span>GST Total: <strong>₹{(summary.amount * 0.18).toLocaleString('en-IN')}</strong></span>
-        <span>Grand Total: <strong>₹{(summary.amount * 1.18).toLocaleString('en-IN')}</strong></span>
+      <div className="row mb-4">
+        <div className="col-md-2-4 col-sm-6 mb-3">
+          <div className="d_stat_card d_stat_card_primary">
+            <div className="d_stat_icon"><MdShoppingCart /></div>
+            <div className="d_stat_content">
+              <div className="d_stat_label">Total Purchases</div>
+              <div className="d_stat_value">{summary.purchases}</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-2-4 col-sm-6 mb-3">
+          <div className="d_stat_card d_stat_card_success">
+            <div className="d_stat_icon"><MdInventory /></div>
+            <div className="d_stat_content">
+              <div className="d_stat_label">Total Items</div>
+              <div className="d_stat_value">{summary.items}</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-2-4 col-sm-6 mb-3">
+          <div className="d_stat_card d_stat_card_info">
+            <div className="d_stat_icon"><MdTrendingUp /></div>
+            <div className="d_stat_content">
+              <div className="d_stat_label">Total Qty</div>
+              <div className="d_stat_value">{summary.quantity}</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-2-4 col-sm-6 mb-3">
+          <div className="d_stat_card d_stat_card_accent">
+            <div className="d_stat_icon"><MdAttachMoney /></div>
+            <div className="d_stat_content">
+              <div className="d_stat_label">Purchase Value</div>
+              <div className="d_stat_value">{money(summary.amount)}</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-2-4 col-sm-6 mb-3">
+          <div className="d_stat_card d_stat_card_warning">
+            <div className="d_stat_icon"><MdReceipt /></div>
+            <div className="d_stat_content">
+              <div className="d_stat_label">Grand Total</div>
+              <div className="d_stat_value">{money(summary.amount * 1.18)}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="d_card">
@@ -213,9 +257,9 @@ const RawMaterialPurchases = () => {
                         <td>{String(purchase.expectedDelivery || '-')}</td>
                         <td><strong>{String(purchase.items?.length || 0)}</strong></td>
                         <td><strong>{String(totalQty)}</strong></td>
-                        <td><strong>₹{totalAmount.toLocaleString('en-IN')}</strong></td>
-                        <td>₹{gstAmount.toLocaleString('en-IN')}</td>
-                        <td><strong>₹{grandTotal.toLocaleString('en-IN')}</strong></td>
+                        <td><strong>{money(totalAmount)}</strong></td>
+                        <td>{money(gstAmount)}</td>
+                        <td><strong>{money(grandTotal)}</strong></td>
                         <td><span className={`d_badge ${statusClass[purchase.status] || 'd_info'}`}>{String(purchase.status)}</span></td>
                         <td>
                           <div className="d_action_btns">
@@ -340,11 +384,11 @@ const RawMaterialPurchases = () => {
         <div className="d_form_row cols-2 mt-3">
           <div className="d_form_group">
             <label className="d_form_label">Total Amount</label>
-            <div className="d_form_control d_readonly">₹{calculateTotal().toLocaleString('en-IN')}</div>
+            <div className="d_form_control d_readonly">{money(calculateTotal())}</div>
           </div>
           <div className="d_form_group">
             <label className="d_form_label">Grand Total (18% GST)</label>
-            <div className="d_form_control d_readonly">₹{(calculateTotal() * 1.18).toLocaleString('en-IN')}</div>
+            <div className="d_form_control d_readonly">{money(calculateTotal() * 1.18)}</div>
           </div>
         </div>
 
@@ -375,8 +419,8 @@ const RawMaterialPurchases = () => {
                     <td>{item.category}</td>
                     <td>{item.quantity}</td>
                     <td>{item.unit}</td>
-                    <td>₹{(item.unitPrice || 0).toLocaleString('en-IN')}</td>
-                    <td><strong>₹{(item.totalPrice || 0).toLocaleString('en-IN')}</strong></td>
+                    <td>{money(item.unitPrice || 0)}</td>
+                    <td><strong>{money(item.totalPrice || 0)}</strong></td>
                   </tr>
                 ))}
               </tbody>

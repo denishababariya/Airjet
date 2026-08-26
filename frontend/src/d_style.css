@@ -1485,6 +1485,22 @@ a {
   border-left-color: var(--d-warning);
 }
 
+.d_stat_card.d_stat_card_primary {
+  border-left-color: var(--d-primary);
+}
+
+.d_stat_card.d_stat_card_success {
+  border-left-color: var(--d-success);
+}
+
+.d_stat_card.d_stat_card_info {
+  border-left-color: var(--d-info);
+}
+
+.d_stat_card.d_stat_card_warning {
+  border-left-color: var(--d-warning);
+}
+
 
 
 .d_stat_icon {
@@ -1539,7 +1555,14 @@ a {
   color: #c49800;
 }
 
-
+.d_stat_icon.d_stat_icon_large {
+  width: 60px;
+  height: 60px;
+  font-size: 28px;
+  margin-bottom: 0;
+  background: rgba(244, 161, 36, 0.12);
+  color: var(--d-accent);
+}
 
 .d_stat_value {
 
@@ -1555,7 +1578,12 @@ a {
 
 }
 
-
+.d_stat_value_large {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--d-primary);
+  line-height: 1;
+}
 
 .d_stat_label {
 
@@ -1593,6 +1621,53 @@ a {
   color: var(--d-danger);
 }
 
+
+/* 5-column grid support */
+.col-md-2-4 {
+  flex: 0 0 auto;
+  width: 20%;
+  padding: 0 12px;
+}
+
+@media (max-width: 991px) {
+  .col-md-2-4 {
+    width: 50%;
+  }
+}
+
+@media (max-width: 575px) {
+  .col-md-2-4 {
+    width: 100%;
+  }
+}
+
+
+/* Deduction List Styles */
+.d_deduction_list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.d_deduction_item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: var(--d-light);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.d_deduction_name {
+  color: var(--d-text-main);
+  font-weight: 500;
+}
+
+.d_deduction_amount {
+  color: var(--d-danger);
+  font-weight: 600;
+}
 
 
 /* ---------- CARD ---------- */

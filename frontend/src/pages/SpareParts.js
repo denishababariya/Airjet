@@ -177,24 +177,6 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
     try {
       const categoryName = form.cat.trim();
       
-      // Check if category exists in API categories, if not create it
-      const existingCategory = categories.find(c => c.name === categoryName);
-      if (!existingCategory && categoryName && categoryName !== 'Custom') {
-        try {
-          await fetch('http://localhost:5000/api/categories', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ name: categoryName, status: 'Active' })
-          });
-          fetchCategories(); // Refresh categories
-        } catch (err) {
-          console.error('Failed to create category:', err);
-        }
-      }
-      
       const payload = {
         partName: form.name.trim(), category: categoryName, brand: form.brand.trim(),
         compatibility: form.model ? form.model.split(',').map(s => s.trim()).filter(Boolean) : [],
@@ -449,16 +431,7 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
               {categories.filter(c => c.status === 'Active').map(c => (
                 <option key={c._id} value={c.name}>{c.name}</option>
               ))}
-              <option value="Custom">+ Add Custom Category</option>
             </select>
-            {form.cat === 'Custom' && (
-              <input 
-                className="d_form_control" 
-                placeholder="Enter custom category" 
-                style={{ marginTop: '5px' }}
-                onChange={(e) => setForm(p => ({ ...p, cat: e.target.value }))}
-              />
-            )}
             <Err field="cat" />
           </div>
         </div>
