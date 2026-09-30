@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controller');
 const { authenticate, authorize, authorizeHR, authorizeByLevel } = require('../middleware/auth');
-const { uploadSingle, uploadMultiple, uploadFields } = require('../middleware/upload');
+const { uploadSingle, uploadSingleOptional, uploadMultiple, uploadFields } = require('../middleware/upload');
 
 // Health Check Route
 router.get('/health', (req, res) => {
@@ -125,7 +125,7 @@ router.get('/erp/warranty/check/:salesOrderNo', authenticate, async (req, res) =
 router.post('/suppliers', authenticate, authorizeByLevel(2), uploadSingle('image'), controller.createSupplier);
 router.get('/suppliers', authenticate, controller.getAllSuppliers);
 router.get('/suppliers/:id/modules', authenticate, controller.getSupplierModuleData);
-router.put('/suppliers/:id', authenticate, authorizeByLevel(2), uploadSingle('image'), controller.updateSupplier);
+router.put('/suppliers/:id', authenticate, authorizeByLevel(2), uploadSingleOptional('image'), controller.updateSupplier);
 router.delete('/suppliers/:id', authenticate, authorize('Admin'), controller.deleteSupplier);
 
 // ──────────────────────────────────────────────────────────────

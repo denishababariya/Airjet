@@ -3,6 +3,8 @@ const Stock = require('../model/Stock.model');
 const SpareParts = require('../model/SpareParts.model');
 const RawMaterial = require('../model/RawMaterial.model');
 const { syncEntityAcrossModules, deleteEntityFromModules, getEntityFromAllModules } = require('../services/universalDataSync.service');
+const fs = require('fs');
+const path = require('path');
 
 const generateId = async () => {
   const count = await Supplier.countDocuments();
@@ -79,19 +81,29 @@ const getAllSuppliers = async (req, res) => {
 const updateSupplier = async (req, res) => {
   try {
     const body = { ...req.body };
+    const supplier = await Supplier.findById(req.params.id);
+    if (!supplier) return res.status(404).json({ error: 'Supplier not found' });
+
+    // Delete old image if new image is uploaded
+    if (req.file && supplier.image) {
+      const oldImagePath = path.join(__dirname, '..', supplier.image);
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+    }
+
     if (req.file) {
       body.image = `/uploads/${req.file.filename}`;
     }
-    const supplier = await Supplier.findByIdAndUpdate(req.params.id, body, { new: true });
-    if (!supplier) return res.status(404).json({ error: 'Supplier not found' });
+    const updatedSupplier = await Supplier.findByIdAndUpdate(req.params.id, body, { new: true });
     
     // Sync products to Stock/SpareParts
-    await syncSupplierProducts(supplier);
+    await syncSupplierProducts(updatedSupplier);
     
     // Sync updated supplier data across relevant modules
-    await syncEntityAcrossModules(supplier, 'supplier', 'update');
+    await syncEntityAcrossModules(updatedSupplier, 'supplier', 'update');
     
-    res.status(200).json(supplier);
+    res.status(200).json(updatedSupplier);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -99,8 +111,18 @@ const updateSupplier = async (req, res) => {
 
 const deleteSupplier = async (req, res) => {
   try {
-    const supplier = await Supplier.findByIdAndDelete(req.params.id);
+    const supplier = await Supplier.findById(req.params.id);
     if (!supplier) return res.status(404).json({ error: 'Supplier not found' });
+
+    // Delete image file if exists
+    if (supplier.image) {
+      const imagePath = path.join(__dirname, '..', supplier.image);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+
+    await Supplier.findByIdAndDelete(req.params.id);
     
     // Delete supplier data from all modules
     await deleteEntityFromModules(req.params.id, 'supplier');

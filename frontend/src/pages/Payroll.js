@@ -105,7 +105,7 @@ const Payroll = ({ defaultTab = 'dashboard' }) => {
           ['deductions', 'Deductions', MdSettings],
           ['payslip', 'Payslip Download', MdSettings]
         ].map(([key, label, Icon]) => (
-          <button 
+          <button   
             key={key} 
             className={`d_tab_btn ${activeTab === key ? 'd_active' : ''}`} 
             onClick={() => {

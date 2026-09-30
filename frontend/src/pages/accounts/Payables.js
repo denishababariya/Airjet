@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MdVisibility, MdEdit, MdAccountBalance, MdMonetizationOn, MdWarning, MdRefresh } from 'react-icons/md';
+import { MdVisibility, MdEdit, MdAccountBalance, MdMonetizationOn, MdWarning, MdRefresh, MdDelete } from 'react-icons/md';
 import { accountsApi } from '../../utils/api';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import useConfirm from '../../hooks/useConfirm';
 
 const statusBadge = s => {
   if (s === 'Paid') return 'd_success';
@@ -11,6 +13,7 @@ const statusBadge = s => {
 export default function Payables() {
   const [payables, setPayables] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { confirmState, confirm, closeConfirm } = useConfirm();
 
   const fetchPayables = async () => {
     try {
@@ -105,6 +108,26 @@ export default function Payables() {
                           <div className="d_action_btns">
                             <button className="d_icon_btn d_view"><MdVisibility /></button>
                             <button className="d_icon_btn d_edit"><MdEdit /></button>
+                            <button 
+                              className="d_icon_btn d_del" 
+                              onClick={() => confirm({
+                                title: 'Delete Payable',
+                                message: `Delete payable "${p.po || p.id}"?`,
+                                confirmLabel: 'Delete',
+                                variant: 'danger',
+                                onConfirm: async () => {
+                                  closeConfirm();
+                                  try {
+                                    await accountsApi.remove('accounts', 'payable', p.id);
+                                    setPayables(prev => prev.filter(item => item.id !== p.id));
+                                  } catch (err) {
+                                    console.error('Failed to delete payable:', err);
+                                  }
+                                }
+                              })}
+                            >
+                              <MdDelete />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -116,6 +139,16 @@ export default function Payables() {
           </div>
         </>
       )}
+      <ConfirmDialog
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmLabel={confirmState.confirmLabel}
+        cancelLabel={confirmState.cancelLabel}
+        variant={confirmState.variant}
+        onConfirm={confirmState.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

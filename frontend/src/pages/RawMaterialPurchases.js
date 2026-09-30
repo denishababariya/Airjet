@@ -159,15 +159,82 @@ const RawMaterialPurchases = () => {
     <div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
+      {/* <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
           <h1 className="d_page_title">Raw Material Purchases</h1>
           <p className="d_page_subtitle">Purchase history for raw materials</p>
         </div>
         <button className="d_btn d_btn_primary" onClick={openAdd}><MdAdd /> Add Purchase</button>
+      </div> */}
+
+
+
+      <div className="d_card mb-3">
+        <div className="d_card_header">
+          <h2 className="d_card_title"><MdShoppingCart className="d_card_icon" /> Purchase Report ({purchases.length})</h2>
+        </div>
+        <div className="d_card_body p-0">
+          {loading ? <div className="text-center py-4">Loading…</div> : (
+            <div className="d_table_wrap">
+              <table className="d_table">
+                <thead>
+                  <tr>
+                    <th>Purchase ID</th>
+                    <th>Supplier</th>
+                    <th>Purchase Date</th>
+                    <th>Expected Delivery</th>
+                    <th>Payment Terms</th>
+                    <th>Items Count</th>
+                    <th>Total Quantity</th>
+                    <th>Total Amount (₹)</th>
+                    <th>GST Amount (₹)</th>
+                    <th>Grand Total (₹)</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {purchases.length === 0 && (
+                    <tr className="d_empty">
+                      <td colSpan={13}>No raw material purchases found.</td>
+                    </tr>
+                  )}
+                  {purchases.map((purchase) => {
+                    const totalQty = (purchase.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+                    const totalAmount = Number(purchase.totalAmount) || 0;
+                    const gstAmount = totalAmount * 0.18;
+                    const grandTotal = totalAmount + gstAmount;
+                    return (
+                      <tr key={purchase._id}>
+                        <td><code>{String(purchase.id)}</code></td>
+                        <td><strong>{String(purchase.supplier)}</strong></td>
+                        <td>{String(purchase.purchaseDate)}</td>
+                        <td>{String(purchase.expectedDelivery || '-')}</td>
+                        <td>{String(purchase.paymentTerms || '-')}</td>
+                        <td><strong>{String(purchase.items?.length || 0)}</strong></td>
+                        <td><strong>{String(totalQty)}</strong></td>
+                        <td><strong>{money(totalAmount)}</strong></td>
+                        <td>{money(gstAmount)}</td>
+                        <td><strong>{money(grandTotal)}</strong></td>
+                        <td><span className={`d_badge ${statusClass[purchase.status] || 'd_info'}`}>{String(purchase.status)}</span></td>
+                        <td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={String(purchase.notes || '-')}>{String(purchase.notes || '-')}</td>
+                        <td>
+                          <div className="d_action_btns">
+                            <button className="d_icon_btn d_view" onClick={() => { setSelectedPurchase(purchase); setViewModal(true); }}><MdVisibility /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="row mb-4">
+      <div className="row ">
         <div className="col-md-2-4 col-sm-6 mb-3">
           <div className="d_stat_card d_stat_card_primary">
             <div className="d_stat_icon"><MdShoppingCart /></div>
@@ -212,67 +279,6 @@ const RawMaterialPurchases = () => {
               <div className="d_stat_value">{money(summary.amount * 1.18)}</div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="d_card">
-        <div className="d_card_header">
-          <h2 className="d_card_title"><MdShoppingCart className="d_card_icon" /> Purchase Report ({purchases.length})</h2>
-        </div>
-        <div className="d_card_body p-0">
-          {loading ? <div className="text-center py-4">Loading…</div> : (
-            <div className="d_table_wrap">
-              <table className="d_table">
-                <thead>
-                  <tr>
-                    <th>Purchase ID</th>
-                    <th>Supplier</th>
-                    <th>Purchase Date</th>
-                    <th>Expected Delivery</th>
-                    <th>Items Count</th>
-                    <th>Total Quantity</th>
-                    <th>Total Amount (₹)</th>
-                    <th>GST Amount (₹)</th>
-                    <th>Grand Total (₹)</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {purchases.length === 0 && (
-                    <tr className="d_empty">
-                      <td colSpan={11}>No raw material purchases found.</td>
-                    </tr>
-                  )}
-                  {purchases.map((purchase) => {
-                    const totalQty = (purchase.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
-                    const totalAmount = Number(purchase.totalAmount) || 0;
-                    const gstAmount = totalAmount * 0.18;
-                    const grandTotal = totalAmount + gstAmount;
-                    return (
-                      <tr key={purchase._id}>
-                        <td><code>{String(purchase.id)}</code></td>
-                        <td><strong>{String(purchase.supplier)}</strong></td>
-                        <td>{String(purchase.purchaseDate)}</td>
-                        <td>{String(purchase.expectedDelivery || '-')}</td>
-                        <td><strong>{String(purchase.items?.length || 0)}</strong></td>
-                        <td><strong>{String(totalQty)}</strong></td>
-                        <td><strong>{money(totalAmount)}</strong></td>
-                        <td>{money(gstAmount)}</td>
-                        <td><strong>{money(grandTotal)}</strong></td>
-                        <td><span className={`d_badge ${statusClass[purchase.status] || 'd_info'}`}>{String(purchase.status)}</span></td>
-                        <td>
-                          <div className="d_action_btns">
-                            <button className="d_icon_btn d_view" onClick={() => { setSelectedPurchase(purchase); setViewModal(true); }}><MdVisibility /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       </div>
 
@@ -400,31 +406,44 @@ const RawMaterialPurchases = () => {
 
       <Modal open={viewModal} onClose={() => setViewModal(false)} title="Purchase Details" size="lg">
         {selectedPurchase && (
-          <div className="d_table_wrap">
-            <table className="d_table">
-              <thead>
-                <tr>
-                  <th>Material</th>
-                  <th>Category</th>
-                  <th>Qty</th>
-                  <th>Unit</th>
-                  <th>Unit Price (₹)</th>
-                  <th>Purchase Value (₹)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(selectedPurchase.items || []).map((item, index) => (
-                  <tr key={index}>
-                    <td>{item.materialName || item.name}</td>
-                    <td>{item.category}</td>
-                    <td>{item.quantity}</td>
-                    <td>{item.unit}</td>
-                    <td>{money(item.unitPrice || 0)}</td>
-                    <td><strong>{money(item.totalPrice || 0)}</strong></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '0.5rem' }}><strong>Purchase ID:</strong> <code>{selectedPurchase.id}</code></div>
+              <div style={{ marginBottom: '0.5rem' }}><strong>Supplier:</strong> {selectedPurchase.supplier}</div>
+              <div style={{ marginBottom: '0.5rem' }}><strong>Purchase Date:</strong> {selectedPurchase.purchaseDate}</div>
+              <div style={{ marginBottom: '0.5rem' }}><strong>Expected Delivery:</strong> {selectedPurchase.expectedDelivery || '-'}</div>
+              <div style={{ marginBottom: '0.5rem' }}><strong>Payment Terms:</strong> {selectedPurchase.paymentTerms || '-'}</div>
+              <div style={{ marginBottom: '0.5rem' }}><strong>Status:</strong> <span className={`d_badge ${statusClass[selectedPurchase.status] || 'd_info'}`}>{selectedPurchase.status}</span></div>
+              <div style={{ marginBottom: '0.5rem' }}><strong>Notes:</strong> {selectedPurchase.notes || '-'}</div>
+            </div>
+
+            <h4 style={{ marginBottom: '1rem', borderBottom: '1px solid var(--d-border)', paddingBottom: '0.5rem' }}>Items</h4>
+            {(selectedPurchase.items || []).map((item, index) => (
+              <div key={index} style={{ 
+                padding: '1rem', 
+                marginBottom: '0.75rem', 
+                backgroundColor: 'var(--d-bg-light)', 
+                borderRadius: '6px',
+                border: '1px solid var(--d-border)'
+              }}>
+                <div style={{ marginBottom: '0.25rem' }}><strong>Material:</strong> {item.materialName || item.name}</div>
+                <div style={{ marginBottom: '0.25rem' }}><strong>Category:</strong> {item.category}</div>
+                <div style={{ marginBottom: '0.25rem' }}><strong>Quantity:</strong> {item.quantity} {item.unit}</div>
+                <div style={{ marginBottom: '0.25rem' }}><strong>Unit Price:</strong> {money(item.unitPrice || 0)}</div>
+                <div><strong>Purchase Value:</strong> {money(item.totalPrice || 0)}</div>
+              </div>
+            ))}
+
+            <div style={{ 
+              marginTop: '1.5rem', 
+              paddingTop: '1rem', 
+              borderTop: '1px solid var(--d-border)',
+              textAlign: 'right'
+            }}>
+              <div style={{ marginBottom: '0.5rem' }}><strong>Total Amount:</strong> {money(selectedPurchase.totalAmount || 0)}</div>
+              <div style={{ marginBottom: '0.5rem' }}><strong>GST (18%):</strong> {money((selectedPurchase.totalAmount || 0) * 0.18)}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--d-accent)' }}><strong>Grand Total:</strong> {money((selectedPurchase.totalAmount || 0) * 1.18)}</div>
+            </div>
           </div>
         )}
       </Modal>

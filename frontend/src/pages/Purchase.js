@@ -8,6 +8,7 @@ import useConfirm from '../hooks/useConfirm';
 // import { suppliersApi, erpApi } from '../utils/api';
 import { V, validate as validateFields } from '../utils/validators';
 import { erpApi, suppliersApi, purchaseOrdersApi, purchaseReturnsApi, grnApi } from '../utils/api';
+import RawMaterialPurchases from './RawMaterialPurchases';
 
 /* ─── Status colour map ────────────────────────────────────── */
 const statusClass = {
@@ -18,7 +19,7 @@ const statusClass = {
 
 /* ─── Blank form state per tab ─────────────────────────────── */
 const blankSup = { name: '', contact: '', phone: '', email: '', city: '', gst: '', status: 'Active' };
-const blankPO  = { supplier: '', date: '', delivery: '', status: 'Pending', notes: '', items: [{ itemCode: '', itemName: '', quantity: '', unitPrice: '', totalPrice: '' }] };
+const blankPO = { supplier: '', date: '', delivery: '', status: 'Pending', notes: '', items: [{ itemCode: '', itemName: '', quantity: '', unitPrice: '', totalPrice: '' }] };
 const blankGRN = { po: '', supplier: '', date: '', receivedBy: '', status: 'Pending', notes: '', items: [{ itemCode: '', itemName: '', quantity: '', unitPrice: '', totalPrice: '' }] };
 const blankRet = { po: '', supplier: '', part: '', qty: '', unitPrice: '', amount: '', date: '', reason: '', status: 'Pending', items: [{ itemCode: '', itemName: '', quantity: '', unitPrice: '', totalPrice: '' }] };
 
@@ -26,8 +27,10 @@ const blankRet = { po: '', supplier: '', part: '', qty: '', unitPrice: '', amoun
 const toISODate = (d) => {
   if (!d) return '';
   if (d.includes('-') && d.length === 10) return d;
-  const months = { Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
-                   Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12' };
+  const months = {
+    Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
+    Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12'
+  };
   const parts = d.split('-');
   if (parts.length === 3 && months[parts[1]])
     return `${parts[2]}-${months[parts[1]]}-${parts[0]}`;
@@ -38,17 +41,17 @@ const toISODate = (d) => {
 const GST_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
 const Purchase = ({ defaultTab = 'suppliers' }) => {
-  const [tab, setTab]             = useState(defaultTab);
+  const [tab, setTab] = useState(defaultTab);
   const [suppliers, setSuppliers] = useState([]);
-  const [orders, setOrders]       = useState([]);
-  const [grnList, setGrnList]     = useState([]);
-  const [returns, setReturns]     = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [modal, setModal]         = useState(false);
-  const [form, setForm]           = useState(blankSup);
-  const [editId, setEditId]       = useState(null);
-  const [errors, setErrors]       = useState({});
-  const [saving, setSaving]       = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [grnList, setGrnList] = useState([]);
+  const [returns, setReturns] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState(blankSup);
+  const [editId, setEditId] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
 
@@ -57,7 +60,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
   const isRet = tab === 'returns';
 
   /* toast + confirm hooks */
-  const { toasts, toast, removeToast }       = useToast();
+  const { toasts, toast, removeToast } = useToast();
   const { confirmState, confirm, closeConfirm } = useConfirm();
 
   /* ── Fetchers ──────────────────────────────────────────── */
@@ -84,11 +87,11 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
       await Promise.all([fetchSuppliers(), fetchOrders(), fetchGrn(), fetchReturns()]);
       setLoading(false);
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ── Safely extract primitives from possibly-populated fields ── */
-  const strField   = (v) => (v && typeof v === 'object') ? (v.name || v.title || '') : (v || '');
+  const strField = (v) => (v && typeof v === 'object') ? (v.name || v.title || '') : (v || '');
   const itemsCount = (v) => Array.isArray(v) ? v.length : (v || '');
 
   const normalizeItems = (items) => {
@@ -163,7 +166,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
         city: row.city || '', gst: row.gst || '', status: row.status || 'Active',
         image: row.image || '',
       });
-      setImagePreview(row.image || '');
+      setImagePreview(row.image ? (row.image.startsWith('http') ? row.image : `http://localhost:5000${row.image}`) : '');
     } else if (isGRN) {
       setForm({
         po: row.po || '',
@@ -226,7 +229,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
     } else if (isGRN) {
       /* GRN */
       if (!form.supplier?.trim()) e.supplier = 'Supplier name is required';
-      if (!form.date?.trim())     e.date     = 'Date is required';
+      if (!form.date?.trim()) e.date = 'Date is required';
       if (!Array.isArray(form.items) || form.items.length === 0)
         e.items = 'At least one received item is required';
       else {
@@ -243,8 +246,8 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
     } else if (isRet) {
       /* Return */
       if (!form.supplier?.trim()) e.supplier = 'Supplier name is required';
-      if (!form.date?.trim())     e.date     = 'Return date is required';
-      if (!form.reason?.trim())   e.reason   = 'Reason is required';
+      if (!form.date?.trim()) e.date = 'Return date is required';
+      if (!form.reason?.trim()) e.reason = 'Reason is required';
       if (!Array.isArray(form.items) || form.items.length === 0)
         e.items = 'At least one returned item is required';
       else {
@@ -260,7 +263,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
     } else {
       /* Purchase Order */
       if (!form.supplier?.trim()) e.supplier = 'Supplier is required';
-      if (!form.date?.trim())     e.date     = 'Order date is required';
+      if (!form.date?.trim()) e.date = 'Order date is required';
       if (!Array.isArray(form.items) || form.items.length === 0)
         e.items = 'At least one order item is required';
       else {
@@ -397,17 +400,17 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
   /* ── Delete (with ConfirmDialog) ─────────────────────────── */
   const handleDelete = (id, label = 'this record') => {
     confirm({
-      title:        'Delete Record',
-      message:      `Are you sure you want to delete ${label}? This action cannot be undone.`,
+      title: 'Delete Record',
+      message: `Are you sure you want to delete ${label}? This action cannot be undone.`,
       confirmLabel: 'Delete',
-      variant:      'danger',
+      variant: 'danger',
       onConfirm: async () => {
         closeConfirm();
         try {
-          if (isSup)       { await suppliersApi.remove(id); fetchSuppliers(); }
-          else if (isGRN)  { await erpApi.remove(id); fetchGrn(); }
-          else if (isRet)  { await purchaseReturnsApi.remove(id); fetchReturns(); }
-          else             { await purchaseOrdersApi.remove(id); fetchOrders(); }
+          if (isSup) { await suppliersApi.remove(id); fetchSuppliers(); }
+          else if (isGRN) { await erpApi.remove(id); fetchGrn(); }
+          else if (isRet) { await purchaseReturnsApi.remove(id); fetchReturns(); }
+          else { await purchaseOrdersApi.remove(id); fetchOrders(); }
           toast.success('Record deleted successfully.');
         } catch (err) {
           toast.error(err.displayMessage || 'Failed to delete.');
@@ -454,8 +457,8 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
 
       {/* Tabs */}
       <div className="d_tabs mb-3">
-        {[['suppliers','Suppliers'],['orders','Purchase Orders'],['grn','GRN'],['returns','Returns']].map(([k,v]) => (
-          <button key={k} className={`d_tab_btn ${tab===k?'d_active':''}`} onClick={() => setTab(k)}>{v}</button>
+        {[['suppliers', 'Suppliers'], ['orders', 'Purchase Orders'], ['grn', 'GRN'], ['returns', 'Returns']].map(([k, v]) => (
+          <button key={k} className={`d_tab_btn ${tab === k ? 'd_active' : ''}`} onClick={() => setTab(k)}>{v}</button>
         ))}
       </div>
 
@@ -467,44 +470,44 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
           </div>
           <div className="d_card_body p-0">
             {loading ? <div className="text-center py-4">Loading…</div> : (
-            <div className="d_table_wrap">
-              <table className="d_table">
-                <thead><tr>
-                  <th>ID</th><th>Supplier Name</th><th>Contact Person</th>
-                  <th>Phone</th><th>City</th><th>GST No.</th><th>Status</th><th>Image</th><th>Actions</th>
-                </tr></thead>
-                <tbody>
-                  {suppliers.length === 0 && <tr className="d_empty"><td colSpan={9}>No suppliers found.</td></tr>}
-                  {suppliers.map(s => (
-                    <tr key={s._id}>
-                      <td><code>{String(s.id || s._id)}</code></td>
-                      <td><strong>{String(s.name)}</strong></td>
-                      <td>{String(s.contact || '-')}</td>
-                      <td>{String(s.phone || '-')}</td>
-                      <td>{String(s.city || '-')}</td>
-                      <td><code>{String(s.gst || '-')}</code></td>
-                      <td><span className={`d_badge ${statusClass[s.status] || 'd_info'}`}>{String(s.status)}</span></td>
-                      <td>
-                        {s.image ? (
-                          <img
-                            src={`http://localhost:5000${s.image}`}
-                            alt={s.name}
-                            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
-                            onClick={() => window.open(`http://localhost:5000${s.image}`, '_blank')}
-                          />
-                        ) : (
-                          <span style={{ color: '#999', fontSize: 12 }}>No image</span>
-                        )}
-                      </td>
-                      <td><div className="d_action_btns">
-                        <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(s)}><MdEdit /></button>
-                        <button className="d_icon_btn d_del"  title="Delete" onClick={() => handleDelete(s._id, `supplier "${s.name}"`)}><MdDelete /></button>
-                      </div></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+              <div className="d_table_wrap">
+                <table className="d_table">
+                  <thead><tr>
+                    <th>ID</th><th>Supplier Name</th><th>Contact Person</th>
+                    <th>Phone</th><th>City</th><th>GST No.</th><th>Status</th><th>Image</th><th>Actions</th>
+                  </tr></thead>
+                  <tbody>
+                    {suppliers.length === 0 && <tr className="d_empty"><td colSpan={9}>No suppliers found.</td></tr>}
+                    {suppliers.map(s => (
+                      <tr key={s._id}>
+                        <td><code>{String(s.id || s._id)}</code></td>
+                        <td><strong>{String(s.name)}</strong></td>
+                        <td>{String(s.contact || '-')}</td>
+                        <td>{String(s.phone || '-')}</td>
+                        <td>{String(s.city || '-')}</td>
+                        <td><code>{String(s.gst || '-')}</code></td>
+                        <td><span className={`d_badge ${statusClass[s.status] || 'd_info'}`}>{String(s.status)}</span></td>
+                        <td>
+                          {s.image ? (
+                            <img
+                              src={`http://localhost:5000${s.image}`}
+                              alt={s.name}
+                              style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                              onClick={() => window.open(`http://localhost:5000${s.image}`, '_blank')}
+                            />
+                          ) : (
+                            <span style={{ color: '#999', fontSize: 12 }}>No image</span>
+                          )}
+                        </td>
+                        <td><div className="d_action_btns">
+                          <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(s)}><MdEdit /></button>
+                          <button className="d_icon_btn d_del" title="Delete" onClick={() => handleDelete(s._id, `supplier "${s.name}"`)}><MdDelete /></button>
+                        </div></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -512,42 +515,9 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
 
       {/* ── Purchase Orders tab ───────────────────────────── */}
       {tab === 'orders' && (
-        <div className="d_card">
-          <div className="d_card_header">
-            <h2 className="d_card_title"><MdShoppingCart className="d_card_icon" /> Purchase Orders ({orders.length})</h2>
-          </div>
-          <div className="d_card_body p-0">
-            {loading ? <div className="text-center py-4">Loading purchase orders…</div> : (
-            <div className="d_table_wrap">
-              <table className="d_table">
-                <thead><tr>
-                  <th>PO No.</th><th>Supplier</th><th>Order Date</th><th>Items</th>
-                  <th>Amount</th><th>Exp. Delivery</th><th>Status</th><th>Actions</th>
-                </tr></thead>
-                <tbody>
-                  {orders.length === 0 && <tr className="d_empty"><td colSpan={8}>No purchase orders found.</td></tr>}
-                  {orders.map(o => (
-                    <tr key={o._id}>
-                      <td><code>{String(o.id)}</code></td>
-                      <td><strong>{strField(o.supplier) || '-'}</strong></td>
-                      <td>{String(o.date || '-')}</td>
-                      <td>{itemsCount(o.items) || '-'}</td>
-                      <td><strong>₹{(o.amount || o.totalAmount || 0).toLocaleString('en-IN')}</strong></td>
-                      <td>{String(o.delivery || '-')}</td>
-                      <td><span className={`d_badge ${statusClass[o.status] || 'd_info'}`}>{String(o.status)}</span></td>
-                      <td><div className="d_action_btns">
-                        <button className="d_icon_btn d_view" title="View"><MdVisibility /></button>
-                        <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(o)}><MdEdit /></button>
-                        <button className="d_icon_btn d_del"  title="Delete" onClick={() => handleDelete(o._id, `PO "${o.id}"`)}><MdDelete /></button>
-                      </div></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            )}
-          </div>
-        </div>
+        // <div className="d_card p-2">
+          <RawMaterialPurchases></RawMaterialPurchases>
+        // </div>
       )}
 
       {/* ── GRN tab ───────────────────────────────────────── */}
@@ -558,33 +528,33 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
           </div>
           <div className="d_card_body p-0">
             {loading ? <div className="text-center py-4">Loading…</div> : (
-            <div className="d_table_wrap">
-              <table className="d_table">
-                <thead><tr>
-                  <th>GRN No.</th><th>PO Ref.</th><th>Supplier</th><th>Date</th>
-                  <th>Items</th><th>Amount</th><th>Received By</th><th>Status</th><th>Actions</th>
-                </tr></thead>
-                <tbody>
-                  {grnList.length === 0 && <tr className="d_empty"><td colSpan={9}>No GRN records found.</td></tr>}
-                  {grnList.map(g => (
-                    <tr key={g._id}>
-                      <td><code>{String(g.id)}</code></td>
-                      <td><code>{String(g.po || '-')}</code></td>
-                      <td><strong>{strField(g.supplier) || '-'}</strong></td>
-                      <td>{String(g.date || '-')}</td>
-                      <td>{itemsCount(g.items) || '-'}</td>
-                      <td><strong>₹{(g.amount || 0).toLocaleString('en-IN')}</strong></td>
-                      <td>{String(g.receivedBy || '-')}</td>
-                      <td><span className={`d_badge ${statusClass[g.status] || 'd_info'}`}>{String(g.status)}</span></td>
-                      <td><div className="d_action_btns">
-                        <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(g)}><MdEdit /></button>
-                        <button className="d_icon_btn d_del"  title="Delete" onClick={() => handleDelete(g._id, `GRN "${g.id}"`)}><MdDelete /></button>
-                      </div></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+              <div className="d_table_wrap">
+                <table className="d_table">
+                  <thead><tr>
+                    <th>GRN No.</th><th>PO Ref.</th><th>Supplier</th><th>Date</th>
+                    <th>Items</th><th>Amount</th><th>Received By</th><th>Status</th><th>Actions</th>
+                  </tr></thead>
+                  <tbody>
+                    {grnList.length === 0 && <tr className="d_empty"><td colSpan={9}>No GRN records found.</td></tr>}
+                    {grnList.map(g => (
+                      <tr key={g._id}>
+                        <td><code>{String(g.id)}</code></td>
+                        <td><code>{String(g.po || '-')}</code></td>
+                        <td><strong>{strField(g.supplier) || '-'}</strong></td>
+                        <td>{String(g.date || '-')}</td>
+                        <td>{itemsCount(g.items) || '-'}</td>
+                        <td><strong>₹{(g.amount || 0).toLocaleString('en-IN')}</strong></td>
+                        <td>{String(g.receivedBy || '-')}</td>
+                        <td><span className={`d_badge ${statusClass[g.status] || 'd_info'}`}>{String(g.status)}</span></td>
+                        <td><div className="d_action_btns">
+                          <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(g)}><MdEdit /></button>
+                          <button className="d_icon_btn d_del" title="Delete" onClick={() => handleDelete(g._id, `GRN "${g.id}"`)}><MdDelete /></button>
+                        </div></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -598,33 +568,33 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
           </div>
           <div className="d_card_body p-0">
             {loading ? <div className="text-center py-4">Loading…</div> : (
-            <div className="d_table_wrap">
-              <table className="d_table">
-                <thead><tr>
-                  <th>Return No.</th><th>Supplier</th><th>Part</th><th>Qty</th>
-                  <th>Date</th><th>Reason</th><th>Amount</th><th>Status</th><th>Actions</th>
-                </tr></thead>
-                <tbody>
-                  {returns.length === 0 && <tr className="d_empty"><td colSpan={9}>No returns found.</td></tr>}
-                  {returns.map(r => (
-                    <tr key={r._id}>
-                      <td><code>{String(r.id)}</code></td>
-                      <td><strong>{strField(r.supplier) || '-'}</strong></td>
-                      <td>{strField(r.part) || '-'}</td>
-                      <td>{String(r.qty || '-')}</td>
-                      <td>{String(r.date || '-')}</td>
-                      <td>{String(r.reason || '-')}</td>
-                      <td><strong>₹{(r.amount || 0).toLocaleString('en-IN')}</strong></td>
-                      <td><span className={`d_badge ${statusClass[r.status] || 'd_warning'}`}>{String(r.status)}</span></td>
-                      <td><div className="d_action_btns">
-                        <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(r)}><MdEdit /></button>
-                        <button className="d_icon_btn d_del"  title="Delete" onClick={() => handleDelete(r._id, `return "${r.id}"`)}><MdDelete /></button>
-                      </div></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+              <div className="d_table_wrap">
+                <table className="d_table">
+                  <thead><tr>
+                    <th>Return No.</th><th>Supplier</th><th>Part</th><th>Qty</th>
+                    <th>Date</th><th>Reason</th><th>Amount</th><th>Status</th><th>Actions</th>
+                  </tr></thead>
+                  <tbody>
+                    {returns.length === 0 && <tr className="d_empty"><td colSpan={9}>No returns found.</td></tr>}
+                    {returns.map(r => (
+                      <tr key={r._id}>
+                        <td><code>{String(r.id)}</code></td>
+                        <td><strong>{strField(r.supplier) || '-'}</strong></td>
+                        <td>{strField(r.part) || '-'}</td>
+                        <td>{String(r.qty || '-')}</td>
+                        <td>{String(r.date || '-')}</td>
+                        <td>{String(r.reason || '-')}</td>
+                        <td><strong>₹{(r.amount || 0).toLocaleString('en-IN')}</strong></td>
+                        <td><span className={`d_badge ${statusClass[r.status] || 'd_warning'}`}>{String(r.status)}</span></td>
+                        <td><div className="d_action_btns">
+                          <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(r)}><MdEdit /></button>
+                          <button className="d_icon_btn d_del" title="Delete" onClick={() => handleDelete(r._id, `return "${r.id}"`)}><MdDelete /></button>
+                        </div></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -651,7 +621,18 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
           <div className="d_form_row cols-2">
             <div className="d_form_group">
               <label className="d_form_label">Phone <span className="d_req">*</span></label>
-              <input className="d_form_control" placeholder="10-digit mobile number" maxLength={10} inputMode="numeric" {...f('phone')} />
+              <input
+                className="d_form_control"
+                placeholder="10-digit mobile number"
+                maxLength={10}
+                inputMode="numeric"
+                value={form.phone}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  setForm(p => ({ ...p, phone: value }));
+                  setErrors(p => ({ ...p, phone: '' }));
+                }}
+              />
               <Err field="phone" />
             </div>
             <div className="d_form_group">
@@ -698,7 +679,7 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
               {(imagePreview || form.image) && (
                 <div style={{ marginTop: 8 }}>
                   <img
-                    src={imagePreview || `http://localhost:5000${form.image}`}
+                    src={imagePreview || (form.image.startsWith('http') ? form.image : `http://localhost:5000${form.image}`)}
                     alt="Supplier"
                     style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }}
                   />

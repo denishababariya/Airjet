@@ -41,7 +41,7 @@ const menuConfig = [
     items: [
       {
         label: 'Purchase', icon: <MdShoppingCart />, id: 'purchase',
-        children: ['Suppliers', 'Raw Material Purchases', 'Purchase Orders', 'GRN', 'Returns'],
+        children: ['Suppliers','Purchase Orders', 'GRN', 'Returns'],
         module: 'Purchase',
       },
       {

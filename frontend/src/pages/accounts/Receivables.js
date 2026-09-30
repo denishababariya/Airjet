@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MdVisibility, MdEdit, MdAccountBalance, MdMonetizationOn, MdWarning, MdRefresh } from 'react-icons/md';
+import { MdVisibility, MdEdit, MdAccountBalance, MdMonetizationOn, MdWarning, MdRefresh, MdDelete } from 'react-icons/md';
 import { accountsApi } from '../../utils/api';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import useConfirm from '../../hooks/useConfirm';
 
 const statusBadge = s => {
   if (s === 'Collected') return 'd_success';
@@ -11,6 +13,7 @@ const statusBadge = s => {
 export default function Receivables() {
   const [receivables, setReceivables] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { confirmState, confirm, closeConfirm } = useConfirm();
 
   const fetchReceivables = async () => {
     try {
@@ -105,6 +108,26 @@ export default function Receivables() {
                           <div className="d_action_btns">
                             <button className="d_icon_btn d_view"><MdVisibility /></button>
                             <button className="d_icon_btn d_edit"><MdEdit /></button>
+                            <button 
+                              className="d_icon_btn d_del" 
+                              onClick={() => confirm({
+                                title: 'Delete Receivable',
+                                message: `Delete receivable "${r.invoice || r.id}"?`,
+                                confirmLabel: 'Delete',
+                                variant: 'danger',
+                                onConfirm: async () => {
+                                  closeConfirm();
+                                  try {
+                                    await accountsApi.remove('accounts', 'receivable', r.id);
+                                    setReceivables(prev => prev.filter(item => item.id !== r.id));
+                                  } catch (err) {
+                                    console.error('Failed to delete receivable:', err);
+                                  }
+                                }
+                              })}
+                            >
+                              <MdDelete />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -116,6 +139,16 @@ export default function Receivables() {
           </div>
         </>
       )}
+      <ConfirmDialog
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmLabel={confirmState.confirmLabel}
+        cancelLabel={confirmState.cancelLabel}
+        variant={confirmState.variant}
+        onConfirm={confirmState.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

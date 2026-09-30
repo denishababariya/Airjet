@@ -54,6 +54,22 @@ const uploadSingle = (fieldName) => {
   };
 };
 
+// Middleware to handle optional single image upload
+const uploadSingleOptional = (fieldName) => {
+  return (req, res, next) => {
+    upload.single(fieldName)(req, res, (err) => {
+      // If no file was provided, continue without error
+      if (err && err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return next();
+      }
+      if (err) {
+        return res.status(400).json({ error: err.message });
+      }
+      next();
+    });
+  };
+};
+
 // Middleware to handle multiple image uploads
 const uploadMultiple = (fieldName, maxCount = 5) => {
   return (req, res, next) => {
@@ -80,6 +96,7 @@ const uploadFields = (fields) => {
 
 module.exports = {
   uploadSingle,
+  uploadSingleOptional,
   uploadMultiple,
   uploadFields
 };

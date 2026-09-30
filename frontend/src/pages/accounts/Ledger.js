@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
-import { MdBook } from 'react-icons/md';
+import { MdBook, MdDelete } from 'react-icons/md';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import useConfirm from '../../hooks/useConfirm';
 
-const ledgerData = [
-  { date: '01 Jun 2026', voucher: 'OPN-001', desc: 'Opening Balance', debit: 0, credit: 500000, balance: 500000 },
-  { date: '05 Jun 2026', voucher: 'PO-2026-0035', desc: 'Purchase – Sulzer Rüti Spare Parts', debit: 98000, credit: 0, balance: 402000 },
-  { date: '10 Jun 2026', voucher: 'INV-2026-0109', desc: 'Sales – Vardhman Textiles Ltd', debit: 0, credit: 103250, balance: 505250 },
-  { date: '12 Jun 2026', voucher: 'PO-2026-0039', desc: 'Purchase – Toyota Industries Parts', debit: 215000, credit: 0, balance: 290250 },
-  { date: '15 Jun 2026', voucher: 'INV-2026-0110', desc: 'Sales – Sri Ramakrishna Mills', debit: 0, credit: 85668, balance: 375918 },
-  { date: '17 Jun 2026', voucher: 'SAL-JUN-001', desc: 'Salary Disbursement – June 2026', debit: 277700, credit: 0, balance: 98218 },
-  { date: '20 Jun 2026', voucher: 'INV-2026-0112', desc: 'Sales – Arvind Limited', debit: 0, credit: 63956, balance: 162174 },
-  { date: '22 Jun 2026', voucher: 'EXP-2026-012', desc: 'Warehouse Rent – June 2026', debit: 45000, credit: 0, balance: 117174 },
-];
 
 export default function Ledger() {
   const [party, setParty] = useState('All');
+  const [ledgerData, setLedgerData] = useState([
+    { date: '01 Jun 2026', voucher: 'OPN-001', desc: 'Opening Balance', debit: 0, credit: 500000, balance: 500000 },
+    { date: '05 Jun 2026', voucher: 'PO-2026-0035', desc: 'Purchase – Sulzer Rüti Spare Parts', debit: 98000, credit: 0, balance: 402000 },
+    { date: '10 Jun 2026', voucher: 'INV-2026-0109', desc: 'Sales – Vardhman Textiles Ltd', debit: 0, credit: 103250, balance: 505250 },
+    { date: '12 Jun 2026', voucher: 'PO-2026-0039', desc: 'Purchase – Toyota Industries Parts', debit: 215000, credit: 0, balance: 290250 },
+    { date: '15 Jun 2026', voucher: 'INV-2026-0110', desc: 'Sales – Sri Ramakrishna Mills', debit: 0, credit: 85668, balance: 375918 },
+    { date: '17 Jun 2026', voucher: 'SAL-JUN-001', desc: 'Salary Disbursement – June 2026', debit: 277700, credit: 0, balance: 98218 },
+    { date: '20 Jun 2026', voucher: 'INV-2026-0112', desc: 'Sales – Arvind Limited', debit: 0, credit: 63956, balance: 162174 },
+    { date: '22 Jun 2026', voucher: 'EXP-2026-012', desc: 'Warehouse Rent – June 2026', debit: 45000, credit: 0, balance: 117174 },
+  ]);
+  const { confirmState, confirm, closeConfirm } = useConfirm();
 
   return (
     <div>
@@ -62,6 +65,7 @@ export default function Ledger() {
                   <th>Debit (₹)</th>
                   <th>Credit (₹)</th>
                   <th>Balance (₹)</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -77,6 +81,25 @@ export default function Ledger() {
                       {row.credit > 0 ? `₹${row.credit.toLocaleString('en-IN')}` : '—'}
                     </td>
                     <td><strong>₹{row.balance.toLocaleString('en-IN')}</strong></td>
+                    <td>
+                      <div className="d_action_btns">
+                        <button 
+                          className="d_icon_btn d_del" 
+                          onClick={() => confirm({
+                            title: 'Delete Ledger Entry',
+                            message: `Delete entry "${row.voucher}"?`,
+                            confirmLabel: 'Delete',
+                            variant: 'danger',
+                            onConfirm: () => {
+                              closeConfirm();
+                              setLedgerData(prev => prev.filter((_, idx) => idx !== i));
+                            }
+                          })}
+                        >
+                          <MdDelete />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -84,6 +107,16 @@ export default function Ledger() {
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmLabel={confirmState.confirmLabel}
+        cancelLabel={confirmState.cancelLabel}
+        variant={confirmState.variant}
+        onConfirm={confirmState.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

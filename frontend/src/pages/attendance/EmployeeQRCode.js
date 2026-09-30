@@ -59,50 +59,154 @@ const EmployeeQRCode = () => {
     link.click();
   };
 
-  const printIDCard = () => {
-    if (!qrData || !qrImageUrl) return;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Employee ID Card - ${qrData.employeeName}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            .id-card { 
-              border: 2px solid #000; 
-              padding: 20px; 
-              width: 300px; 
+const printIDCard = () => {
+  if (!qrData || !qrImageUrl) return;
+
+  const printWindow = window.open('', '_blank', 'width=500,height=700');
+
+  if (!printWindow) {
+    setError('Please allow popups to print the QR code');
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Employee ID Card - ${qrData.employeeName}</title>
+
+        <style>
+          * {
+            box-sizing: border-box;
+          }
+
+          html,
+          body {
+            margin: 0;
+            padding: 0;
+            background: white;
+            font-family: Arial, sans-serif;
+          }
+
+          body {
+            padding: 20px;
+          }
+
+          .id-card {
+            border: 2px solid #000;
+            padding: 20px;
+            width: 340px;
+            margin: 0 auto;
+            text-align: center;
+            background: white;
+            border-radius: 10px;
+          }
+
+          .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #1a1a1a;
+          }
+
+          .employee-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
+          }
+
+          .employee-id {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+          }
+
+          .qr-wrapper {
+            width: 200px;
+            height: 200px;
+            margin: 15px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .qr-image {
+            width: 200px;
+            height: 200px;
+            display: block;
+          }
+
+          .footer {
+            font-size: 12px;
+            color: #777;
+            margin-top: 15px;
+          }
+
+          @media print {
+            body {
+              padding: 0;
+            }
+
+            .id-card {
               margin: 0 auto;
-              text-align: center;
-              background: white;
+              page-break-inside: avoid;
             }
-            .logo { font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1a1a1a; }
-            .qr-image { 
-              width: 150px; 
-              height: 150px; 
-              margin: 20px auto;
-              border: 1px solid #ddd;
+
+            @page {
+              margin: 10mm;
             }
-            .employee-name { font-size: 18px; font-weight: bold; margin: 10px 0; color: #333; }
-            .employee-id { font-size: 14px; color: #666; margin-bottom: 5px; }
-            .footer { font-size: 12px; color: #999; margin-top: 15px; }
-          </style>
-        </head>
-        <body>
-          <div class="id-card">
-            <div class="logo">AIRJET ERP</div>
-            <div class="employee-name">${qrData.employeeName}</div>
-            <div class="employee-id">ID: ${qrData.qrToken}</div>
-            <img src="${qrImageUrl}" class="qr-image" alt="QR Code" />
-            <div class="footer">Scan for attendance</div>
+          }
+        </style>
+      </head>
+
+      <body>
+        <div class="id-card">
+          <div class="logo">AIRJET ERP</div>
+
+          <div class="employee-name">
+            ${qrData.employeeName}
           </div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-  };
+
+          <div class="employee-id">
+            Employee ID: ${qrData.employeeId}
+          </div>
+
+          <div class="qr-wrapper">
+            <img
+              src="${qrImageUrl}"
+              class="qr-image"
+              alt="Employee QR Code"
+              id="qrImage"
+            />
+          </div>
+
+          <div class="footer">
+            Scan this QR code for attendance
+          </div>
+        </div>
+
+        <script>
+          const qrImage = document.getElementById('qrImage');
+
+          qrImage.onload = function () {
+            setTimeout(function () {
+              window.focus();
+              window.print();
+            }, 300);
+          };
+
+          qrImage.onerror = function () {
+            alert('QR Code image could not be loaded.');
+          };
+        </script>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+};
 
   React.useEffect(() => {
     fetchEmployees();

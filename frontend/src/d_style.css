@@ -2200,6 +2200,14 @@ a {
 
 
 
+.d_search_box .d_form_control {
+
+  padding-left: 36px;
+
+}
+
+
+
 .d_search_input {
 
   border: 1px solid var(--d-light-border);
