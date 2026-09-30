@@ -17,14 +17,21 @@ export default function Allowances() {
   const { confirmState, confirm, closeConfirm } = useConfirm();
 
   useEffect(() => {
-    // In a real implementation, fetch from API
-    setAllowances([
-      { _id: '1', name: 'House Rent Allowance (HRA)', type: 'Percentage', value: '40%', applicable: 'All Employees', status: 'Active' },
-      { _id: '2', name: 'Dearness Allowance (DA)', type: 'Percentage', value: '20%', applicable: 'All Employees', status: 'Active' },
-      { _id: '3', name: 'Travel Allowance', type: 'Fixed', value: '₹1,500', applicable: 'All Employees', status: 'Active' },
-      { _id: '4', name: 'Medical Allowance', type: 'Fixed', value: '₹1,250', applicable: 'All Employees', status: 'Active' },
-      { _id: '5', name: 'Special Allowance', type: 'Fixed', value: '₹2,000', applicable: 'Senior Staff', status: 'Active' },
-    ]);
+    // Load from localStorage or use default data
+    const savedAllowances = localStorage.getItem('allowances');
+    if (savedAllowances) {
+      setAllowances(JSON.parse(savedAllowances));
+    } else {
+      const defaultAllowances = [
+        { _id: '1', name: 'House Rent Allowance (HRA)', type: 'Percentage', value: '40%', applicable: 'All Employees', status: 'Active' },
+        { _id: '2', name: 'Dearness Allowance (DA)', type: 'Percentage', value: '20%', applicable: 'All Employees', status: 'Active' },
+        { _id: '3', name: 'Travel Allowance', type: 'Fixed', value: '₹1,500', applicable: 'All Employees', status: 'Active' },
+        { _id: '4', name: 'Medical Allowance', type: 'Fixed', value: '₹1,250', applicable: 'All Employees', status: 'Active' },
+        { _id: '5', name: 'Special Allowance', type: 'Fixed', value: '₹2,000', applicable: 'Senior Staff', status: 'Active' },
+      ];
+      setAllowances(defaultAllowances);
+      localStorage.setItem('allowances', JSON.stringify(defaultAllowances));
+    }
   }, []);
 
   const openAdd = () => {
@@ -34,7 +41,9 @@ export default function Allowances() {
   };
 
   const openEdit = (allowance) => {
-    setForm({ ...allowance });
+    // Strip symbol when editing to show clean value
+    const cleanValue = allowance.value.replace(/[₹%,]/g, '');
+    setForm({ ...allowance, value: cleanValue });
     setEditId(allowance._id);
     setModal(true);
   };
@@ -45,11 +54,22 @@ export default function Allowances() {
       return;
     }
 
+    // Add symbol based on type
+    const valueWithSymbol = form.type === 'Fixed' 
+      ? `₹${form.value.replace(/[₹%,]/g, '')}` 
+      : `${form.value.replace(/[₹%,]/g, '')}%`;
+
+    const formData = { ...form, value: valueWithSymbol };
+
     if (editId) {
-      setAllowances(allowances.map(a => a._id === editId ? { ...form, _id: editId } : a));
+      const updatedAllowances = allowances.map(a => a._id === editId ? { ...formData, _id: editId } : a);
+      setAllowances(updatedAllowances);
+      localStorage.setItem('allowances', JSON.stringify(updatedAllowances));
       toast.success('Allowance updated successfully');
     } else {
-      setAllowances([...allowances, { ...form, _id: Date.now().toString() }]);
+      const newAllowances = [...allowances, { ...formData, _id: Date.now().toString() }];
+      setAllowances(newAllowances);
+      localStorage.setItem('allowances', JSON.stringify(newAllowances));
       toast.success('Allowance added successfully');
     }
     setModal(false);
@@ -63,7 +83,9 @@ export default function Allowances() {
       variant: 'danger',
       onConfirm: () => {
         closeConfirm();
-        setAllowances(allowances.filter(a => a._id !== id));
+        const updatedAllowances = allowances.filter(a => a._id !== id);
+        setAllowances(updatedAllowances);
+        localStorage.setItem('allowances', JSON.stringify(updatedAllowances));
         toast.success('Allowance deleted successfully');
       }
     });

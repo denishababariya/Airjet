@@ -10,6 +10,7 @@
     "@yudiel/react-qr-scanner": "^2.6.0",
     "axios": "^1.18.0",
     "bootstrap": "^5.3.8",
+    "html2pdf.js": "^0.14.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

@@ -11,8 +11,14 @@ const TAB_TYPE = { records: 'attendance', leave: 'leave' };
 const blankAttendance = { emp: '', empId: '', date: '', checkIn: '', checkOut: '', status: 'Present' };
 const blankLeave = { emp: '', empId: '', from: '', to: '', days: '', type: 'Casual Leave', reason: '', status: 'Pending' };
 
-const Attendance = ({ defaultTab = 'records' }) => {
+const Attendance = ({ defaultTab = 'records', setActiveMenu }) => {
   const [tab, setTab] = useState(defaultTab);
+
+  // Map tab keys to sidebar menu labels
+  const tabToMenuMap = {
+    'records': "Today's Records",
+    'leave': 'Leave Requests',
+  };
   const [records, setRecords] = useState([]);
   const [leaveData, setLeaveData] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -185,7 +191,12 @@ const Attendance = ({ defaultTab = 'records' }) => {
 
       <div className="d_tabs mb-3">
         {[['records', "Today's Records"], ['leave', 'Leave Requests']].map(([k, v]) => (
-          <button key={k} className={`d_tab_btn ${tab === k ? 'd_active' : ''}`} onClick={() => setTab(k)}>{v}</button>
+          <button key={k} className={`d_tab_btn ${tab === k ? 'd_active' : ''}`} onClick={() => {
+            setTab(k);
+            if (setActiveMenu) {
+              setActiveMenu(tabToMenuMap[k]);
+            }
+          }}>{v}</button>
         ))}
       </div>
 

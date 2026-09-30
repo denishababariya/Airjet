@@ -40,8 +40,16 @@ const toISODate = (d) => {
 /* ─── GST regex ────────────────────────────────────────────── */
 const GST_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
-const Purchase = ({ defaultTab = 'suppliers' }) => {
-  const [tab, setTab] = useState(defaultTab);
+const Purchase = ({ defaultTab = 'suppliers', setActiveMenu }) => {
+  const [tab, setTab]             = useState(defaultTab);
+
+  // Map tab keys to sidebar menu labels
+  const tabToMenuMap = {
+    'suppliers': 'Suppliers',
+    'orders': 'Purchase Orders',
+    'grn': 'GRN',
+    'returns': 'Returns',
+  };
   const [suppliers, setSuppliers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [grnList, setGrnList] = useState([]);
@@ -457,8 +465,13 @@ const Purchase = ({ defaultTab = 'suppliers' }) => {
 
       {/* Tabs */}
       <div className="d_tabs mb-3">
-        {[['suppliers', 'Suppliers'], ['orders', 'Purchase Orders'], ['grn', 'GRN'], ['returns', 'Returns']].map(([k, v]) => (
-          <button key={k} className={`d_tab_btn ${tab === k ? 'd_active' : ''}`} onClick={() => setTab(k)}>{v}</button>
+        {[['suppliers','Suppliers'],['orders','Purchase Orders'],['grn','GRN'],['returns','Returns']].map(([k,v]) => (
+          <button key={k} className={`d_tab_btn ${tab===k?'d_active':''}`} onClick={() => {
+            setTab(k);
+            if (setActiveMenu) {
+              setActiveMenu(tabToMenuMap[k]);
+            }
+          }}>{v}</button>
         ))}
       </div>
 

@@ -23,8 +23,16 @@ const TAB_TYPE  = { quotations: 'quotation', orders: 'order', invoices: 'invoice
 const strField   = (v) => (v && typeof v === 'object') ? (v.name || v.title || '') : (v || '');
 const itemsCount = (v) => Array.isArray(v) ? v.length : (v ?? '-');
 
-const Sales = ({ defaultTab = 'customers' }) => {
+const Sales = ({ defaultTab = 'customers', setActiveMenu }) => {
   const [tab, setTab]             = useState(defaultTab);
+
+  // Map tab keys to sidebar menu labels
+  const tabToMenuMap = {
+    'customers': 'Customers',
+    'quotations': 'Quotations',
+    'orders': 'Sales Orders',
+    'invoices': 'Invoices',
+  };
   const [customers, setCustomers] = useState([]);
   const [salesDocs, setSalesDocs] = useState([]);
   const [stockItems, setStockItems] = useState([]);
@@ -277,7 +285,12 @@ const Sales = ({ defaultTab = 'customers' }) => {
 
       <div className="d_tabs mb-3">
         {[['customers','Customers'],['quotations','Quotations'],['orders','Sales Orders'],['invoices','Invoices']].map(([k,v]) => (
-          <button key={k} className={`d_tab_btn ${tab===k?'d_active':''}`} onClick={() => setTab(k)}>{v}</button>
+          <button key={k} className={`d_tab_btn ${tab===k?'d_active':''}`} onClick={() => {
+            setTab(k);
+            if (setActiveMenu) {
+              setActiveMenu(tabToMenuMap[k]);
+            }
+          }}>{v}</button>
         ))}
       </div>
 

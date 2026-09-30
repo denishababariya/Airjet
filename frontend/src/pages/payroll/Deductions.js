@@ -17,13 +17,20 @@ export default function Deductions() {
   const { confirmState, confirm, closeConfirm } = useConfirm();
 
   useEffect(() => {
-    // In a real implementation, fetch from API
-    setDeductions([
-      { _id: '1', name: 'Provident Fund (PF)', type: 'Percentage', value: '12%', applicable: 'All Employees', status: 'Active' },
-      { _id: '2', name: 'Employee State Insurance (ESI)', type: 'Percentage', value: '0.75%', applicable: 'Salary ≤ ₹21,000', status: 'Active' },
-      { _id: '3', name: 'Professional Tax', type: 'Fixed', value: '₹200', applicable: 'All Employees', status: 'Active' },
-      { _id: '4', name: 'Loan Repayment', type: 'Fixed', value: '₹5,000', applicable: 'Loan Account Holders', status: 'Active' },
-    ]);
+    // Load from localStorage or use default data
+    const savedDeductions = localStorage.getItem('deductions');
+    if (savedDeductions) {
+      setDeductions(JSON.parse(savedDeductions));
+    } else {
+      const defaultDeductions = [
+        { _id: '1', name: 'Provident Fund (PF)', type: 'Percentage', value: '12%', applicable: 'All Employees', status: 'Active' },
+        { _id: '2', name: 'Employee State Insurance (ESI)', type: 'Percentage', value: '0.75%', applicable: 'Salary ≤ ₹21,000', status: 'Active' },
+        { _id: '3', name: 'Professional Tax', type: 'Fixed', value: '₹200', applicable: 'All Employees', status: 'Active' },
+        { _id: '4', name: 'Loan Repayment', type: 'Fixed', value: '₹5,000', applicable: 'Loan Account Holders', status: 'Active' },
+      ];
+      setDeductions(defaultDeductions);
+      localStorage.setItem('deductions', JSON.stringify(defaultDeductions));
+    }
   }, []);
 
   const openAdd = () => {
@@ -33,7 +40,9 @@ export default function Deductions() {
   };
 
   const openEdit = (deduction) => {
-    setForm({ ...deduction });
+    // Strip symbol when editing to show clean value
+    const cleanValue = deduction.value.replace(/[₹%,]/g, '');
+    setForm({ ...deduction, value: cleanValue });
     setEditId(deduction._id);
     setModal(true);
   };
@@ -44,11 +53,22 @@ export default function Deductions() {
       return;
     }
 
+    // Add symbol based on type
+    const valueWithSymbol = form.type === 'Fixed' 
+      ? `₹${form.value.replace(/[₹%,]/g, '')}` 
+      : `${form.value.replace(/[₹%,]/g, '')}%`;
+
+    const formData = { ...form, value: valueWithSymbol };
+
     if (editId) {
-      setDeductions(deductions.map(d => d._id === editId ? { ...form, _id: editId } : d));
+      const updatedDeductions = deductions.map(d => d._id === editId ? { ...formData, _id: editId } : d);
+      setDeductions(updatedDeductions);
+      localStorage.setItem('deductions', JSON.stringify(updatedDeductions));
       toast.success('Deduction updated successfully');
     } else {
-      setDeductions([...deductions, { ...form, _id: Date.now().toString() }]);
+      const newDeductions = [...deductions, { ...formData, _id: Date.now().toString() }];
+      setDeductions(newDeductions);
+      localStorage.setItem('deductions', JSON.stringify(newDeductions));
       toast.success('Deduction added successfully');
     }
     setModal(false);
@@ -62,7 +82,9 @@ export default function Deductions() {
       variant: 'danger',
       onConfirm: () => {
         closeConfirm();
-        setDeductions(deductions.filter(d => d._id !== id));
+        const updatedDeductions = deductions.filter(d => d._id !== id);
+        setDeductions(updatedDeductions);
+        localStorage.setItem('deductions', JSON.stringify(updatedDeductions));
         toast.success('Deduction deleted successfully');
       }
     });

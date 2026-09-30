@@ -44,12 +44,16 @@ const toISODate = (d) => {
 
 };
 
-
-
-const Warehouse = ({ defaultTab = 'warehouses' }) => {
-
+const Warehouse = ({ defaultTab = 'warehouses', setActiveMenu }) => {
   const [tab, setTab]             = useState(defaultTab);
 
+  // Map tab keys to sidebar menu labels
+  const tabToMenuMap = {
+    'warehouses': 'Warehouses',
+    'transfers': 'Stock Transfers',
+    'transactions': 'Inventory History',
+    'audits': 'Stock Audits',
+  };
   const [warehouses, setWarehouses] = useState([]);
 
   const [transfers, setTransfers] = useState([]);
@@ -447,9 +451,12 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
       <div className="d_tabs mb-3">
 
         {[['warehouses','Warehouses'],['transfers','Stock Transfers'],['transactions','Inventory History'],['audits','Stock Audits']].map(([k,v]) => (
-
-          <button key={k} className={`d_tab_btn ${tab===k?'d_active':''}`} onClick={() => setTab(k)}>{v}</button>
-
+          <button key={k} className={`d_tab_btn ${tab===k?'d_active':''}`} onClick={() => {
+            setTab(k);
+            if (setActiveMenu) {
+              setActiveMenu(tabToMenuMap[k]);
+            }
+          }}>{v}</button>
         ))}
 
       </div>

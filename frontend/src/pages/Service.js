@@ -6,8 +6,17 @@ import EngineerVisit from './service/EngineerVisit';
 import SparePartsRequired from './service/SparePartsRequired';
 import ServiceReports from './service/ServiceReports';
 
-const Service = ({ defaultTab = 'tickets' }) => {
+const Service = ({ defaultTab = 'tickets', setActiveMenu }) => {
   const [tab, setTab] = useState(defaultTab);
+
+  // Map tab keys to sidebar menu labels
+  const tabToMenuMap = {
+    'tickets': 'Service Tickets',
+    'assignment': 'Engineer Assignment',
+    'visit': 'Engineer Visit',
+    'parts': 'Spare Parts',
+    'reports': 'Service Reports',
+  };
 
   const TABS = [
     { key: 'tickets', label: 'Service Tickets', component: ServiceTickets },
@@ -33,7 +42,12 @@ const Service = ({ defaultTab = 'tickets' }) => {
           <button 
             key={key} 
             className={`d_tab_btn ${tab === key ? 'd_active' : ''}`} 
-            onClick={() => setTab(key)}
+            onClick={() => {
+              setTab(key);
+              if (setActiveMenu) {
+                setActiveMenu(tabToMenuMap[key]);
+              }
+            }}
           >
             {label}
           </button>

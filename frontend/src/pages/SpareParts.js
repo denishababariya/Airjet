@@ -12,8 +12,16 @@ const statusClass = { 'Available': 'd_success', 'Low Stock': 'd_warning', 'Out o
 const blank = { name: '', cat: '', brand: '', model: '', stock: '', minStock: '', price: '', warrantyPeriod: '', warrantyUnit: 'Months', status: 'Available', images: [] };
 const blankCategory = { name: '', desc: '', status: 'Active' };
 
-const SpareParts = ({ defaultTab = 'parts' }) => {
+const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
   const [tab, setTab]     = useState(defaultTab);
+
+  // Map tab keys to sidebar menu labels
+  const tabToMenuMap = {
+    'parts': 'Part Number',
+    'category': 'Category',
+    'brand': 'Brand',
+    'models': 'Compatible Models',
+  };
   const [data, setData]   = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -321,7 +329,12 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
 
       <div className="d_tabs mb-3">
         {[['parts','Part Number'],['category','Category'],['brand','Brand'],['models','Compatible Models']].map(([k,v]) => (
-          <button key={k} className={`d_tab_btn ${tab===k?'d_active':''}`} onClick={() => setTab(k)}>{v}</button>
+          <button key={k} className={`d_tab_btn ${tab===k?'d_active':''}`} onClick={() => {
+            setTab(k);
+            if (setActiveMenu) {
+              setActiveMenu(tabToMenuMap[k]);
+            }
+          }}>{v}</button>
         ))}
       </div>
 
