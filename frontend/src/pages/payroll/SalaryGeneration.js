@@ -116,7 +116,12 @@ export default function SalaryGeneration({ onViewSalary, onEditSalary, onDownloa
           }
           fetchSalaries();
         } catch (error) {
-          toast.error(error.displayMessage || 'Failed to generate salaries');
+          // Handle backend error for already generated salaries
+          if (error.response?.status === 400 && error.response?.data?.error) {
+            toast.error(error.response.data.error);
+          } else {
+            toast.error(error.displayMessage || error.response?.data?.message || 'Failed to generate salaries');
+          }
         } finally {
           setGenerating(false);
         }

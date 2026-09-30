@@ -264,6 +264,18 @@ exports.generateAllSalaries = async (req, res) => {
       }
     }
     
+    // If all employees have "already generated" error, return proper error
+    const allAlreadyGenerated = errors.length > 0 && 
+      errors.length === employees.length && 
+      errors.every(e => e.error === 'Salary already generated');
+    
+    if (allAlreadyGenerated) {
+      return res.status(400).json({ 
+        error: `Salaries for ${month} ${year} have already been generated for all employees. Please check existing records or select a different month.`,
+        errors 
+      });
+    }
+    
     res.status(201).json({ 
       message: `Generated ${results.length} salaries`,
       results,

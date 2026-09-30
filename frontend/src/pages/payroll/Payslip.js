@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MdDownload, MdPrint, MdArrowBack } from 'react-icons/md';
 import { payrollApi } from '../../utils/api';
+import html2pdf from 'html2pdf.js';
 
 export default function Payslip({ salaryId, onBack }) {
   const [salary, setSalary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const payslipRef = useRef(null);
 
   useEffect(() => {
     if (salaryId) {
@@ -25,9 +28,39 @@ export default function Payslip({ salaryId, onBack }) {
   };
 
   const handleDownload = () => {
-    // In a real implementation, this would generate a PDF
-    // For now, we'll use the browser's print functionality
-    window.print();
+    if (!payslipRef.current || !salary) return;
+    
+    setDownloading(true);
+    
+    const element = payslipRef.current;
+    const employeeName = salary.employeeName?.replace(/\s+/g, '_') || 'employee';
+    const month = salary.month?.replace(/\s+/g, '_') || 'month';
+    const filename = `Payslip_${employeeName}_${month}.pdf`;
+    
+    const opt = {
+      margin: [10, 10, 10, 10],
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2,
+        useCORS: true,
+        logging: false
+      },
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
+        orientation: 'portrait' 
+      }
+    };
+    
+    html2pdf().set(opt).from(element).save()
+      .then(() => {
+        setDownloading(false);
+      })
+      .catch((error) => {
+        console.error('Error generating PDF:', error);
+        setDownloading(false);
+      });
   };
 
   const handlePrint = () => {
@@ -44,6 +77,22 @@ export default function Payslip({ salaryId, onBack }) {
 
   return (
     <div>
+      <style>{`
+        @media print {
+          .d_page_header {
+            display: none !important;
+          }
+          #payslip-document {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 1rem !important;
+            max-width: 100% !important;
+          }
+          body {
+            background: white !important;
+          }
+        }
+      `}</style>
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2" style={{ '@media print': { display: 'none' } }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button className="d_btn d_btn_outline" onClick={onBack}>
@@ -55,8 +104,13 @@ export default function Payslip({ salaryId, onBack }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button className="d_btn d_btn_primary" onClick={handleDownload}>
-            <MdDownload /> Download PDF
+          <button 
+            className="d_btn d_btn_primary" 
+            onClick={handleDownload}
+            disabled={downloading}
+            style={{ opacity: downloading ? 0.6 : 1, cursor: downloading ? 'not-allowed' : 'pointer' }}
+          >
+            <MdDownload /> {downloading ? 'Downloading...' : 'Download PDF'}
           </button>
           <button className="d_btn d_btn_outline" onClick={handlePrint}>
             <MdPrint /> Print
@@ -66,6 +120,7 @@ export default function Payslip({ salaryId, onBack }) {
 
       {/* Payslip Document */}
       <div 
+        ref={payslipRef}
         id="payslip-document"
         style={{
           maxWidth: '800px',

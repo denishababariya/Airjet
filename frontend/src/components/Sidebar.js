@@ -109,6 +109,20 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
   const userRole = currentUser?.role || 'User';
   const hasAdminPanelAccess = isAdminRole(userRole) || isManagerRole(userRole) || isHeadRole(userRole) || isHRRole(userRole);
 
+  // Auto-expand parent menu if activeMenu is a child
+  React.useEffect(() => {
+    if (activeMenu) {
+      for (const section of menuConfig) {
+        for (const item of section.items) {
+          if (item.children && item.children.includes(activeMenu)) {
+            setOpenMenu(item.id);
+            break;
+          }
+        }
+      }
+    }
+  }, [activeMenu]);
+
   const toggleMenu = (id) => {
     // If already open → close it; else open this one and close previous
     setOpenMenu(prev => (prev === id ? null : id));

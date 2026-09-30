@@ -11,10 +11,21 @@ import Allowances from './payroll/Allowances';
 import Deductions from './payroll/Deductions';
 import PayslipDownload from './payroll/PayslipDownload';
 
-const Payroll = ({ defaultTab = 'dashboard' }) => {
+const Payroll = ({ defaultTab = 'dashboard', setActiveMenu }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [selectedSalaryId, setSelectedSalaryId] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'details', 'edit', 'payslip'
+
+  // Map tab keys to sidebar menu labels
+  const tabToMenuMap = {
+    'dashboard': 'Payroll Dashboard',
+    'salary-generation': 'Salary Generation',
+    'salary-list': 'Salary List',
+    'reports': 'Payroll Reports',
+    'allowances': 'Allowances',
+    'deductions': 'Deductions',
+    'payslip': 'Payslip Download',
+  };
 
   // Sync activeTab when defaultTab prop changes (from sidebar navigation)
   useEffect(() => {
@@ -112,6 +123,9 @@ const Payroll = ({ defaultTab = 'dashboard' }) => {
               setActiveTab(key);
               setViewMode('list');
               setSelectedSalaryId(null);
+              if (setActiveMenu) {
+                setActiveMenu(tabToMenuMap[key]);
+              }
             }}
           >
             <Icon style={{ marginRight: '0.5rem' }} />

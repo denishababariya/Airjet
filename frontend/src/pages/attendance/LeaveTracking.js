@@ -97,6 +97,18 @@ export default function LeaveTracking() {
     setShowModal(true);
   };
 
+  const handleView = (leave) => {
+    setEditId(leave._id);
+    setForm({
+      employeeId: leave.employeeId?._id || leave.employeeId,
+      from: leave.from, to: leave.to,
+      fromTime: leave.fromTime||'', toTime: leave.toTime||'',
+      type: leave.type, reason: leave.reason, status: leave.status,
+    });
+    setErrors({});
+    setShowModal(true);
+  };
+
   const handleAddNew = () => {
     setEditId(null); setForm(blankForm); setErrors({}); setShowModal(true);
   };
@@ -212,7 +224,7 @@ export default function LeaveTracking() {
                     <td style={{ maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{l.reason}</td>
                     <td><span className={`d_badge ${statusBadge(l.status)}`}>{l.status}</span></td>
                     <td><div className="d_action_btns">
-                      <button className="d_icon_btn d_view"><MdVisibility /></button>
+                      <button className="d_icon_btn d_view" onClick={() => handleView(l)}><MdVisibility /></button>
                       <button className="d_icon_btn d_edit" onClick={() => handleEdit(l)}><MdEdit /></button>
                     </div></td>
                   </tr>

@@ -63,8 +63,17 @@ const blankPL = {
   profit: "",
 };
 
-const Accounts = ({ defaultTab = "receivables" }) => {
+const Accounts = ({ defaultTab = "receivables", setActiveMenu }) => {
   const [tab, setTab] = useState(defaultTab);
+
+  // Map tab keys to sidebar menu labels
+  const tabToMenuMap = {
+    'receivables': 'Receivables',
+    'payables': 'Payables',
+    'ledger': 'Ledger',
+    'gst': 'GST Reports',
+    'pl': 'Profit & Loss',
+  };
   const [receivables, setReceivables] = useState([]);
   const [payables, setPayables] = useState([]);
   const [ledger, setLedger] = useState([]);
@@ -374,7 +383,12 @@ const Accounts = ({ defaultTab = "receivables" }) => {
           <button
             key={k}
             className={`d_tab_btn ${tab === k ? "d_active" : ""}`}
-            onClick={() => setTab(k)}
+            onClick={() => {
+              setTab(k);
+              if (setActiveMenu) {
+                setActiveMenu(tabToMenuMap[k]);
+              }
+            }}
           >
             {v}
           </button>
