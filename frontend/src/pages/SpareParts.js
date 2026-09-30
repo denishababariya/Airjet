@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MdInventory2, MdAdd, MdEdit, MdDelete, MdSearch } from 'react-icons/md';
+import { MdInventory2, MdAdd, MdEdit, MdDelete, MdSearch, MdVisibility } from 'react-icons/md';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ToastContainer from '../components/Toast';
@@ -19,6 +19,8 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState('');
   const [modal, setModal]     = useState(false);
+  const [viewModal, setViewModal] = useState(false);
+  const [viewPart, setViewPart] = useState(null);
   const [form, setForm]       = useState(blank);
   const [editId, setEditId]   = useState(null);
   const [errors, setErrors]   = useState({});
@@ -154,6 +156,11 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
     setModal(true);
   };
 
+  const handleView = (part) => {
+    setViewPart(part);
+    setViewModal(true);
+  };
+
   const f = (field) => ({
     value: form[field] ?? '',
     onChange: (e) => { setForm(p => ({ ...p, [field]: e.target.value })); setErrors(p => ({ ...p, [field]: '' })); },
@@ -271,6 +278,9 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
       setSavingCategory(false);
     }
   };
+  const handleSubmit = () => {
+    
+  }
 
   const handleCategoryDelete = (id, name) => {
     confirm({
@@ -350,6 +360,7 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
                       )}
                     </td>
                     <td><div className="d_action_btns">
+                      <button className="d_icon_btn d_view" onClick={() => handleView(p)}><MdVisibility /></button>
                       <button className="d_icon_btn d_edit" onClick={() => openEdit(p)}><MdEdit /></button>
                       <button className="d_icon_btn d_del"  onClick={() => handleDelete(p._id, p.partName)}><MdDelete /></button>
                     </div></td>
@@ -361,6 +372,19 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
           </div>
         </div>
       )}
+
+      {/* const [data, setData] = useState([]);
+const [search, setSearch] = useState("");
+
+useEffect(() => {
+  fetch("https://jsonplaceholder.typicode.com/users")
+    .then((res) => res.json())
+    .then((res) => setData(res));
+}, []);
+
+const filteredData = data.filter((item) =>
+  item.name.toLowerCase().includes(search.toLowerCase())
+); */}
 
       {tab === 'category' && (
         <div className="d_card">
@@ -523,6 +547,77 @@ const SpareParts = ({ defaultTab = 'parts' }) => {
             {saving ? 'Saving…' : editId ? 'Update Part' : 'Save Part'}
           </button>
         </div>
+      </Modal>
+
+      <Modal open={viewModal} onClose={() => setViewModal(false)} title="Part Details" size="lg">
+        {viewPart && (
+          <div>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Part No.</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{String(viewPart.partNumber)}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Part Name</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewPart.partName)}</div>
+              </div>
+            </div>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Category</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewPart.category)}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Brand</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewPart.brand)}</div>
+              </div>
+            </div>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Stock</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewPart.quantity)}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Min. Stock</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewPart.minimumStock)}</div>
+              </div>
+            </div>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Unit Price (₹)</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>₹{(viewPart.unitPrice||0).toLocaleString('en-IN')}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Status</label>
+                <span className={`d_badge ${statusClass[viewPart.status]||'d_info'}`}>{String(viewPart.status)}</span>
+              </div>
+            </div>
+            <div className="d_form_row cols-1">
+              <div className="d_form_group">
+                <label className="d_form_label">Compatible Models</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{(viewPart.compatibility||[]).join(', ') || '-'}</div>
+              </div>
+            </div>
+            {viewPart.images && viewPart.images.length > 0 && (
+              <div className="d_form_row cols-1">
+                <div className="d_form_group">
+                  <label className="d_form_label">Images</label>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                    {viewPart.images.map((src, idx) => (
+                      <img
+                        key={idx}
+                        src={src.startsWith('http') || src.startsWith('/uploads') ? `http://localhost:5000${src}` : src}
+                        alt={`Part ${idx + 1}`}
+                        style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd', cursor: 'pointer' }}
+                        onClick={() => window.open(src.startsWith('http') || src.startsWith('/uploads') ? `http://localhost:5000${src}` : src, '_blank')}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
 
       <Modal open={categoryModal} onClose={() => setCategoryModal(false)} title={categoryEditId ? 'Edit Category' : 'Add Category'} size="md">

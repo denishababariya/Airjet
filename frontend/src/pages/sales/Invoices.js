@@ -56,6 +56,8 @@ export default function Invoices() {
     const [activeTab, setActiveTab] = useState('All');
     const [modal, setModal] = useState(false);
     const [paymentModal, setPaymentModal] = useState(false);
+    const [viewModal, setViewModal] = useState(false);
+    const [viewInvoice, setViewInvoice] = useState(null);
     const [form, setForm] = useState(blankInvoice);
     const [paymentForm, setPaymentForm] = useState({ amount: 0, paymentMode: 'Cash', transactionReference: '', notes: '' });
     const [editId, setEditId] = useState(null);
@@ -124,6 +126,11 @@ export default function Invoices() {
         setEditId(invoice._id);
         setErrors({});
         setModal(true);
+    };
+
+    const handleView = (invoice) => {
+        setViewInvoice(invoice);
+        setViewModal(true);
     };
 
     const handleSalesOrderSelect = (salesOrderId) => {
@@ -450,7 +457,7 @@ export default function Invoices() {
                                         <td><span className={`d_badge ${statusBadge(i.status)}`}>{i.status}</span></td>
                                         <td>
                                             <div className="d_action_btns">
-                                                <button className="d_icon_btn d_view" onClick={() => openEdit(i)}><MdVisibility /></button>
+                                                <button className="d_icon_btn d_view" onClick={() => handleView(i)}><MdVisibility /></button>
                                                 <button className="d_icon_btn d_edit" onClick={() => openEdit(i)}><MdEdit /></button>
                                                 {i.status === 'Draft' && (
                                                     <button className="d_icon_btn d_primary" onClick={() => handleStatusChange(i._id, 'issue')} title="Issue"><MdCheck /></button>
@@ -724,6 +731,158 @@ export default function Invoices() {
                     <button className="d_btn d_btn_outline" onClick={() => setPaymentModal(false)}>Cancel</button>
                     <button className="d_btn d_btn_primary" onClick={handleAddPayment}><MdAttachMoney /> Add Payment</button>
                 </div>
+            </Modal>
+
+            {/* View Invoice Modal */}
+            <Modal open={viewModal} onClose={() => setViewModal(false)} title="Invoice Details" size="xl">
+                {viewInvoice && (
+                    <div>
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Invoice Number</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{viewInvoice.invoiceNumber}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Status</label>
+                                <span className={`d_badge ${statusBadge(viewInvoice.status)}`}>{viewInvoice.status}</span>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Customer</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewInvoice.customer?.name}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Sales Order</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewInvoice.salesOrder?.orderNumber || '-'}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Invoice Date</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{new Date(viewInvoice.invoiceDate).toLocaleDateString('en-IN')}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Due Date</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', color: new Date(viewInvoice.dueDate) < new Date() ? 'var(--d-danger)' : 'var(--d-success)' }}>
+                                    {new Date(viewInvoice.dueDate).toLocaleDateString('en-IN')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Payment Terms</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewInvoice.paymentTerms}</div>
+                            </div>
+                        </div>
+
+                        {viewInvoice.billingAddress && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Billing Address</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewInvoice.billingAddress}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {viewInvoice.shippingAddress && viewInvoice.shippingAddress !== viewInvoice.billingAddress && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Shipping Address</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewInvoice.shippingAddress}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="d_form_row cols-1">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Items</label>
+                                <table className="d_table">
+                                    <thead>
+                                        <tr>
+                                            <th>Part Number</th>
+                                            <th>Description</th>
+                                            <th>Qty</th>
+                                            <th>Rate</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {viewInvoice.items?.map((item, index) => (
+                                            <tr key={index}>
+                                                <td>{item.partNumber}</td>
+                                                <td>{item.description}</td>
+                                                <td>{item.quantity}</td>
+                                                <td>{formatCurrency(item.rate)}</td>
+                                                <td>{formatCurrency(item.total)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>Subtotal:</span>
+                                <strong>{formatCurrency(viewInvoice.subtotal)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>Discount:</span>
+                                <strong>{formatCurrency(viewInvoice.totalDiscount)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>Taxable Amount:</span>
+                                <strong>{formatCurrency(viewInvoice.taxableAmount)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>CGST:</span>
+                                <strong>{formatCurrency(viewInvoice.cgst)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>SGST:</span>
+                                <strong>{formatCurrency(viewInvoice.sgst)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>IGST:</span>
+                                <strong>{formatCurrency(viewInvoice.igst)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1em', borderTop: '1px solid #ddd', paddingTop: '10px', marginTop: '10px' }}>
+                                <span>Grand Total:</span>
+                                <strong style={{ color: 'var(--d-primary)' }}>{formatCurrency(viewInvoice.grandTotal)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>Paid Amount:</span>
+                                <strong style={{ color: 'var(--d-success)' }}>{formatCurrency(viewInvoice.paidAmount)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1em', borderTop: '1px solid #ddd', paddingTop: '10px', marginTop: '10px' }}>
+                                <span>Balance Amount:</span>
+                                <strong style={{ color: viewInvoice.balanceAmount > 0 ? 'var(--d-danger)' : 'var(--d-success)' }}>{formatCurrency(viewInvoice.balanceAmount)}</strong>
+                            </div>
+                        </div>
+
+                        {viewInvoice.notes && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Notes</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewInvoice.notes}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {viewInvoice.terms && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Terms & Conditions</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewInvoice.terms}</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </Modal>
 
             <ConfirmModal

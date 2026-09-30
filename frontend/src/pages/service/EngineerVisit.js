@@ -22,6 +22,8 @@ const blank = {
 export default function EngineerVisit() {
   const { data, loading, error, setError, save, remove } = useErpRecords('service', 'visit');
   const [modal, setModal] = useState(false);
+  const [viewModal, setViewModal] = useState(false);
+  const [viewVisit, setViewVisit] = useState(null);
   const [form, setForm] = useState(blank);
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
@@ -48,6 +50,11 @@ export default function EngineerVisit() {
     setEditId(v._id);
     setErrors({});
     setModal(true);
+  };
+
+  const handleView = (v) => {
+    setViewVisit(v);
+    setViewModal(true);
   };
 
   const validate = () => {
@@ -130,7 +137,7 @@ export default function EngineerVisit() {
                       <td style={{ fontSize: '0.85rem', maxWidth: 200 }}>{String(v.inspectionNotes)}</td>
                       <td>
                         <div className="d_action_btns">
-                          <button className="d_icon_btn d_view"><MdVisibility /></button>
+                          <button className="d_icon_btn d_view" onClick={() => handleView(v)}><MdVisibility /></button>
                           <button className="d_icon_btn d_edit" onClick={() => openEdit(v)}><MdEdit /></button>
                         </div>
                       </td>
@@ -208,6 +215,74 @@ export default function EngineerVisit() {
           <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
           <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Visit' : 'Record Visit'}</button>
         </div>
+      </Modal>
+
+      {/* View Visit Modal */}
+      <Modal open={viewModal} onClose={() => setViewModal(false)} title="Visit Details" size="lg">
+        {viewVisit && (
+          <div>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Ticket No</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{viewVisit.ticketNo}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Engineer</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewVisit.engineer}</div>
+              </div>
+            </div>
+
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Visit Date</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{new Date(viewVisit.visitDate).toLocaleDateString('en-IN')}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Arrival Time</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewVisit.arrivalTime}</div>
+              </div>
+            </div>
+
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Service Type</label>
+                <span className="d_badge d_info">{viewVisit.serviceType}</span>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Machine Running</label>
+                <span className={`d_badge ${viewVisit.machineRunning === 'Running' ? 'd_success' : viewVisit.machineRunning === 'Not Running' ? 'd_danger' : 'd_warning'}`}>
+                  {viewVisit.machineRunning}
+                </span>
+              </div>
+            </div>
+
+            <div className="d_form_row cols-1">
+              <div className="d_form_group">
+                <label className="d_form_label">Inspection Notes</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewVisit.inspectionNotes}</div>
+              </div>
+            </div>
+
+            <div className="d_form_row cols-2">
+              {viewVisit.beforePhoto && (
+                <div className="d_form_group">
+                  <label className="d_form_label">Before Photo</label>
+                  <div style={{ marginTop: '8px' }}>
+                    <img src={viewVisit.beforePhoto} alt="Before" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px' }} />
+                  </div>
+                </div>
+              )}
+              {viewVisit.afterPhoto && (
+                <div className="d_form_group">
+                  <label className="d_form_label">After Photo</label>
+                  <div style={{ marginTop: '8px' }}>
+                    <img src={viewVisit.afterPhoto} alt="After" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px' }} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

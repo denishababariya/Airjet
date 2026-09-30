@@ -16,11 +16,11 @@ import { MdWarning, MdClose } from 'react-icons/md';
  */
 const ConfirmDialog = ({
   open,
-  title    = 'Confirm',
-  message  = 'Are you sure?',
+  title = 'Confirm',
+  message = 'Are you sure?',
   confirmLabel = 'Confirm',
-  cancelLabel  = 'Cancel',
-  variant  = 'danger',
+  cancelLabel = 'Cancel',
+  variant = 'danger',
   onConfirm,
   onCancel,
 }) => {
@@ -35,7 +35,7 @@ const ConfirmDialog = ({
   if (!open) return null;
 
   const variantBtn = {
-    danger:  'd_btn_danger',
+    danger: 'd_btn_danger',
     warning: 'd_btn_accent',
     primary: 'd_btn_primary',
   }[variant] || 'd_btn_danger';
@@ -52,20 +52,24 @@ const ConfirmDialog = ({
         className="d_confirm_box"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="d_confirm_header">
-          <div className="d_confirm_icon_wrap">
-            <MdWarning className="d_confirm_icon" />
+        <div className="d-flex">
+          {/* Header */}
+          <div className="d_confirm_header">
+            <div>
+              <div className="d_confirm_icon_wrap">
+                <MdWarning className="d_confirm_icon" />
+              </div>
+              <button className="d_modal_close" onClick={onCancel} aria-label="Close">
+                <MdClose />
+              </button>
+            </div>
+            <div className="d_confirm_body">
+              <h4 id="confirm_title" className="d_confirm_title">{title}</h4>
+              <p className="d_confirm_msg">{message}</p>
+            </div>
           </div>
-          <button className="d_modal_close" onClick={onCancel} aria-label="Close">
-            <MdClose />
-          </button>
-        </div>
 
-        {/* Body */}
-        <div className="d_confirm_body">
-          <h4 id="confirm_title" className="d_confirm_title">{title}</h4>
-          <p className="d_confirm_msg">{message}</p>
+          {/* Body */}
         </div>
 
         {/* Actions */}

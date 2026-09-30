@@ -46,6 +46,8 @@ export default function SalesReturns() {
     const [activeTab, setActiveTab] = useState('All');
     const [modal, setModal] = useState(false);
     const [viewMode, setViewMode] = useState(false);
+    const [viewModal, setViewModal] = useState(false);
+    const [viewReturn, setViewReturn] = useState(null);
     const [form, setForm] = useState(blankReturn);
     const [editId, setEditId] = useState(null);
     const [errors, setErrors] = useState({});
@@ -104,6 +106,11 @@ export default function SalesReturns() {
         setErrors({});
         setViewMode(true);
         setModal(true);
+    };
+
+    const handleViewModal = (returnItem) => {
+        setViewReturn(returnItem);
+        setViewModal(true);
     };
 
     const openEdit = (returnItem) => {
@@ -374,7 +381,7 @@ export default function SalesReturns() {
                                         <td><span className={`d_badge ${statusBadge(r.status)}`}>{r.status}</span></td>
                                         <td>
                                             <div className="d_action_btns">
-                                                <button className="d_icon_btn d_view" onClick={() => openView(r)}><MdVisibility /></button>
+                                                <button className="d_icon_btn d_view" onClick={() => handleViewModal(r)}><MdVisibility /></button>
                                                 <button className="d_icon_btn d_edit" onClick={() => openEdit(r)}><MdEdit /></button>
                                                 {r.status === 'Pending' && (
                                                     <>
@@ -606,6 +613,104 @@ export default function SalesReturns() {
                     <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
                     {!viewMode && <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Return' : 'Create Return'}</button>}
                 </div>
+            </Modal>
+
+            {/* View Sales Return Modal */}
+            <Modal open={viewModal} onClose={() => setViewModal(false)} title="Sales Return Details" size="xl">
+                {viewReturn && (
+                    <div>
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Return Number</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{viewReturn.returnNumber}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Status</label>
+                                <span className={`d_badge ${statusBadge(viewReturn.status)}`}>{viewReturn.status}</span>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Customer</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewReturn.customer?.name}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Invoice/Sales Order</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>
+                                    {viewReturn.invoice?.invoiceNumber || viewReturn.salesOrder?.salesOrderNumber || '-'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Return Date</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{new Date(viewReturn.returnDate).toLocaleDateString('en-IN')}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Return Method</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewReturn.returnMethod}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-1">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Items</label>
+                                <table className="d_table">
+                                    <thead>
+                                        <tr>
+                                            <th>Part Number</th>
+                                            <th>Description</th>
+                                            <th>Qty</th>
+                                            <th>Rate</th>
+                                            <th>Reason</th>
+                                            <th>Condition</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {viewReturn.items?.map((item, index) => (
+                                            <tr key={index}>
+                                                <td>{item.partNumber}</td>
+                                                <td>{item.description}</td>
+                                                <td>{item.quantity}</td>
+                                                <td>{formatCurrency(item.rate)}</td>
+                                                <td>{item.returnReason}</td>
+                                                <td>{item.condition}</td>
+                                                <td>{formatCurrency(item.total)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>Subtotal:</span>
+                                <strong>{formatCurrency(viewReturn.subtotal)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>Tax:</span>
+                                <strong>{formatCurrency(viewReturn.totalTax)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1em', borderTop: '1px solid #ddd', paddingTop: '10px', marginTop: '10px' }}>
+                                <span>Total Refund Amount:</span>
+                                <strong style={{ color: 'var(--d-danger)' }}>{formatCurrency(viewReturn.totalAmount)}</strong>
+                            </div>
+                        </div>
+
+                        {viewReturn.notes && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Notes</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewReturn.notes}</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </Modal>
 
             <ConfirmModal
