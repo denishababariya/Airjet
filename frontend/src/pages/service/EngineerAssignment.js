@@ -25,6 +25,8 @@ export default function EngineerAssignment() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modal, setModal] = useState(false);
+  const [viewModal, setViewModal] = useState(false);
+  const [viewAssignment, setViewAssignment] = useState(null);
   const [form, setForm] = useState(blank);
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
@@ -76,6 +78,11 @@ export default function EngineerAssignment() {
     setEditId(req._id);
     setErrors({});
     setModal(true);
+  };
+
+  const handleView = (req) => {
+    setViewAssignment(req);
+    setViewModal(true);
   };
 
   const validate = () => {
@@ -176,7 +183,7 @@ export default function EngineerAssignment() {
                       </td>
                       <td>
                         <div className="d_action_btns">
-                          <button className="d_icon_btn d_view"><MdVisibility /></button>
+                          <button className="d_icon_btn d_view" onClick={() => handleView(req)}><MdVisibility /></button>
                           <button className="d_icon_btn d_edit" onClick={() => openEdit(req)}><MdEdit /></button>
                         </div>
                       </td>
@@ -239,6 +246,72 @@ export default function EngineerAssignment() {
           <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
           <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Assignment' : 'Create Assignment'}</button>
         </div>
+      </Modal>
+
+      {/* View Assignment Modal */}
+      <Modal open={viewModal} onClose={() => setViewModal(false)} title="Assignment Details" size="lg">
+        {viewAssignment && (
+          <div>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Request Number</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{viewAssignment.requestNumber}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Status</label>
+                <span className={`d_badge ${statusBadge(viewAssignment.status)}`}>{viewAssignment.status}</span>
+              </div>
+            </div>
+
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Customer</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewAssignment.customer?.name || '-'}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Machine</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewAssignment.machine || '-'}</div>
+              </div>
+            </div>
+
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Assigned Engineer</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>
+                  {viewAssignment.assignedEngineer?.name || viewAssignment.assignedEngineer || 'Unassigned'}
+                </div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Assign Date</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>
+                  {viewAssignment.assignedDate ? new Date(viewAssignment.assignedDate).toLocaleDateString('en-IN') : '-'}
+                </div>
+              </div>
+            </div>
+
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Scheduled Date</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>
+                  {viewAssignment.scheduledDate ? new Date(viewAssignment.scheduledDate).toLocaleDateString('en-IN') : '-'}
+                </div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Service Type</label>
+                <span className={`d_badge ${viewAssignment.serviceType === 'Warranty' ? 'd_success' : 'd_warning'}`}>
+                  {viewAssignment.serviceType}
+                </span>
+              </div>
+            </div>
+
+            <div className="d_form_row cols-1">
+              <div className="d_form_group">
+                <label className="d_form_label">Complaint</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewAssignment.complaint || '-'}</div>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

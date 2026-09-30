@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
-import { MdWarehouse, MdAdd, MdEdit, MdDelete, MdSwapHoriz, MdFactCheck } from 'react-icons/md';
-
+import { MdWarehouse, MdAdd, MdEdit, MdDelete, MdSwapHoriz, MdFactCheck, MdVisibility } from 'react-icons/md';
 import Modal from '../components/Modal';
 
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -63,7 +61,8 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
   const [loading, setLoading]     = useState(true);
 
   const [modal, setModal]         = useState(false);
-
+  const [viewModal, setViewModal] = useState(false);
+  const [viewRow, setViewRow]     = useState(null);
   const [form, setForm]           = useState(blankWH);
 
   const [editId, setEditId]       = useState(null);
@@ -156,7 +155,10 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
 
   };
 
-
+  const handleView = (row) => {
+    setViewRow(row);
+    setViewModal(true);
+  };
 
   const f = (field) => ({
 
@@ -507,7 +509,7 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
                     </td>
 
                     <td><div className="d_action_btns">
-
+                      <button className="d_icon_btn d_view" onClick={() => handleView(w)}><MdVisibility /></button>
                       <button className="d_icon_btn d_edit" onClick={() => openEdit(w)}><MdEdit /></button>
 
                       <button className="d_icon_btn d_del"  onClick={() => handleDelete(w._id, `item "${w.itemName}"`)}><MdDelete /></button>
@@ -559,7 +561,7 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
                     <td><span className={`d_badge ${statusClass[t.status]||'d_info'}`}>{String(t.status)}</span></td>
 
                     <td><div className="d_action_btns">
-
+                      <button className="d_icon_btn d_view" onClick={() => handleView(t)}><MdVisibility /></button>
                       <button className="d_icon_btn d_edit" onClick={() => openEdit(t)}><MdEdit /></button>
 
                       <button className="d_icon_btn d_del"  onClick={() => handleDelete(t._id, `transfer "${t.id}"`)}><MdDelete /></button>
@@ -617,15 +619,11 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
                       <td><span className={`d_badge ${statusClass[a.status]||'d_info'}`}>{String(a.status)}</span></td>
 
                       <td>{String(a.notes)}</td>
-
-                      <td><div className="d_action_btns">
-
-                        <button className="d_icon_btn d_edit" onClick={() => openEdit(a)}><MdEdit /></button>
-
-                        <button className="d_icon_btn d_del"  onClick={() => handleDelete(a._id, `audit "${a.id}"`)}><MdDelete /></button>
-
-                      </div></td>
-
+                        <td><div className="d_action_btns">
+                          <button className="d_icon_btn d_view" onClick={() => handleView(a)}><MdVisibility /></button>
+                          <button className="d_icon_btn d_edit" onClick={() => openEdit(a)}><MdEdit /></button>
+                          <button className="d_icon_btn d_del"  onClick={() => handleDelete(a._id, `audit "${a.id}"`)}><MdDelete /></button>
+                        </div></td>
                     </tr>
 
                   ))}
@@ -691,7 +689,7 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
                       <td>{String(t.notes||'-')}</td>
 
                       <td><div className="d_action_btns">
-
+                        <button className="d_icon_btn d_view" onClick={() => handleView(t)}><MdVisibility /></button>
                         <button className="d_icon_btn d_edit" onClick={() => openEdit(t)}><MdEdit /></button>
 
                         <button className="d_icon_btn d_del"  onClick={() => handleDelete(t._id, `transaction "${t.id}"`)}><MdDelete /></button>
@@ -982,6 +980,185 @@ const Warehouse = ({ defaultTab = 'warehouses' }) => {
 
       )}
 
+      {/* View Modal */}
+      <Modal open={viewModal} onClose={() => setViewModal(false)} title="Record Details" size="lg">
+        {viewRow && (
+          <div>
+            {isWH && (
+              <>
+                <div className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Stock ID</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{String(viewRow.id)}</div>
+                  </div>
+                  <div className="d_form_group">
+                    <label className="d_form_label">Item Name</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.itemName)}</div>
+                  </div>
+                </div>
+                <div className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Location</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.location||'-')}</div>
+                  </div>
+                  <div className="d_form_group">
+                    <label className="d_form_label">Quantity</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.quantity)}</div>
+                  </div>
+                </div>
+                <div className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Unit Price (₹)</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>₹{(viewRow.unitPrice||0).toLocaleString('en-IN')}</div>
+                  </div>
+                  <div className="d_form_group">
+                    <label className="d_form_label">Supplier</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.supplier||'-')}</div>
+                  </div>
+                </div>
+                <div className="d_form_row cols-1">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Status</label>
+                    <span className={`d_badge ${statusClass[viewRow.status]||'d_info'}`}>{String(viewRow.status)}</span>
+                  </div>
+                </div>
+                {viewRow.images && viewRow.images.length > 0 && (
+                  <div className="d_form_row cols-1">
+                    <div className="d_form_group">
+                      <label className="d_form_label">Images</label>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                        {viewRow.images.map((src, idx) => (
+                          <img
+                            key={idx}
+                            src={src.startsWith('http') || src.startsWith('/uploads') ? `http://localhost:5000${src}` : src}
+                            alt={`Item ${idx + 1}`}
+                            style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd', cursor: 'pointer' }}
+                            onClick={() => window.open(src.startsWith('http') || src.startsWith('/uploads') ? `http://localhost:5000${src}` : src, '_blank')}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            {isTRF && (
+              <>
+                <div className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Transfer ID</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{String(viewRow.id)}</div>
+                  </div>
+                  <div className="d_form_group">
+                    <label className="d_form_label">Status</label>
+                    <span className={`d_badge ${statusClass[viewRow.status]||'d_info'}`}>{String(viewRow.status)}</span>
+                  </div>
+                </div>
+                <div className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">From</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.from)}</div>
+                  </div>
+                  <div className="d_form_group">
+                    <label className="d_form_label">To</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.to)}</div>
+                  </div>
+                </div>
+                <div className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Part</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.part)}</div>
+                  </div>
+                  <div className="d_form_group">
+                    <label className="d_form_label">Quantity</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.qty)}</div>
+                  </div>
+                </div>
+                <div className="d_form_row cols-1">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Date</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.date)}</div>
+                  </div>
+                </div>
+              </>
+            )}
+            {isAUD && (
+              <>
+                <div className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Audit ID</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{String(viewRow.id)}</div>
+                  </div>
+                  <div className="d_form_group">
+                    <label className="d_form_label">Status</label>
+                    <span className={`d_badge ${statusClass[viewRow.status]||'d_info'}`}>{String(viewRow.status)}</span>
+                  </div>
+                </div>
+                <div className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Location</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.location)}</div>
+                  </div>
+                  <div className="d_form_group">
+                    <label className="d_form_label">Date</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.date)}</div>
+                  </div>
+                </div>
+                <div className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Items Count</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.items)}</div>
+                  </div>
+                  <div className="d_form_group">
+                    <label className="d_form_label">Notes</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.notes||'-')}</div>
+                  </div>
+                </div>
+              </>
+            )}
+            {isTXN && (
+              <>
+                <div className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Transaction ID</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{String(viewRow.id)}</div>
+                  </div>
+                  <div className="d_form_group">
+                    <label className="d_form_label">Type</label>
+                    <span className={`d_badge ${statusClass[viewRow.type]||'d_info'}`}>{String(viewRow.type)}</span>
+                  </div>
+                </div>
+                <div className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Item</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.item)}</div>
+                  </div>
+                  <div className="d_form_group">
+                    <label className="d_form_label">Quantity</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.quantity)}</div>
+                  </div>
+                </div>
+                <div className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Date</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.date)}</div>
+                  </div>
+                  <div className="d_form_group">
+                    <label className="d_form_label">Reference</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{String(viewRow.reference||'-')}</div>
+                  </div>
+                </div>
+                <div className="d_form_row cols-1">
+                  <div className="d_form_group">
+                    <label className="d_form_label">Notes</label>
+                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{String(viewRow.notes||'-')}</div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
 
   );

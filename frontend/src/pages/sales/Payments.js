@@ -34,6 +34,8 @@ export default function Payments() {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('All');
     const [modal, setModal] = useState(false);
+    const [viewModal, setViewModal] = useState(false);
+    const [viewPayment, setViewPayment] = useState(null);
     const [form, setForm] = useState(blankPayment);
     const [editId, setEditId] = useState(null);
     const [errors, setErrors] = useState({});
@@ -99,6 +101,11 @@ export default function Payments() {
         setEditId(payment._id);
         setErrors({});
         setModal(true);
+    };
+
+    const handleView = (payment) => {
+        setViewPayment(payment);
+        setViewModal(true);
     };
 
     const handleInvoiceSelect = (invoiceId) => {
@@ -278,7 +285,7 @@ export default function Payments() {
                                         <td><span className={`d_badge ${statusBadge(p.status)}`}>{p.status}</span></td>
                                         <td>
                                             <div className="d_action_btns">
-                                                <button className="d_icon_btn d_view" onClick={() => openEdit(p)}><MdVisibility /></button>
+                                                <button className="d_icon_btn d_view" onClick={() => handleView(p)}><MdVisibility /></button>
                                                 <button className="d_icon_btn d_edit" onClick={() => openEdit(p)}><MdEdit /></button>
                                                 <button className="d_icon_btn d_del" onClick={() => handleDelete(p._id)}><MdDelete /></button>
                                             </div>
@@ -396,6 +403,77 @@ export default function Payments() {
                     <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
                     <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Payment' : 'Record Payment'}</button>
                 </div>
+            </Modal>
+
+            {/* View Payment Modal */}
+            <Modal open={viewModal} onClose={() => setViewModal(false)} title="Payment Details" size="lg">
+                {viewPayment && (
+                    <div>
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Payment ID</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{viewPayment.paymentId}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Status</label>
+                                <span className={`d_badge ${statusBadge(viewPayment.status)}`}>{viewPayment.status}</span>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Invoice</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewPayment.invoice?.invoiceNumber || '-'}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Customer</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewPayment.customer?.name || '-'}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Payment Date</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{new Date(viewPayment.paymentDate).toLocaleDateString('en-IN')}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Payment Method</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewPayment.paymentMode}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Amount (₹)</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold', color: 'var(--d-success)' }}>
+                                    {formatCurrency(viewPayment.amount)}
+                                </div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Transaction Reference</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewPayment.transactionReference || '-'}</div>
+                            </div>
+                        </div>
+
+                        {viewPayment.bank && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Bank Name</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewPayment.bank}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {viewPayment.notes && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Notes</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewPayment.notes}</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </Modal>
 
             <ConfirmModal

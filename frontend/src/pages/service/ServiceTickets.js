@@ -50,11 +50,15 @@ export default function ServiceTickets() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modal, setModal] = useState(false);
+  const [viewModal, setViewModal] = useState(false);
+  const [viewTicket, setViewTicket] = useState(null);
   const [form, setForm] = useState(blank);
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
   const [salesOrders, setSalesOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [selectedSalesOrderItems, setSelectedSalesOrderItems] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -117,10 +121,22 @@ export default function ServiceTickets() {
 
   const handleSalesOrderChange = async (soNumber) => {
     setForm(p => ({ ...p, salesOrderNumber: soNumber }));
+    setSelectedProduct('');
     
     const selectedOrder = salesOrders.find(o => o.orderNumber === soNumber);
     if (selectedOrder) {
       setForm(p => ({ ...p, customer: selectedOrder.customer?._id || selectedOrder.customer }));
+      
+      // Fetch sales order items
+      try {
+        const orderDetails = await api.get(`/sales-orders/${selectedOrder._id}`);
+        setSelectedSalesOrderItems(orderDetails.data.items || []);
+      } catch (err) {
+        console.error('Failed to fetch sales order items:', err);
+        setSelectedSalesOrderItems([]);
+      }
+    } else {
+      setSelectedSalesOrderItems([]);
     }
     
     await checkWarrantyStatus(soNumber);
@@ -138,6 +154,8 @@ export default function ServiceTickets() {
     setForm({ ...blank, requestNumber: generateTicketNo() });
     setEditId(null);
     setErrors({});
+    setSelectedSalesOrderItems([]);
+    setSelectedProduct('');
     setModal(true);
   };
 
@@ -161,6 +179,11 @@ export default function ServiceTickets() {
     setEditId(t._id);
     setErrors({});
     setModal(true);
+  };
+
+  const handleView = (t) => {
+    setViewTicket(t);
+    setViewModal(true);
   };
 
   const validate = () => {
@@ -287,7 +310,7 @@ export default function ServiceTickets() {
                       <td>{String(t.warranty?.warrantyEndDate ? t.warranty.warrantyEndDate.split('T')[0] : '-')}</td>
                       <td>
                         <div className="d_action_btns">
-                          <button className="d_icon_btn d_view"><MdVisibility /></button>
+                          <button className="d_icon_btn d_view" onClick={() => handleView(t)}><MdVisibility /></button>
                           <button className="d_icon_btn d_edit" onClick={() => openEdit(t)}><MdEdit /></button>
                         </div>
                       </td>
@@ -318,6 +341,30 @@ export default function ServiceTickets() {
         </div>
         <div className="d_form_row cols-2">
           <div className="d_form_group">
+            <label className="d_form_label">Product (Optional)</label>
+            <select 
+              className="d_form_control" 
+              value={selectedProduct} 
+              onChange={(e) => {
+                setSelectedProduct(e.target.value);
+                const selectedItem = selectedSalesOrderItems.find(item => item.sparePart?._id === e.target.value || item.sparePart === e.target.value);
+                setForm(p => ({ 
+                  ...p, 
+                  machine: selectedItem?.sparePart?.partName || selectedItem?.description || '',
+                  machineSerialNo: selectedItem?.partNumber || ''
+                }));
+              }}
+              disabled={!form.salesOrderNumber}
+            >
+              <option value="">Select Product</option>
+              {selectedSalesOrderItems.map((item, idx) => (
+                <option key={idx} value={item.sparePart?._id || item.sparePart}>
+                  {String(item.sparePart?.partName || item.description)} - {String(item.partNumber)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="d_form_group">
             <label className="d_form_label">Customer <span className="d_req">*</span></label>
             <select className="d_form_control" {...f('customer')}>
               <option value="">Select Customer</option>
@@ -326,10 +373,6 @@ export default function ServiceTickets() {
               ))}
             </select>
             {errors.customer && <span style={{ color: 'var(--d-danger)', fontSize: 12 }}>{errors.customer}</span>}
-          </div>
-          <div className="d_form_group">
-            <label className="d_form_label">Service Type</label>
-            <input className="d_form_control" value={form.serviceType} disabled style={{ background: '#f5f5f5' }} />
           </div>
         </div>
         <div className="d_form_row cols-2">
@@ -387,6 +430,106 @@ export default function ServiceTickets() {
           <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
           <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Ticket' : 'Create Ticket'}</button>
         </div>
+      </Modal>
+
+      {/* View Ticket Modal */}
+      <Modal open={viewModal} onClose={() => setViewModal(false)} title="Service Ticket Details" size="lg">
+        {viewTicket && (
+          <div>
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Request Number</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{viewTicket.requestNumber}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Status</label>
+                <span className={`d_badge ${statusBadge(viewTicket.status)}`}>{viewTicket.status}</span>
+              </div>
+            </div>
+
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Customer</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewTicket.customer?.name || '-'}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Sales Order</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewTicket.salesOrder?.orderNumber || '-'}</div>
+              </div>
+            </div>
+
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Machine</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewTicket.machine || '-'}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Machine Serial No</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewTicket.machineSerialNo || '-'}</div>
+              </div>
+            </div>
+
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Priority</label>
+                <span className={`d_badge ${priorityBadge(viewTicket.priority)}`}>{viewTicket.priority}</span>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Service Type</label>
+                <span className={`d_badge ${viewTicket.serviceType === 'Warranty' ? 'd_success' : 'd_warning'}`}>{viewTicket.serviceType}</span>
+              </div>
+            </div>
+
+            <div className="d_form_row cols-2">
+              <div className="d_form_group">
+                <label className="d_form_label">Request Date</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewTicket.requestDate ? new Date(viewTicket.requestDate).toLocaleDateString('en-IN') : '-'}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Warranty</label>
+                <span className={`d_badge ${viewTicket.warranty ? 'd_success' : 'd_info'}`}>{viewTicket.warranty ? 'Yes' : 'No'}</span>
+              </div>
+            </div>
+
+            {viewTicket.warranty && viewTicket.warranty.warrantyEndDate && (
+              <div className="d_form_row cols-1">
+                <div className="d_form_group">
+                  <label className="d_form_label">Warranty Expiry Date</label>
+                  <div className="d_form_control" style={{ background: '#f8f9fa', color: new Date(viewTicket.warranty.warrantyEndDate) < new Date() ? 'var(--d-danger)' : 'var(--d-success)' }}>
+                    {new Date(viewTicket.warranty.warrantyEndDate).toLocaleDateString('en-IN')}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="d_form_row cols-1">
+              <div className="d_form_group">
+                <label className="d_form_label">Complaint</label>
+                <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewTicket.complaint || '-'}</div>
+              </div>
+            </div>
+
+            {viewTicket.technicianNotes && (
+              <div className="d_form_row cols-1">
+                <div className="d_form_group">
+                  <label className="d_form_label">Technician Notes</label>
+                  <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewTicket.technicianNotes}</div>
+                </div>
+              </div>
+            )}
+
+            {viewTicket.attachment && (
+              <div className="d_form_row cols-1">
+                <div className="d_form_group">
+                  <label className="d_form_label">Attachment</label>
+                  <div style={{ marginTop: '8px' }}>
+                    <a href={viewTicket.attachment} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--d-primary)' }}>View Attachment</a>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );

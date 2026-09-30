@@ -60,6 +60,8 @@ export default function SalesOrders() {
     const [activeTab, setActiveTab] = useState('All');
     const [modal, setModal] = useState(false);
     const [viewMode, setViewMode] = useState(false);
+    const [viewModal, setViewModal] = useState(false);
+    const [viewOrder, setViewOrder] = useState(null);
     const [form, setForm] = useState(blankOrder);
     const [editId, setEditId] = useState(null);
     const [errors, setErrors] = useState({});
@@ -140,6 +142,11 @@ export default function SalesOrders() {
         setCreditCheck(null);
         setViewMode(true);
         setModal(true);
+    };
+
+    const handleViewModal = (order) => {
+        setViewOrder(order);
+        setViewModal(true);
     };
 
     const openEdit = (order) => {
@@ -562,7 +569,7 @@ export default function SalesOrders() {
                                         <td><span className={`d_badge ${statusBadge(r.status)}`}>{r.status}</span></td>
                                         <td>
                                             <div className="d_action_btns">
-                                                <button className="d_icon_btn d_view" onClick={() => openView(r)}><MdVisibility /></button>
+                                                <button className="d_icon_btn d_view" onClick={() => handleViewModal(r)}><MdVisibility /></button>
                                                 <button className="d_icon_btn d_edit" onClick={() => openEdit(r)}><MdEdit /></button>
                                                 {r.status === 'Draft' && (
                                                     <>
@@ -891,6 +898,148 @@ export default function SalesOrders() {
                     <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
                     {!viewMode && <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Sales Order' : 'Create Sales Order'}</button>}
                 </div>
+            </Modal>
+
+            {/* View Sales Order Modal */}
+            <Modal open={viewModal} onClose={() => setViewModal(false)} title="Sales Order Details" size="xl">
+                {viewOrder && (
+                    <div>
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Order Number</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>{viewOrder.orderNumber}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Status</label>
+                                <span className={`d_badge ${statusBadge(viewOrder.status)}`}>{viewOrder.status}</span>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Customer</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewOrder.customer?.name}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Quotation</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewOrder.quotation?.quotationNumber || '-'}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Order Date</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{new Date(viewOrder.orderDate).toLocaleDateString('en-IN')}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Expected Delivery</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewOrder.expectedDeliveryDate ? new Date(viewOrder.expectedDeliveryDate).toLocaleDateString('en-IN') : '-'}</div>
+                            </div>
+                        </div>
+
+                        <div className="d_form_row cols-2">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Sales Person</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewOrder.salesPerson}</div>
+                            </div>
+                            <div className="d_form_group">
+                                <label className="d_form_label">Payment Terms</label>
+                                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewOrder.paymentTerms}</div>
+                            </div>
+                        </div>
+
+                        {viewOrder.billingAddress && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Billing Address</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewOrder.billingAddress}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {viewOrder.shippingAddress && viewOrder.shippingAddress !== viewOrder.billingAddress && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Shipping Address</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewOrder.shippingAddress}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="d_form_row cols-1">
+                            <div className="d_form_group">
+                                <label className="d_form_label">Items</label>
+                                <table className="d_table">
+                                    <thead>
+                                        <tr>
+                                            <th>Part Number</th>
+                                            <th>Description</th>
+                                            <th>Qty</th>
+                                            <th>Rate</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {viewOrder.items?.map((item, index) => (
+                                            <tr key={index}>
+                                                <td>{item.partNumber}</td>
+                                                <td>{item.description}</td>
+                                                <td>{item.quantity}</td>
+                                                <td>{formatCurrency(item.rate)}</td>
+                                                <td>{formatCurrency(item.total)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>Subtotal:</span>
+                                <strong>{formatCurrency(viewOrder.subtotal)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>Discount:</span>
+                                <strong>{formatCurrency(viewOrder.totalDiscount)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>CGST:</span>
+                                <strong>{formatCurrency(viewOrder.cgst)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>SGST:</span>
+                                <strong>{formatCurrency(viewOrder.sgst)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                <span>IGST:</span>
+                                <strong>{formatCurrency(viewOrder.igst)}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1em', borderTop: '1px solid #ddd', paddingTop: '10px', marginTop: '10px' }}>
+                                <span>Grand Total:</span>
+                                <strong style={{ color: 'var(--d-primary)' }}>{formatCurrency(viewOrder.grandTotal)}</strong>
+                            </div>
+                        </div>
+
+                        {viewOrder.notes && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Notes</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewOrder.notes}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {viewOrder.terms && (
+                            <div className="d_form_row cols-1">
+                                <div className="d_form_group">
+                                    <label className="d_form_label">Terms & Conditions</label>
+                                    <div className="d_form_control" style={{ background: '#f8f9fa', minHeight: '60px' }}>{viewOrder.terms}</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </Modal>
 
             <ConfirmModal
