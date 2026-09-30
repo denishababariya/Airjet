@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
 import { rawMaterialPurchasesApi, suppliersApi } from '../utils/api';
+import './RawMaterialPurchases.css';
 
 const statusClass = {
   Pending: 'd_warning',
@@ -62,6 +63,13 @@ const RawMaterialPurchases = () => {
   const money = (value) => {
     const num = Number(value) || 0;
     return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  };
+
+  const formatDate = (value) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   const summary = useMemo(() => {
@@ -154,6 +162,144 @@ const RawMaterialPurchases = () => {
   };
 
   const Err = ({ field }) => errors[field] ? <span className="d_field_error">{errors[field]}</span> : null;
+
+  const renderPurchaseDetails = () => {
+    if (!selectedPurchase) return null;
+
+    const items = selectedPurchase.items || [];
+    const totalQty = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+    const totalAmount = Number(selectedPurchase.totalAmount) || 0;
+    const gstAmount = totalAmount * 0.18;
+    const grandTotal = totalAmount + gstAmount;
+
+    return (
+      <div className="d_rmp_details">
+        <div className="d_rmp_details_hero">
+          <div className="d_rmp_details_identity">
+            <div className="d_rmp_details_eyebrow">
+              <MdShoppingCart />
+              Purchase Overview
+            </div>
+            <div className="d_rmp_details_ref">
+              Purchase ID: <code>{selectedPurchase.id}</code>
+            </div>
+            <div className="d_rmp_details_supplier">{selectedPurchase.supplier || 'Unknown Supplier'}</div>
+            <div className="d_rmp_details_notes">{selectedPurchase.notes || 'No notes added for this purchase.'}</div>
+          </div>
+
+          <div className="d_rmp_details_amount_card">
+            <span className={`d_badge ${statusClass[selectedPurchase.status] || 'd_info'}`}>{selectedPurchase.status}</span>
+            <div>
+              <div className="d_rmp_details_amount_label">Grand Total</div>
+              <div className="d_rmp_details_amount_value">{money(grandTotal)}</div>
+            </div>
+            <div className="d_rmp_details_amount_meta">Base {money(totalAmount)} + GST {money(gstAmount)}</div>
+          </div>
+        </div>
+
+        <div className="d_rmp_details_info_grid">
+          <div className="d_rmp_info_card">
+            <div className="d_rmp_info_label">Purchase Date</div>
+            <div className="d_rmp_info_value">{formatDate(selectedPurchase.purchaseDate)}</div>
+          </div>
+          <div className="d_rmp_info_card">
+            <div className="d_rmp_info_label">Expected Delivery</div>
+            <div className="d_rmp_info_value">{formatDate(selectedPurchase.expectedDelivery)}</div>
+          </div>
+          <div className="d_rmp_info_card">
+            <div className="d_rmp_info_label">Payment Terms</div>
+            <div className="d_rmp_info_value">{selectedPurchase.paymentTerms || 'Not specified'}</div>
+          </div>
+          <div className="d_rmp_info_card">
+            <div className="d_rmp_info_label">Material Lines</div>
+            <div className="d_rmp_info_value">{items.length} items</div>
+          </div>
+        </div>
+
+        <div className="d_rmp_details_stats">
+          <div className="d_rmp_stat_card">
+            <div className="d_rmp_stat_icon"><MdInventory /></div>
+            <div>
+              <div className="d_rmp_stat_label">Item Count</div>
+              <div className="d_rmp_stat_value">{items.length}</div>
+            </div>
+          </div>
+          <div className="d_rmp_stat_card">
+            <div className="d_rmp_stat_icon"><MdTrendingUp /></div>
+            <div>
+              <div className="d_rmp_stat_label">Total Quantity</div>
+              <div className="d_rmp_stat_value">{totalQty}</div>
+            </div>
+          </div>
+          <div className="d_rmp_stat_card">
+            <div className="d_rmp_stat_icon"><MdAttachMoney /></div>
+            <div>
+              <div className="d_rmp_stat_label">Purchase Value</div>
+              <div className="d_rmp_stat_value">{money(totalAmount)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="d_rmp_details_section">
+          <div className="d_rmp_details_section_header">
+            <div className="d_rmp_details_section_title">
+              <MdReceipt />
+              Item Breakdown
+            </div>
+            <div className="d_rmp_details_section_hint">Detailed pricing for each purchased material</div>
+          </div>
+
+          <div className="d_rmp_item_list">
+            {items.map((item, index) => {
+              const lineTotal = Number(item.totalPrice) || ((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0));
+
+              return (
+                <div key={item.id || item._id || index} className="d_rmp_item_card">
+                  <div className="d_rmp_item_header">
+                    <div>
+                      <div className="d_rmp_item_name">{item.materialName || item.name || `Material ${index + 1}`}</div>
+                      <div className="d_rmp_item_subtitle">{item.category || 'Other'} | {item.quantity || 0} {item.unit || 'unit'}</div>
+                    </div>
+                    <div className="d_rmp_item_total">{money(lineTotal)}</div>
+                  </div>
+
+                  <div className="d_rmp_item_stats">
+                    <div className="d_rmp_item_stat">
+                      <span>Unit Price</span>
+                      <strong>{money(item.unitPrice || 0)}</strong>
+                    </div>
+                    <div className="d_rmp_item_stat">
+                      <span>Quantity</span>
+                      <strong>{item.quantity || 0} {item.unit || 'unit'}</strong>
+                    </div>
+                    <div className="d_rmp_item_stat">
+                      <span>Category</span>
+                      <strong>{item.category || 'Other'}</strong>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="d_rmp_totals_card">
+            <div className="d_rmp_total_row">
+              <span>Subtotal</span>
+              <strong>{money(totalAmount)}</strong>
+            </div>
+            <div className="d_rmp_total_row">
+              <span>GST (18%)</span>
+              <strong>{money(gstAmount)}</strong>
+            </div>
+            <div className="d_rmp_total_row is_grand">
+              <span>Grand Total</span>
+              <strong>{money(grandTotal)}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -405,47 +551,7 @@ const RawMaterialPurchases = () => {
       </Modal>
 
       <Modal open={viewModal} onClose={() => setViewModal(false)} title="Purchase Details" size="lg">
-        {selectedPurchase && (
-          <div>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <div style={{ marginBottom: '0.5rem' }}><strong>Purchase ID:</strong> <code>{selectedPurchase.id}</code></div>
-              <div style={{ marginBottom: '0.5rem' }}><strong>Supplier:</strong> {selectedPurchase.supplier}</div>
-              <div style={{ marginBottom: '0.5rem' }}><strong>Purchase Date:</strong> {selectedPurchase.purchaseDate}</div>
-              <div style={{ marginBottom: '0.5rem' }}><strong>Expected Delivery:</strong> {selectedPurchase.expectedDelivery || '-'}</div>
-              <div style={{ marginBottom: '0.5rem' }}><strong>Payment Terms:</strong> {selectedPurchase.paymentTerms || '-'}</div>
-              <div style={{ marginBottom: '0.5rem' }}><strong>Status:</strong> <span className={`d_badge ${statusClass[selectedPurchase.status] || 'd_info'}`}>{selectedPurchase.status}</span></div>
-              <div style={{ marginBottom: '0.5rem' }}><strong>Notes:</strong> {selectedPurchase.notes || '-'}</div>
-            </div>
-
-            <h4 style={{ marginBottom: '1rem', borderBottom: '1px solid var(--d-border)', paddingBottom: '0.5rem' }}>Items</h4>
-            {(selectedPurchase.items || []).map((item, index) => (
-              <div key={index} style={{ 
-                padding: '1rem', 
-                marginBottom: '0.75rem', 
-                backgroundColor: 'var(--d-bg-light)', 
-                borderRadius: '6px',
-                border: '1px solid var(--d-border)'
-              }}>
-                <div style={{ marginBottom: '0.25rem' }}><strong>Material:</strong> {item.materialName || item.name}</div>
-                <div style={{ marginBottom: '0.25rem' }}><strong>Category:</strong> {item.category}</div>
-                <div style={{ marginBottom: '0.25rem' }}><strong>Quantity:</strong> {item.quantity} {item.unit}</div>
-                <div style={{ marginBottom: '0.25rem' }}><strong>Unit Price:</strong> {money(item.unitPrice || 0)}</div>
-                <div><strong>Purchase Value:</strong> {money(item.totalPrice || 0)}</div>
-              </div>
-            ))}
-
-            <div style={{ 
-              marginTop: '1.5rem', 
-              paddingTop: '1rem', 
-              borderTop: '1px solid var(--d-border)',
-              textAlign: 'right'
-            }}>
-              <div style={{ marginBottom: '0.5rem' }}><strong>Total Amount:</strong> {money(selectedPurchase.totalAmount || 0)}</div>
-              <div style={{ marginBottom: '0.5rem' }}><strong>GST (18%):</strong> {money((selectedPurchase.totalAmount || 0) * 0.18)}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--d-accent)' }}><strong>Grand Total:</strong> {money((selectedPurchase.totalAmount || 0) * 1.18)}</div>
-            </div>
-          </div>
-        )}
+        {renderPurchaseDetails()}
       </Modal>
     </div>
   );

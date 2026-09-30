@@ -2376,9 +2376,8 @@ a {
 
 .d_badge.d_success {
 
-  background: rgba(40, 167, 69, 0.10);
-
-  color: #1e7e34;
+     background: rgb(40 167 69 / 22%);
+    color: #3ccb5d;
 
   border-color: rgba(40, 167, 69, 0.20);
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   MdDashboard, MdPeople, MdAccessTime, MdPayments,
   MdShoppingCart, MdPointOfSale, MdInventory2, MdWarehouse,
@@ -101,6 +101,19 @@ const menuConfig = [
   },
 ];
 
+const CHILD_PARENT_MAP = menuConfig.reduce((acc, section) => {
+  section.items.forEach((item) => {
+    (item.children || []).forEach((child) => {
+      acc[child] = item.id;
+    });
+  });
+  return acc;
+}, {});
+
+const PARENT_MENU_IDS = new Set(
+  menuConfig.flatMap((section) => section.items.filter((item) => item.children?.length).map((item) => item.id))
+);
+
 const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser, hasAdminAccess }) => {
   // Only ONE menu open at a time — store the single open id (or null)
   const [openMenu, setOpenMenu] = useState(null);
@@ -135,6 +148,21 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
       setActiveMenu(id);
     }
   };
+
+  useEffect(() => {
+    const parentMenu = CHILD_PARENT_MAP[activeMenu];
+    if (parentMenu) {
+      setOpenMenu(parentMenu);
+      return;
+    }
+
+    if (PARENT_MENU_IDS.has(activeMenu)) {
+      setOpenMenu(activeMenu);
+      return;
+    }
+
+    setOpenMenu(null);
+  }, [activeMenu]);
 
   const sidebarClass = [
     'd_sidebar',
@@ -177,7 +205,8 @@ const Sidebar = ({ collapsed, mobileOpen, activeMenu, setActiveMenu, currentUser
 
                 const hasChildren = item.children && item.children.length > 0;
                 const isOpen = openMenu === item.id;   // ← single open check
-                const isActive = activeMenu === item.id;
+                const hasActiveChild = hasChildren && item.children.includes(activeMenu);
+                const isActive = activeMenu === item.id || hasActiveChild;
 
                 return (
                   <div key={item.id} className="d_nav_item">
