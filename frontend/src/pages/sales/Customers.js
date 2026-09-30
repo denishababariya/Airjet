@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdVisibility, MdSearch, MdPeople } from 'react-icons/md';
 import Modal from '../../components/Modal';
-import ConfirmModal from '../../components/ConfirmModal';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import CustomerDetail from './CustomerDetail';
 import api from '../../utils/api';
 
@@ -556,15 +556,15 @@ export default function Customers({ setActiveMenu }) {
                 )}
             </Modal>
 
-            <ConfirmModal
+            <ConfirmDialog
                 open={confirmModal.open}
-                onClose={() => setConfirmModal({ open: false, onConfirm: null, title: '', message: '' })}
+                onCancel={() => setConfirmModal({ open: false, onConfirm: null, title: '', message: '' })}
                 onConfirm={confirmModal.onConfirm}
                 title={confirmModal.title}
                 message={confirmModal.message}
-                confirmText="Delete"
-                cancelText="Cancel"
-                type="danger"
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                variant="danger"
             />
         </div>
     );

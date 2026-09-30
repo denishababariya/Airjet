@@ -4,7 +4,6 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
-import useConfirm from '../hooks/useConfirm';
 import { sparePartsApi } from '../utils/api';
 import { V, validate } from '../utils/validators';
 
@@ -42,7 +41,10 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
   const [savingCategory, setSavingCategory] = useState(false);
 
   const { toasts, toast, removeToast }         = useToast();
-  const { confirmState, confirm, closeConfirm } = useConfirm();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteType, setDeleteType] = useState(null); // 'part' or 'category'
+  const [deleteLabel, setDeleteLabel] = useState('');
 
   const fetchParts = async () => {
     setLoading(true);
@@ -215,15 +217,54 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
   };
 
   const handleDelete = (id, name) => {
-    confirm({
-      title: 'Delete Spare Part', message: `Delete part "${name}"?`,
-      confirmLabel: 'Delete', variant: 'danger',
-      onConfirm: async () => {
-        closeConfirm();
-        try { await sparePartsApi.remove(id); toast.success('Part deleted.'); fetchParts(); }
-        catch (err) { toast.error(err.displayMessage || 'Failed to delete'); }
-      },
-    });
+    setDeleteId(id);
+    setDeleteType('part');
+    setDeleteLabel(name);
+    setConfirmOpen(true);
+  };
+
+  const handleCategoryDelete = (id, name) => {
+    setDeleteId(id);
+    setDeleteType('category');
+    setDeleteLabel(name);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!deleteId) return;
+
+    try {
+      setConfirmOpen(false);
+      if (deleteType === 'part') {
+        await sparePartsApi.remove(deleteId);
+        toast.success('Part deleted.');
+        fetchParts();
+      } else if (deleteType === 'category') {
+        await fetch(`http://localhost:5000/api/categories/${deleteId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        toast.success('Category deleted.');
+        fetchCategories();
+      }
+      setDeleteId(null);
+      setDeleteType(null);
+      setDeleteLabel('');
+    } catch (err) {
+      setDeleteId(null);
+      setDeleteType(null);
+      setDeleteLabel('');
+      toast.error(err.displayMessage || 'Failed to delete');
+    }
+  };
+
+  const handleConfirmCancel = () => {
+    setConfirmOpen(false);
+    setDeleteId(null);
+    setDeleteType(null);
+    setDeleteLabel('');
   };
 
   const openAddCategory = () => {
@@ -287,30 +328,8 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
     }
   };
   const handleSubmit = () => {
-    
-  }
 
-  const handleCategoryDelete = (id, name) => {
-    confirm({
-      title: 'Delete Category', message: `Delete category "${name}"?`,
-      confirmLabel: 'Delete', variant: 'danger',
-      onConfirm: async () => {
-        closeConfirm();
-        try {
-          await fetch(`http://localhost:5000/api/categories/${id}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          });
-          toast.success('Category deleted.');
-          fetchCategories();
-        } catch (err) {
-          toast.error(err.displayMessage || 'Failed to delete category');
-        }
-      },
-    });
-  };
+  }
 
   const cf = (field) => ({
     value: categoryForm[field] ?? '',
@@ -320,7 +339,16 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
   return (
     <div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <ConfirmDialog {...confirmState} onCancel={closeConfirm} />
+      <ConfirmDialog
+        open={confirmOpen}
+        title={deleteType === 'category' ? 'Delete Category' : 'Delete Spare Part'}
+        message={deleteType === 'category' ? `Are you sure you want to delete category "${deleteLabel}"? This action cannot be undone.` : `Are you sure you want to delete spare part "${deleteLabel}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleConfirm}
+        onCancel={handleConfirmCancel}
+      />
 
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div><h1 className="d_page_title">Spare Parts Inventory</h1><p className="d_page_subtitle">Manage parts, categories, brands and compatibility</p></div>

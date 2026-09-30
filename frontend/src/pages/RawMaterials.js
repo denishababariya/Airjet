@@ -479,7 +479,6 @@ const RawMaterials = () => {
                     <th>Current Stock Value (₹)</th>
                     <th>Supplier</th>
                     <th>Status</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
 
@@ -560,21 +559,6 @@ const RawMaterials = () => {
                         >
                           {String(m.status)}
                         </span>
-                      </td>
-
-                      <td>
-                        <div className="d_action_btns">
-                          <button
-                            type="button"
-                            className="d_icon_btn d_warning"
-                            onClick={() =>
-                              openStockModal(m)
-                            }
-                            title="Deduct Stock"
-                          >
-                            <MdRemove />
-                          </button>
-                        </div>
                       </td>
 
                     </tr>
