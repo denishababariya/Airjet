@@ -12,7 +12,9 @@ const empoleeSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        require: true
+        require: true,
+        trim: true,
+        lowercase: true
     },
     address: {
         type: String,

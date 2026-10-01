@@ -95,7 +95,7 @@ const Attendance = ({ defaultTab = 'records', setActiveMenu }) => {
       const recordType = TAB_TYPE[tab];
       let payload = { recordType, emp: form.emp, empId: form.empId };
       if (tab === 'leave') {
-        payload = { ...payload, from: form.from, to: form.to, days: Number(form.days) || 1, type: form.type, reason: form.reason, status: form.status };
+        payload = { ...payload, employeeId: form.employeeId, date: form.from, from: form.from, to: form.to || form.from, days: Number(form.days) || 1, type: form.type, reason: form.reason, status: form.status };
       } else {
         payload = { ...payload, date: form.date, checkIn: form.checkIn || '--', checkOut: form.checkOut || '--', hours: '--', status: form.status };
       }

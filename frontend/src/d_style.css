@@ -1220,6 +1220,18 @@ a {
 
 
 
+.d_profile_info {
+
+  display: block;
+
+  text-align: left;
+
+  line-height: 1.2;
+
+}
+
+
+
 .d_profile_name {
 
   font-size: 13px;
@@ -2675,6 +2687,16 @@ a {
 
 
 
+  .d_navbar_actions {
+
+    gap: 0px;
+
+  }
+
+
+
+  .d_profile_info,
+
   .d_profile_name,
 
   .d_profile_role {
@@ -2715,7 +2737,9 @@ a {
 
     flex-wrap: wrap;
 
-    gap: 10px;
+    gap: 7px;
+
+    align-items: center;
 
   }
 

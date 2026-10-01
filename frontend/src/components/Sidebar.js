@@ -46,7 +46,7 @@ const menuConfig = [
       },
       {
         label: 'Sales', icon: <MdPointOfSale />, id: 'sales',
-        children: ['Sales Dashboard', 'Customers', 'Quotations', 'Sales Orders', 'Invoices', 'Payments', 'Sales Returns', 'Sales Reports'],
+        children: ['Sales Dashboard', 'Customers', 'Quotations', 'Sales Orders', 'Invoices', 'Payments', 'Sales Returns'],
         module: 'Sales',
       },
     ],

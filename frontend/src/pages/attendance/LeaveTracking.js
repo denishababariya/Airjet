@@ -12,6 +12,32 @@ const tabs = ['All Leaves','Pending Approval','Approved','Rejected'];
 
 const blankForm = { employeeId:'', from:'', to:'', fromTime:'', toTime:'', type:'Casual', reason:'', status:'Pending' };
 
+// A leave application is stored as one record per day (needed for attendance mapping).
+// Collapse those day rows into a single table row per application.
+const groupKey = (l) =>
+  l.leaveGroup || `${l.employeeId?._id || l.employeeId || l.empId || l.emp}|${l.from}|${l.to}`;
+
+const groupLeaves = (records = []) => {
+  const map = new Map();
+  records.forEach(r => {
+    const key = groupKey(r);
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, { ...r, _ids: [r._id], recordCount: 1 });
+      return;
+    }
+    existing.recordCount += 1;
+    existing._ids.push(r._id);
+    if (r.status && r.status !== existing.status) {
+      const order = { Pending: 0, Approved: 1, Rejected: 2 };
+      existing.status = (order[r.status] ?? 0) > (order[existing.status] ?? 0) ? r.status : existing.status;
+    }
+    if (r.from && r.from < existing.from) existing.from = r.from;
+    if (r.to && r.to > existing.to) existing.to = r.to;
+  });
+  return [...map.values()];
+};
+
 export default function LeaveTracking() {
   const [activeTab, setActiveTab] = useState('All Leaves');
   const [leaves, setLeaves]       = useState([]);
@@ -23,6 +49,7 @@ export default function LeaveTracking() {
   const [errors, setErrors]       = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId]       = useState(null);
+  const [editLeave, setEditLeave] = useState(null);
 
   const { toasts, toast, removeToast } = useToast();
 
@@ -30,9 +57,10 @@ export default function LeaveTracking() {
     setLoading(true);
     try {
       const res = await attendanceApi.getLeave();
-      setLeaves(res.data.records || []);
+      const records = Array.isArray(res.data) ? res.data : (res.data?.records || []);
+      setLeaves(groupLeaves(records));
     } catch (err) {
-      toast.error(err.displayMessage || 'Failed to fetch leaves');
+      toast.error(err.response?.data?.error || err.displayMessage || 'Failed to fetch leaves');
     } finally { setLoading(false); }
   };
 
@@ -47,7 +75,7 @@ export default function LeaveTracking() {
       activeTab === 'Pending Approval' ? l.status === 'Pending' :
       activeTab === 'Approved'         ? l.status === 'Approved' :
       activeTab === 'Rejected'         ? l.status === 'Rejected' : true;
-    const matchSearch = !search || (l.emp||'').toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || (l.emp || l.employeeId?.name || '').toLowerCase().includes(search.toLowerCase());
     return matchTab && matchSearch;
   });
 
@@ -74,10 +102,11 @@ export default function LeaveTracking() {
         fromTime: form.fromTime, toTime: form.toTime,
         type: form.type, reason: form.reason.trim(),
         ...(editId ? { status: form.status } : {}),
+        ...(editLeave?.leaveGroup ? { leaveGroup: editLeave.leaveGroup } : {}),
       };
       if (editId) await attendanceApi.updateLeave(editId, payload);
       else        await attendanceApi.createLeave(payload);
-      setShowModal(false); setEditId(null); setForm(blankForm);
+      setShowModal(false); setEditId(null); setEditLeave(null); setForm(blankForm);
       toast.success(editId ? 'Leave updated!' : 'Leave applied successfully!');
       fetchLeaves();
     } catch (err) {
@@ -85,32 +114,25 @@ export default function LeaveTracking() {
     } finally { setSubmitting(false); }
   };
 
-  const handleEdit = (leave) => {
-    setEditId(leave._id);
+  const openLeave = (leave) => {
+    setEditId(leave._ids?.[0] || leave._id);
+    setEditLeave(leave);
     setForm({
       employeeId: leave.employeeId?._id || leave.employeeId,
-      from: leave.from, to: leave.to,
+      from: leave.from || '', to: leave.to || '',
       fromTime: leave.fromTime||'', toTime: leave.toTime||'',
-      type: leave.type, reason: leave.reason, status: leave.status,
+      type: leave.type || 'Casual', reason: leave.reason || '', status: leave.status || 'Pending',
     });
     setErrors({});
     setShowModal(true);
   };
 
-  const handleView = (leave) => {
-    setEditId(leave._id);
-    setForm({
-      employeeId: leave.employeeId?._id || leave.employeeId,
-      from: leave.from, to: leave.to,
-      fromTime: leave.fromTime||'', toTime: leave.toTime||'',
-      type: leave.type, reason: leave.reason, status: leave.status,
-    });
-    setErrors({});
-    setShowModal(true);
-  };
+  const handleEdit = (leave) => openLeave(leave);
+
+  const handleView = (leave) => openLeave(leave);
 
   const handleAddNew = () => {
-    setEditId(null); setForm(blankForm); setErrors({}); setShowModal(true);
+    setEditId(null); setEditLeave(null); setForm(blankForm); setErrors({}); setShowModal(true);
   };
 
   return (
@@ -122,7 +144,7 @@ export default function LeaveTracking() {
         <button className="d_btn d_btn_primary" onClick={handleAddNew}><MdAdd /> Apply Leave</button>
       </div>
 
-      <Modal open={showModal} onClose={() => { setShowModal(false); setEditId(null); setForm(blankForm); setErrors({}); }}
+      <Modal open={showModal} onClose={() => { setShowModal(false); setEditId(null); setEditLeave(null); setForm(blankForm); setErrors({}); }}
         title={editId ? 'Edit Leave' : 'Apply Leave'} size="md">
         <form onSubmit={handleSubmit}>
           <div className="d_form_row cols-2">
@@ -209,18 +231,18 @@ export default function LeaveTracking() {
               <thead><tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody>
                 {filtered.map(l => (
-                  <tr key={l._id}>
+                  <tr key={l.leaveGroup || l._id}>
                     <td>
                       <div className="d-flex align-items-center gap-2">
                         <div className="d-avatar text-white rounded-circle d-flex align-items-center justify-content-center"
                           style={{ width:32, height:32, fontSize:12, background:'#1a3c5e', flexShrink:0 }}>
-                          {(l.emp||'?').charAt(0)}
+                          {(l.emp || l.employeeId?.name || '?').charAt(0)}
                         </div>
-                        {l.emp}
+                        {l.emp || l.employeeId?.name || '-'}
                       </div>
                     </td>
                     <td><span className={`d_badge ${typeBadge(l.type)}`}>{l.type}</span></td>
-                    <td>{l.from}</td><td>{l.to}</td><td>{l.days}</td>
+                    <td>{l.from}</td><td>{l.to}</td><td>{l.recordCount || l.days || 1}</td>
                     <td style={{ maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{l.reason}</td>
                     <td><span className={`d_badge ${statusBadge(l.status)}`}>{l.status}</span></td>
                     <td><div className="d_action_btns">

@@ -62,12 +62,12 @@ router.put('/users/:id', authenticate, authorize('Admin'), controller.updateUser
 // ──────────────────────────────────────────────────────────────
 // Attendance Routes
 // ──────────────────────────────────────────────────────────────
-router.post('/attendance', authenticate, authorize('Admin', 'Head', 'Manager'), controller.createAttendanceRecord);
+router.post('/attendance', authenticate, authorize('Admin', 'Head', 'Manager', 'HR'), controller.createAttendanceRecord);
 router.get('/attendance', authenticate, controller.getAllAttendanceRecords);
-router.put('/attendance/:id', authenticate, authorize('Admin', 'Head', 'Manager'), controller.updateAttendanceRecord);
-router.delete('/attendance/:id', authenticate, authorize('Admin', 'Head', 'Manager'), controller.deleteAttendanceRecord);
-router.post('/attendance/check-in', authenticate, authorize('Admin', 'Head', 'Manager'), controller.checkIn);
-router.post('/attendance/check-out', authenticate, authorize('Admin', 'Head', 'Manager'), controller.checkOut);
+router.put('/attendance/:id', authenticate, authorize('Admin', 'Head', 'Manager', 'HR'), controller.updateAttendanceRecord);
+router.delete('/attendance/:id', authenticate, authorize('Admin', 'Head', 'Manager', 'HR'), controller.deleteAttendanceRecord);
+router.post('/attendance/check-in', authenticate, authorize('Admin', 'Head', 'Manager', 'HR'), controller.checkIn);
+router.post('/attendance/check-out', authenticate, authorize('Admin', 'Head', 'Manager', 'HR'), controller.checkOut);
 router.get('/attendance/my', authenticate, controller.getMyAttendance);
 router.post('/attendance/scan', authenticate, controller.scanAttendance);
 router.get('/attendance/today', authenticate, controller.getTodayAttendance);
@@ -78,9 +78,9 @@ router.post('/employees/:employeeId/generate-qr', authenticate, authorize('Admin
 // Leave Tracking Routes
 // ──────────────────────────────────────────────────────────────
 router.get('/attendance/leave', authenticate, authorize('Admin', 'HR', 'Manager', 'Head'), controller.getLeaveRecords);
-router.post('/attendance/leave', authenticate, authorize('Admin', 'HR', 'Manager'), controller.applyLeave);
-router.put('/attendance/leave/:id', authenticate, authorize('Admin', 'HR', 'Manager'), controller.updateLeaveRecord);
-router.delete('/attendance/leave/:id', authenticate, authorize('Admin', 'Head'), controller.deleteAttendanceRecord);
+router.post('/attendance/leave', authenticate, authorize('Admin', 'HR', 'Manager', 'Head'), controller.applyLeave);
+router.put('/attendance/leave/:id', authenticate, authorize('Admin', 'HR', 'Manager', 'Head'), controller.updateLeaveRecord);
+router.delete('/attendance/leave/:id', authenticate, authorize('Admin', 'Head', 'Manager', 'HR'), controller.deleteAttendanceRecord);
 
 // ──────────────────────────────────────────────────────────────
 // Late Entry Report Routes

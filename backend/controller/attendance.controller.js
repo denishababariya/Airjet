@@ -4,8 +4,13 @@ const User = require('../model/User.model');
 
 const generateId = (prefix, count) =>
   `${prefix}${String(count + 1).padStart(3, '0')}`;
-const DUPLICATE_SCAN_WINDOW_MS = 30 * 1000;
+const DUPLICATE_SCAN_WINDOW_MS = 3 * 1000;
 const generateAbsentId = (empId, date) => `ABS_${date.replace(/-/g, '')}_${empId}`;
+const toDateStr = (value) => {
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return '';
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+};
 
 let dailyAttendanceInitialized = null;
 
@@ -313,15 +318,15 @@ const scanAttendance = async (req, res) => {
 
     const today = new Date().toISOString().split('T')[0];
     
-    // Check if already scanned within 30 seconds
+    // Check if already scanned within the duplicate-scan window (3 seconds)
     const recentScan = await Attendance.findOne({
       employeeId: employee._id,
       date: today,
-      lastScannedAt: { $gte: new Date(Date.now() - 30000) }
+      lastScannedAt: { $gte: new Date(Date.now() - DUPLICATE_SCAN_WINDOW_MS) }
     });
 
     if (recentScan) {
-      return res.status(429).json({ error: 'Please wait 30 seconds before scanning again' });
+      return res.status(429).json({ error: 'Please wait 3 seconds before scanning again' });
     }
 
     // Check today's attendance
@@ -717,18 +722,25 @@ const updateLeaveRecord = async (req, res) => {
       return res.status(400).json({ error: 'Record is not a leave record' });
     }
 
-    if (employeeId) record.employeeId = employeeId;
-    if (from) record.from = from;
-    if (to) record.to = to;
-    if (fromTime !== undefined) record.fromTime = fromTime;
-    if (toTime !== undefined) record.toTime = toTime;
-    if (type) record.type = type;
-    if (reason) record.reason = reason;
-    if (status) record.status = status;
-    
-    await record.save();
+    // A leave application is stored as one record per day — update the whole group
+    const leaveGroup = req.body.leaveGroup || record.leaveGroup;
+    const targets = leaveGroup
+      ? await Attendance.find({ leaveGroup, recordType: 'leave' })
+      : [record];
 
-    res.status(200).json(record);
+    for (const target of targets) {
+      if (employeeId) target.employeeId = employeeId;
+      if (from) target.from = from;
+      if (to) target.to = to;
+      if (fromTime !== undefined) target.fromTime = fromTime;
+      if (toTime !== undefined) target.toTime = toTime;
+      if (type) target.type = type;
+      if (reason) target.reason = reason;
+      if (status) target.status = status;
+      await target.save();
+    }
+
+    res.status(200).json({ ...record.toObject(), leaveGroup, updated: targets.length });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -748,22 +760,32 @@ const applyLeave = async (req, res) => {
       return res.status(404).json({ error: 'Employee not found' });
     }
 
-    const startDate = new Date(from);
-    const endDate = new Date(to);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const fromStr = toDateStr(from);
+    const toStr = toDateStr(to);
+    const todayStr = toDateStr(new Date());
 
-    if (startDate < today) {
+    if (!fromStr || !toStr) {
+      return res.status(400).json({ error: 'From and To dates are invalid' });
+    }
+
+    if (toStr < fromStr) {
+      return res.status(400).json({ error: 'To date must be on or after from date' });
+    }
+
+    if (fromStr < todayStr) {
       return res.status(400).json({ error: 'Cannot apply leave for past dates' });
     }
 
+    // Build list of dates (local time, no UTC shifting)
     const days = [];
-    const current = new Date(startDate);
-    while (current <= endDate) {
-      days.push(new Date(current).toISOString().split('T')[0]);
+    const current = new Date(`${fromStr}T00:00:00`);
+    const last = new Date(`${toStr}T00:00:00`);
+    while (current <= last) {
+      days.push(toDateStr(current));
       current.setDate(current.getDate() + 1);
     }
 
+    const leaveGroup = `LGRP-${employee.id}-${Date.now()}`;
     const createdRecords = [];
     const updatedRecords = [];
 
@@ -780,43 +802,58 @@ const applyLeave = async (req, res) => {
         recordType: 'leave'
       });
 
-      if (existingLeave) {
-        continue;
-      }
-
-      if (existingAttendance) {
+      // Mark attendance as leave (record already auto-created by daily init)
+      if (existingAttendance && existingAttendance.status !== 'Leave') {
         existingAttendance.status = 'Leave';
         existingAttendance.updatedBy = userId;
         await existingAttendance.save();
-        updatedRecords.push(existingAttendance);
-      } else {
-        const count = await Attendance.countDocuments({ recordType: 'leave' });
-        const leaveRecord = await Attendance.create({
-          id: generateId('LVE', count),
-          recordType: 'leave',
-          employeeId: employee._id,
-          emp: employee.name,
-          empId: employee.id,
-          date: dateStr,
-          from,
-          to,
-          fromTime: fromTime || null,
-          toTime: toTime || null,
-          type,
-          reason,
-          status: 'Pending',
-          days: 1,
-          createdBy: userId,
-        });
-        createdRecords.push(leaveRecord);
       }
+
+      const leaveFields = {
+        from,
+        to,
+        fromTime: fromTime || null,
+        toTime: toTime || null,
+        type,
+        reason,
+        days: 1,
+        emp: employee.name,
+        empId: employee.id,
+        updatedBy: userId,
+      };
+
+      if (existingLeave) {
+        Object.assign(existingLeave, leaveFields);
+        existingLeave.leaveGroup = existingLeave.leaveGroup || leaveGroup;
+        await existingLeave.save();
+        updatedRecords.push(existingLeave);
+        continue;
+      }
+
+      const count = await Attendance.countDocuments({ recordType: 'leave' });
+      const leaveRecord = await Attendance.create({
+        id: generateId('LVE', count),
+        recordType: 'leave',
+        employeeId: employee._id,
+        date: dateStr,
+        status: 'Pending',
+        leaveGroup,
+        createdBy: userId,
+        ...leaveFields,
+      });
+      createdRecords.push(leaveRecord);
+    }
+
+    if (createdRecords.length === 0 && updatedRecords.length === 0) {
+      return res.status(409).json({ error: 'Leave already applied for the selected dates' });
     }
 
     res.status(201).json({
       message: 'Leave applied successfully',
       createdRecords,
       updatedRecords,
-      totalDays: days.length
+      totalDays: days.length,
+      leaveGroup
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

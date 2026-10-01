@@ -20,6 +20,7 @@ const attendanceSchema = new mongoose.Schema({
   qrToken: { type: String },
   from: { type: String },
   to: { type: String },
+  leaveGroup: { type: String },
   fromTime: { type: String },
   toTime: { type: String },
   days: { type: Number },
