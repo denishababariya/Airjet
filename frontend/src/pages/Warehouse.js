@@ -22,7 +22,7 @@ const blankWH  = { name: '', location: '', capacity: '', unitPrice: '', manager:
 
 const blankTRF = { from: '', to: '', part: '', qty: '', date: '', status: 'Pending' };
 
-const blankAUD = { location: '', date: '', items: '', status: 'Pending', notes: '' };
+const blankAUD = { location: '', date: '', items: [], status: 'Pending', notes: '' };
 
 const blankTXN = { item: '', type: '', quantity: '', date: '', reference: '', notes: '' };
 
@@ -137,7 +137,7 @@ const Warehouse = ({ defaultTab = 'warehouses', setActiveMenu }) => {
 
     } else if (isAUD) {
 
-      setForm({ location: row.location||'', date: toISODate(row.date), items: String(row.items??''), status: row.status||'Pending', notes: row.notes||'' });
+      setForm({ location: row.location||'', date: toISODate(row.date), items: row.items || [], status: row.status||'Pending', notes: row.notes||'' });
 
       setImagePreviews([]);
 
@@ -219,14 +219,11 @@ const Warehouse = ({ defaultTab = 'warehouses', setActiveMenu }) => {
     });
 
     // audit
-
-    return validate({
+    if (isAUD) return validate({
 
       location: V.required(form.location, 'Location'),
 
       date:     V.date(form.date, 'Audit date'),
-
-      items:    form.items !== '' ? V.nonNegInt(form.items, 'Items count') : '',
 
     });
 
@@ -366,7 +363,7 @@ const Warehouse = ({ defaultTab = 'warehouses', setActiveMenu }) => {
 
       } else {
 
-        const payload = { module:'warehouse', recordType:'audit', ...form, items: Number(form.items)||0 };
+        const payload = { module:'warehouse', recordType:'audit', ...form, items: Array.isArray(form.items) ? form.items : [] };
 
         if (!editId) payload.id = `AUD-${String(Date.now()).slice(-6)}`;
 

@@ -1438,7 +1438,10 @@ a {
 
 @media (max-width: 575.98px) {
 
-  .d_menu_wrap { display: flex; width: 100%; }
+  .d_menu_wrap {
+    display: flex;
+    width: 100%;
+  }
 
   .d_menu_dropdown {
 
@@ -1843,6 +1846,7 @@ a {
   border-bottom: 1px solid var(--d-light-border);
 
   display: flex;
+  gap: 10px;
 
   align-items: center;
 
@@ -2356,21 +2360,15 @@ a {
 /* ---------- TABS ---------- */
 
 .d_tabs {
-
   display: flex;
-
-  flex-wrap: wrap;
-
-  gap: 6px;
-
+  /* flex-wrap: wrap; */
+  overflow-x: scroll;
+  gap: 7px;
+  width: 100%;
   background: var(--d-white);
-
   padding: 10px 14px;
-
   border-radius: var(--d-radius);
-
   box-shadow: var(--d-shadow-sm);
-
 }
 
 
@@ -2487,8 +2485,8 @@ a {
 
 .d_badge.d_success {
 
-     background: rgb(40 167 69 / 22%);
-    color: #3ccb5d;
+  background: rgb(40 167 69 / 22%);
+  color: #3ccb5d;
 
   border-color: rgba(40, 167, 69, 0.20);
 
@@ -2938,6 +2936,34 @@ a {
 
 }
 
+/* Small screens (375px and below) - fix profile button position when search is active */
+@media (max-width: 375px) {
+
+  .d_navbar_actions {
+    gap: 4px;
+  }
+
+  .d_nav_action_btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .d_profile_avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .d_search_input {
+    width: 120px;
+  }
+
+  .d_search_input:focus {
+    width: 140px;
+  }
+
+}
 
 
 /* Mobile sidebar open — allow body scroll to be locked by JS */
@@ -3187,7 +3213,7 @@ body.d_modal_open {
 /* Grid/flex children must be allowed to shrink, otherwise long content
    (emails, file inputs, selects) push the modal wider than the screen */
 
-.d_form_row > * {
+.d_form_row>* {
 
   min-width: 0;
 
@@ -3355,9 +3381,13 @@ textarea.d_form_control {
 
 @media (min-width: 1600px) {
 
-  .d_modal_lg { max-width: 900px; }
+  .d_modal_lg {
+    max-width: 900px;
+  }
 
-  .d_modal_xl { max-width: 1240px; }
+  .d_modal_xl {
+    max-width: 1240px;
+  }
 
   .d_form_control {
 
@@ -3367,11 +3397,17 @@ textarea.d_form_control {
 
   }
 
-  .d_form_label { font-size: 13.5px; }
+  .d_form_label {
+    font-size: 13.5px;
+  }
 
-  .d_form_row { gap: 16px; }
+  .d_form_row {
+    gap: 16px;
+  }
 
-  .d_form_actions .d_btn { min-width: 120px; }
+  .d_form_actions .d_btn {
+    min-width: 120px;
+  }
 
 }
 
@@ -3379,11 +3415,17 @@ textarea.d_form_control {
 
 @media (max-width: 991.98px) {
 
-  .d_modal_box { max-height: min(94vh, 94dvh); }
+  .d_modal_box {
+    max-height: min(94vh, 94dvh);
+  }
 
-  .d_modal_sm { max-width: 460px; }
+  .d_modal_sm {
+    max-width: 460px;
+  }
 
-  .d_modal_md { max-width: 680px; }
+  .d_modal_md {
+    max-width: 680px;
+  }
 
 }
 
@@ -3392,8 +3434,6 @@ textarea.d_form_control {
 @media (max-width: 767.98px) {
 
   .d_modal_backdrop {
-
-    align-items: flex-end;
 
     padding: 10px 8px 8px;
 
@@ -3417,9 +3457,13 @@ textarea.d_form_control {
 
   }
 
-  .d_modal_body { padding: 14px; }
+  .d_modal_body {
+    padding: 14px;
+  }
 
-  .d_form_actions .d_btn { flex: 1 1 auto; }
+  .d_form_actions .d_btn {
+    flex: 1 1 auto;
+  }
 
 }
 
@@ -3427,7 +3471,9 @@ textarea.d_form_control {
 
 @media (max-width: 575.98px) {
 
-  .d_modal_backdrop { padding: 8px; }
+  .d_modal_backdrop {
+    padding: 8px;
+  }
 
   .d_form_row.cols-2,
 
@@ -3437,13 +3483,23 @@ textarea.d_form_control {
 
   }
 
-  .d_form_row { gap: 12px; margin-bottom: 12px; }
+  .d_form_row {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
 
-  .d_form_control { padding: 9px 11px; font-size: 13px; }
+  .d_form_control {
+    padding: 9px 11px;
+    font-size: 13px;
+  }
 
-  .d_modal_body { padding: 12px; }
+  .d_modal_body {
+    padding: 12px;
+  }
 
-  .d_modal_title { font-size: 14px; }
+  .d_modal_title {
+    font-size: 14px;
+  }
 
   .d_form_actions {
 
@@ -3467,19 +3523,33 @@ textarea.d_form_control {
 
 @media (max-width: 380px) {
 
-  .d_modal_backdrop { padding: 6px; }
+  .d_modal_backdrop {
+    padding: 6px;
+  }
 
-  .d_modal_body { padding: 10px; }
+  .d_modal_body {
+    padding: 10px;
+  }
 
-  .d_form_label { font-size: 12px; }
+  .d_form_label {
+    font-size: 12px;
+  }
 
-  .d_form_actions { flex-direction: column-reverse; }
+  .d_form_actions {
+    flex-direction: column-reverse;
+  }
 
-  .d_form_actions .d_btn { width: 100%; }
+  .d_form_actions .d_btn {
+    width: 100%;
+  }
 
-  .d_confirm_actions { padding: 12px 14px; }
+  .d_confirm_actions {
+    padding: 12px 14px;
+  }
 
-  .d_confirm_actions .d_btn { flex: 1 1 auto; }
+  .d_confirm_actions .d_btn {
+    flex: 1 1 auto;
+  }
 
 }
 
@@ -3495,11 +3565,17 @@ textarea.d_form_control {
 
   }
 
-  .d_modal_box { max-height: 96dvh; }
+  .d_modal_box {
+    max-height: 96dvh;
+  }
 
-  .d_modal_header { padding: 10px 14px; }
+  .d_modal_header {
+    padding: 10px 14px;
+  }
 
-  .d_modal_body { padding: 12px; }
+  .d_modal_body {
+    padding: 12px;
+  }
 
 }
 

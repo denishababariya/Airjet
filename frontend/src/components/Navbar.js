@@ -8,6 +8,7 @@ import {
   MdKeyboardArrowDown,
 } from "react-icons/md";
 import { useSearch } from "../context/SearchContext";
+import ConfirmDialog from "./ConfirmDialog";
 
 const Navbar = ({
   collapsed,
@@ -25,6 +26,7 @@ const Navbar = ({
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef(null);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const { setSearchQuery: setGlobalSearchQuery } = useSearch();
 
   // Close dropdown on outside click
@@ -243,10 +245,8 @@ const Navbar = ({
               <div
                 className="d_dropdown_item d_logout"
                 onClick={() => {
-                  if (window.confirm("Are you sure you want to logout?")) {
-                    onLogout();
-                    setProfileOpen(false);
-                  }
+                  setLogoutOpen(true);
+                  setProfileOpen(false);
                 }}
                 style={{ cursor: "pointer" }}
               >
@@ -256,6 +256,20 @@ const Navbar = ({
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={logoutOpen}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmLabel="Logout"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          setLogoutOpen(false);
+          onLogout();
+        }}
+        onCancel={() => setLogoutOpen(false)}
+      />
     </header>
   );
 };
