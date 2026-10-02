@@ -10,11 +10,55 @@ import {
 const formatCurrency = (value) => `₹${Number(value || 0).toLocaleString('en-IN')}`;
 const formatNumber = (value) => Number(value || 0).toLocaleString('en-IN');
 
+const useResponsive = () => {
+  const [size, setSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isMobile = size.width < 576;
+  const isTablet = size.width >= 576 && size.width < 992;
+  const isDesktop = size.width >= 992;
+  const isLarge = size.width >= 1600;
+
+  const chartHeight = isMobile ? 260 : isTablet ? 290 : 320;
+  const cardPadding = isMobile ? '16px' : isTablet ? '20px' : '28px';
+  const statCardMinWidth = isMobile ? '100%' : '260px';
+  const chartCardMinWidth = isMobile ? '100%' : isTablet ? '340px' : '420px';
+  const yAxisWidth = isMobile ? 80 : 110;
+  const gridGap = isMobile ? '14px' : '20px';
+  const fontSize = isMobile ? '0.9rem' : '1rem';
+  const titleFontSize = isMobile ? '1.05rem' : isTablet ? '1.15rem' : '1.25rem';
+  const statValueFontSize = isMobile ? '1.25rem' : isTablet ? '1.4rem' : '1.5rem';
+  const headerGap = isMobile ? '12px' : '14px';
+
+  return {
+    isMobile, isTablet, isDesktop, isLarge,
+    chartHeight, cardPadding, statCardMinWidth,
+    chartCardMinWidth, yAxisWidth, gridGap,
+    fontSize, titleFontSize, statValueFontSize, headerGap,
+  };
+};
+
 const RawMaterialReport = ({ setActiveMenu }) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigateTo = (menu) => setActiveMenu?.(menu);
+  const {
+    isMobile, isTablet, isDesktop, isLarge,
+    chartHeight, cardPadding, statCardMinWidth,
+    chartCardMinWidth, yAxisWidth, gridGap,
+    fontSize, titleFontSize, statValueFontSize, headerGap,
+  } = useResponsive();
 
   useEffect(() => {
     const load = async () => {
@@ -123,86 +167,86 @@ const RawMaterialReport = ({ setActiveMenu }) => {
   ];
 
   return (
-    <div>
-      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div>
-          <h1 className="d_page_title">Raw Material Report</h1>
-          <p className="d_page_subtitle">Purchase and stock performance with interactive charts and live inventory metrics.</p>
+    <div style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden', padding: isMobile ? '12px' : isTablet ? '16px' : '20px', boxSizing: 'border-box' }}>
+      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2" style={{ marginBottom: isMobile ? '16px' : '20px' }}>
+        <div style={{ minWidth: 0 }}>
+          <h1 className="d_page_title" style={{ fontSize: isMobile ? '1.4rem' : isTablet ? '1.6rem' : '1.8rem', marginBottom: '4px' }}>Raw Material Report</h1>
+          <p className="d_page_subtitle" style={{ fontSize: isMobile ? '0.85rem' : '0.95rem' }}>Purchase and stock performance with interactive charts and live inventory metrics.</p>
         </div>
         <ExportMenu className="d_btn d_btn_primary" label="Export" filename="raw_material_report" data={report} />
       </div>
 
-      {error && <div className="alert alert-danger" style={{ padding: '16px', backgroundColor: '#FFB6C1', color: '#C0392B', borderRadius: '8px', marginBottom: '20px', fontSize: '1rem' }}>{error}</div>}
+      {error && <div className="alert alert-danger" style={{ padding: isMobile ? '12px' : '16px', backgroundColor: '#FFB6C1', color: '#C0392B', borderRadius: '8px', marginBottom: isMobile ? '16px' : '20px', fontSize: fontSize }}>{error}</div>}
       {loading && <div className="text-center py-4" style={{ fontSize: '1.1rem', color: '#7F8C8D', padding: '40px' }}>Loading report…</div>}
 
       {!loading && report && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '28px' }}          >
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${isMobile ? '100%' : '260px'}, 1fr))`, gap: gridGap, marginBottom: isMobile ? '18px' : '28px' }}>
             {summaryCards.map((card) => (
-              <div className="d_stat_card" key={card.label} style={{ borderLeft: `4px solid ${card.color}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}                >
-                  <span className='d_stat_icon' style={{ fontSize: '1.5rem', marginBottom: '5px', color: card.color, backgroundColor: card.backgroundColor, }}                  >
+              <div className="d_stat_card" key={card.label} style={{ borderLeft: `4px solid ${card.color}`, padding: isMobile ? '14px' : '18px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px' }}>
+                  <span className='d_stat_icon' style={{ fontSize: isMobile ? '1.25rem' : '1.5rem', marginBottom: '5px', color: card.color, backgroundColor: card.backgroundColor, }}>
                     {card.icon}
                   </span>
-                  <h5 style={{ fontSize: '1rem', color: '#546E7A', fontWeight: '600', margin: 0 }}                  >
+                  <h5 style={{ fontSize: isMobile ? '0.85rem' : '1rem', color: '#546E7A', fontWeight: '600', margin: 0, wordBreak: 'break-word' }}>
                     {card.label}
                   </h5>
                 </div>
-                <div className='ms-1' style={{ fontSize: '1.5rem', fontWeight: '700', color: card.color, letterSpacing: '-0.5px' }}                >
+                <div className='ms-1' style={{ fontSize: statValueFontSize, fontWeight: '700', color: card.color, letterSpacing: '-0.5px', marginTop: isMobile ? '6px' : '10px', wordBreak: 'break-word' }}>
                   {card.value}
                 </div>
               </div>
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-            <div className="d_card" style={{ padding: '28px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
-              <div className="d_card_header" style={{ marginBottom: '24px' }}>
-                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#2C3E50', margin: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${chartCardMinWidth}, 1fr))`, gap: gridGap, marginBottom: isMobile ? '18px' : '28px' }}>
+            <div className="d_card" style={{ padding: cardPadding, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
+              <div className="d_card_header" style={{ marginBottom: isMobile ? '14px' : '24px' }}>
+                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: headerGap, fontSize: titleFontSize, fontWeight: '700', color: '#2C3E50', margin: 0, flexWrap: 'wrap' }}>
                   <MdBarChart style={{ color: 'var(--d-primary)' }} /> Stock by Category
                 </h5>
               </div>
-              <div className="d_card_body" style={{ height: '320px' }}>
+              <div className="d_card_body" style={{ height: chartHeight, padding: 0, minHeight: isMobile ? '240px' : '280px' }}>
                 {categoryBreakdown.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#7F8C8D', padding: '50px', fontSize: '1rem', backgroundColor: '#F8F9FA', borderRadius: '12px' }}>No category data available.</div>
+                  <div style={{ textAlign: 'center', color: '#7F8C8D', padding: isMobile ? '30px' : '50px', fontSize: fontSize, backgroundColor: '#F8F9FA', borderRadius: '12px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No category data available.</div>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={categoryBreakdown}>
+                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                    <BarChart data={categoryBreakdown} margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E8EAF6" />
-                      <XAxis dataKey="category" style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <YAxis dataKey="value" style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
+                      <XAxis dataKey="category" tick={{ fontSize: isMobile ? 11 : 13, fill: '#546E7A' }} interval={isMobile ? 'preserveStartEnd' : 0} angle={isMobile ? -20 : 0} textAnchor={isMobile ? 'end' : 'middle'} height={isMobile ? 60 : 30} />
+                      <YAxis tick={{ fontSize: isMobile ? 11 : 13, fill: '#546E7A' }} width={isMobile ? 45 : 60} />
                       <Tooltip
                         formatter={(value) => formatCurrency(value)}
-                        contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: '0.95rem' }}
+                        contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: fontSize }}
                       />
-                      <Legend style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <Bar dataKey="value" fill="var(--d-primary)" radius={[8, 8, 0, 0]} />
+                      <Legend wrapperStyle={{ fontSize: isMobile ? 11 : 13, paddingTop: '10px' }} />
+                      <Bar dataKey="value" fill="var(--d-primary)" radius={[8, 8, 0, 0]} maxBarSize={isMobile ? 30 : 50} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
               </div>
             </div>
 
-            <div className="d_card" style={{ padding: '28px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
-              <div className="d_card_header" style={{ marginBottom: '24px' }}>
-                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#2C3E50', margin: 0 }}>
+            <div className="d_card" style={{ padding: cardPadding, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
+              <div className="d_card_header" style={{ marginBottom: isMobile ? '14px' : '24px' }}>
+                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: headerGap, fontSize: titleFontSize, fontWeight: '700', color: '#2C3E50', margin: 0, flexWrap: 'wrap' }}>
                   <MdLayers style={{ color: 'var(--d-success)' }} /> Stock Movement
                 </h5>
               </div>
-              <div className="d_card_body" style={{ height: '320px' }}>
+              <div className="d_card_body" style={{ height: chartHeight, padding: 0, minHeight: isMobile ? '240px' : '280px' }}>
                 {stockMovements.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#7F8C8D', padding: '50px', fontSize: '1rem', backgroundColor: '#F8F9FA', borderRadius: '12px' }}>No stock movement data available.</div>
+                  <div style={{ textAlign: 'center', color: '#7F8C8D', padding: isMobile ? '30px' : '50px', fontSize: fontSize, backgroundColor: '#F8F9FA', borderRadius: '12px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No stock movement data available.</div>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={stockMovements}>
+                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                    <AreaChart data={stockMovements} margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E8EAF6" />
-                      <XAxis dataKey="type" style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <YAxis dataKey="quantity" style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
+                      <XAxis dataKey="type" tick={{ fontSize: isMobile ? 11 : 13, fill: '#546E7A' }} interval={isMobile ? 'preserveStartEnd' : 0} angle={isMobile ? -15 : 0} textAnchor={isMobile ? 'end' : 'middle'} height={isMobile ? 50 : 30} />
+                      <YAxis tick={{ fontSize: isMobile ? 11 : 13, fill: '#546E7A' }} width={isMobile ? 45 : 60} />
                       <Tooltip
                         formatter={(value) => formatNumber(value)}
-                        contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: '0.95rem' }}
+                        contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: fontSize }}
                       />
-                      <Legend style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
+                      <Legend wrapperStyle={{ fontSize: isMobile ? 11 : 13, paddingTop: '10px' }} />
                       <Area type="monotone" dataKey="quantity" stroke="var(--d-success)" fill="#00800014" fillOpacity={0.5} />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -212,51 +256,52 @@ const RawMaterialReport = ({ setActiveMenu }) => {
           </div>
 
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-            {/* <div className="d_card" style={{ padding: '28px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
-              <div className="d_card_header" style={{ marginBottom: '24px' }}>
-                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#2C3E50', margin: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${chartCardMinWidth}, 1fr))`, gap: gridGap, marginBottom: isMobile ? '18px' : '28px' }}>
+            {/* <div className="d_card" style={{ padding: cardPadding, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
+              <div className="d_card_header" style={{ marginBottom: isMobile ? '14px' : '24px' }}>
+                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: headerGap, fontSize: titleFontSize, fontWeight: '700', color: '#2C3E50', margin: 0, flexWrap: 'wrap' }}>
                   <MdBarChart style={{ color: 'var(--d-primary)' }} /> Compliance by Supplier
                 </h5>
               </div>
-              <div className="d_card_body" style={{ height: '320px' }}>
+              <div className="d_card_body" style={{ height: chartHeight, padding: 0, minHeight: isMobile ? '240px' : '280px' }}>
                 {complianceBySupplier.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#7F8C8D', padding: '50px', fontSize: '1rem', backgroundColor: '#F8F9FA', borderRadius: '12px' }}>No compliance data available.</div>
+                  <div style={{ textAlign: 'center', color: '#7F8C8D', padding: isMobile ? '30px' : '50px', fontSize: fontSize, backgroundColor: '#F8F9FA', borderRadius: '12px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No compliance data available.</div>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={complianceBySupplier}>
+                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                    <BarChart data={complianceBySupplier} margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E8EAF6" />
-                      <XAxis dataKey="name" style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <YAxis domain={[0, 100]} style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
+                      <XAxis dataKey="name" tick={{ fontSize: isMobile ? 11 : 13, fill: '#546E7A' }} interval={isMobile ? 'preserveStartEnd' : 0} angle={isMobile ? -20 : 0} textAnchor={isMobile ? 'end' : 'middle'} height={isMobile ? 60 : 30} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: isMobile ? 11 : 13, fill: '#546E7A' }} width={isMobile ? 45 : 60} />
                       <Tooltip
                         formatter={(value) => `${value}%`}
-                        contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: '0.95rem' }}
+                        contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: fontSize }}
                       />
-                      <Legend style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <Bar dataKey="compliance" fill="var(--d-primary)" radius={[8, 8, 0, 0]} />
+                      <Legend wrapperStyle={{ fontSize: isMobile ? 11 : 13, paddingTop: '10px' }} />
+                      <Bar dataKey="compliance" fill="var(--d-primary)" radius={[8, 8, 0, 0]} maxBarSize={isMobile ? 30 : 50} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
               </div>
             </div> */}
-            <div className="d_card">
-            <div className="d_card_header">
-              <h2 className="d_card_title">
+            <div className="d_card" style={{ borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF', overflow: 'hidden' }}>
+            <div className="d_card_header" style={{ padding: isMobile ? '14px 16px' : '20px 24px' }}>
+              <h2 className="d_card_title" style={{ fontSize: titleFontSize, display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '10px', margin: 0, flex: 1, minWidth: 0 }}>
                 <MdBarChart className="d_card_icon" />
-                Material Purchase & Stock Summary
+                <span style={{ whiteSpace: isMobile ? 'normal' : 'nowrap' }}>Material Purchase &amp; Stock Summary</span>
               </h2>
 
               <button
                 className="d_btn d_btn_outline d_btn_sm"
                 onClick={() => navigateTo('Raw Materials')}
+                style={{ flexShrink: 0 }}
               >
                 View All
               </button>
             </div>
 
-            <div className="d_card_body p-0">
-              <div className="d_table_wrap">
-                <table className="d_table">
+            <div className="d_card_body p-0" style={{ padding: 0 }}>
+              <div className="d_table_wrap" style={{ maxWidth: '100%' }}>
+                <table className="d_table" style={{ minWidth: isMobile ? '650px' : '750px' }}>
                   <thead>
                     <tr>
                       <th>#</th>
@@ -280,7 +325,7 @@ const RawMaterialReport = ({ setActiveMenu }) => {
 
                     {materials.slice(0, 5).map((material, index) => (<tr key={material._id}>                          <td>{index + 1}</td>
                       <td>
-                        <strong>
+                        <strong style={{ fontSize: isMobile ? '0.85rem' : 'inherit' }}>
                           {material.name || material.code}
                         </strong>
                       </td>
@@ -317,29 +362,31 @@ const RawMaterialReport = ({ setActiveMenu }) => {
             </div>
           </div>
 
-            <div className="d_card" style={{ padding: '28px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
-              <div className="d_card_header" style={{ marginBottom: '24px' }}>
-                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#2C3E50', margin: 0 }}>
+            <div className="d_card" style={{ padding: cardPadding, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#FFFFFF' }}>
+              <div className="d_card_header" style={{ marginBottom: isMobile ? '14px' : '24px' }}>
+                <h5 className="d_card_title" style={{ display: 'flex', alignItems: 'center', gap: headerGap, fontSize: titleFontSize, fontWeight: '700', color: '#2C3E50', margin: 0, flexWrap: 'wrap' }}>
                   <MdInventory2 style={{ color: 'var(--d-info)' }} /> Top Materials by Quantity
                 </h5>
               </div>
-              <div className="d_card_body" style={{ height: '320px' }}>
+              <div className="d_card_body" style={{ height: chartHeight, padding: 0, minHeight: isMobile ? '240px' : '280px' }}>
                 {materials.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#7F8C8D', padding: '50px', fontSize: '1rem', backgroundColor: '#F8F9FA', borderRadius: '12px' }}>No material data available.</div>
+                  <div style={{ textAlign: 'center', color: '#7F8C8D', padding: isMobile ? '30px' : '50px', fontSize: fontSize, backgroundColor: '#F8F9FA', borderRadius: '12px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No material data available.</div>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
                     <BarChart
-                      data={materials.slice().sort((a, b) => Number(b.quantity || 0) - Number(a.quantity || 0)).slice(0, 8)}
+                      data={materials.slice().sort((a, b) => Number(b.quantity || 0) - Number(a.quantity || 0)).slice(0, isMobile ? 5 : 8)}
                       layout="vertical"
+                      margin={{ top: 5, right: isMobile ? 5 : 20, left: isMobile ? 0 : 10, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="#E8EAF6" />
-                      <XAxis type="number" dataKey="quantity" style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
-                      <YAxis dataKey="name" type="category" width={120} style={{ fontSize: '0.85rem', fill: '#546E7A' }} />
+                      <XAxis type="number" dataKey="quantity" tick={{ fontSize: isMobile ? 11 : 13, fill: '#546E7A' }} width={isMobile ? 45 : 60} />
+                      <YAxis dataKey="name" type="category" width={yAxisWidth} tick={{ fontSize: isMobile ? 11 : 13, fill: '#546E7A' }} />
                       <Tooltip
                         formatter={(value) => formatNumber(value)}
-                        contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: '0.95rem' }}
+                        contentStyle={{ borderRadius: '12px', border: '1px solid #E8EAF6', backgroundColor: '#FFFFFF', fontSize: fontSize }}
                       />
-                      <Bar dataKey="quantity" fill="var(--d-info)" radius={[0, 8, 8, 0]} />
+                      <Legend wrapperStyle={{ fontSize: isMobile ? 11 : 13, paddingTop: '10px' }} />
+                      <Bar dataKey="quantity" fill="var(--d-info)" radius={[0, 8, 8, 0]} maxBarSize={isMobile ? 24 : 36} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -347,7 +394,7 @@ const RawMaterialReport = ({ setActiveMenu }) => {
             </div>
           </div>
 
-          
+
         </>
       )}
     </div>

@@ -1629,8 +1629,6 @@ a {
 
 }
 
-
-
 .d_stat_icon.d_primary {
   background: rgba(26, 60, 94, 0.1);
   color: var(--d-primary);
@@ -1745,6 +1743,12 @@ a {
   .col-md-2-4 {
     width: 100%;
   }
+
+  .d_stat_cards_section .d_stat_card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
 }
 
 
@@ -1847,6 +1851,7 @@ a {
   background: var(--d-white);
 
   border-radius: 0;
+  gap: 12px
 
 }
 
@@ -2831,7 +2836,7 @@ a {
 
     flex-wrap: wrap;
 
-    gap: 7px;
+    gap: 10px;
 
     align-items: center;
 

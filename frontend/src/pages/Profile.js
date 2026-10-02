@@ -137,7 +137,7 @@ const Profile = ({ currentUser }) => {
 
       <div className="row g-3 mb-4">
         {stats.map((stat, i) => (
-          <div key={i} className="col-6 col-md-3">
+          <div key={i} className="col-12 col-md-3">
             <div className="d_card" style={{ borderLeft: `4px solid ${stat.color}` }}>
               <div className="d_card_body d-flex align-items-center gap-3" style={{ padding: '16px 18px' }}>
                 <div style={{
