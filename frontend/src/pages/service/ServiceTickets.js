@@ -465,7 +465,7 @@ export default function ServiceTickets() {
               </div>
               <div className="d_form_group">
                 <label className="d_form_label">Machine Serial No</label>
-                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewTicket.machineSerialNo || '-'}</div>
+                <div className="d_form_control" style={{ background: '#f8f9fa' }}>{viewTicket.machineSerialNo || viewTicket.machineSerialNumber || '-'}</div>
               </div>
             </div>
 

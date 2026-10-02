@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { MdBusiness, MdAdd, MdEdit, MdDelete, MdCorporateFare } from 'react-icons/md';
+import { MdBusiness, MdAdd, MdEdit, MdDelete } from 'react-icons/md';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
 import { departmentsApi, employeesApi } from '../utils/api';
 import { V, validate } from '../utils/validators';
-import useConfirm from '../hooks/useConfirm';
 
 const blank = { name: '', head: '', description: '', status: 'Active' };
 
@@ -21,7 +20,8 @@ const Department = () => {
   const [saving, setSaving] = useState(false);
 
   const { toasts, toast, removeToast }       = useToast();
- const { confirmState, confirm, closeConfirm } = useConfirm();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
 
   const fetchDepartments = async () => {
     setLoading(true);
@@ -85,23 +85,29 @@ const Department = () => {
     }
   };
 
-  const handleDelete = (id, name) => {
-    confirm({
-      title: 'Delete Department',
-      message: `Delete department "${name}"? This may affect employees assigned to it.`,
-      confirmLabel: 'Delete',
-      variant: 'danger',
-      onConfirm: async () => {
-        closeConfirm();
-        try {
-          await departmentsApi.remove(id);
-          toast.success('Department deleted.');
-          fetchDepartments();
-        } catch (err) {
-          toast.error(err.displayMessage || 'Failed to delete department');
-        }
-      },
-    });
+  const handleDelete = (id) => {
+    setDeleteId(id);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!deleteId) return;
+
+    try {
+      setConfirmOpen(false);
+      await departmentsApi.remove(deleteId);
+      setDeleteId(null);
+      toast.success('Department deleted.');
+      fetchDepartments();
+    } catch (err) {
+      setDeleteId(null);
+      toast.error(err.displayMessage || 'Failed to delete department');
+    }
+  };
+
+  const handleConfirmCancel = () => {
+    setConfirmOpen(false);
+    setDeleteId(null);
   };
 
   const f = (field) => ({
@@ -115,7 +121,16 @@ const Department = () => {
   return (
     <div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <ConfirmDialog {...confirmState} onCancel={closeConfirm} />
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete Department"
+        message="Are you sure you want to delete this department? This may affect employees assigned to it."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleConfirm}
+        onCancel={handleConfirmCancel}
+      />
 
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
@@ -127,7 +142,7 @@ const Department = () => {
 
       <div className="d_card">
         <div className="d_card_header">
-          <h2 className="d_card_title"><MdCorporateFare className="d_card_icon" /> Departments ({data.length})</h2>
+          <h2 className="d_card_title"><MdBusiness className="d_card_icon" /> Departments ({data.length})</h2>
         </div>
         <div className="d_card_body p-0">
           {loading ? (
@@ -149,7 +164,7 @@ const Department = () => {
                     <td>
                       <div className="d_action_btns">
                         <button className="d_icon_btn d_edit" onClick={() => openEdit(d)} title="Edit"><MdEdit /></button>
-                        <button className="d_icon_btn d_del" onClick={() => handleDelete(d._id, d.title || d.name)} title="Delete"><MdDelete /></button>
+                        <button className="d_icon_btn d_del" onClick={() => handleDelete(d._id)} title="Delete"><MdDelete /></button>
                       </div>
                     </td>
                   </tr>

@@ -382,8 +382,11 @@ const RawMaterialPurchases = () => {
 
       <div className="row g-3 mb-4">
 
-        <div className="col-6 col-md">
-          <div className="d_stat_card d_stat_card_primary">
+        <div className="col-6 col-md-4 col-lg">
+          <div
+            className="d_stat_card d_stat_card_primary h-100"
+            style={{ minHeight: "100px" }}
+          >
             <div className="d_stat_icon">
               <MdShoppingCart />
             </div>
@@ -394,8 +397,11 @@ const RawMaterialPurchases = () => {
           </div>
         </div>
 
-        <div className="col-6 col-md">
-          <div className="d_stat_card d_stat_card_success">
+        <div className="col-6 col-md-4 col-lg">
+          <div
+            className="d_stat_card d_stat_card_success h-100"
+            style={{ minHeight: "100px" }}
+          >
             <div className="d_stat_icon">
               <MdInventory />
             </div>
@@ -406,8 +412,11 @@ const RawMaterialPurchases = () => {
           </div>
         </div>
 
-        <div className="col-6 col-md">
-          <div className="d_stat_card d_stat_card_info">
+        <div className="col-6 col-md-4 col-lg">
+          <div
+            className="d_stat_card d_stat_card_info h-100"
+            style={{ minHeight: "100px" }}
+          >
             <div className="d_stat_icon">
               <MdTrendingUp />
             </div>
@@ -418,8 +427,11 @@ const RawMaterialPurchases = () => {
           </div>
         </div>
 
-        <div className="col-6 col-md">
-          <div className="d_stat_card d_stat_card_accent">
+        <div className="col-6 col-md-6 col-lg">
+          <div
+            className="d_stat_card d_stat_card_accent h-100"
+            style={{ minHeight: "100px" }}
+          >
             <div className="d_stat_icon">
               <MdAttachMoney />
             </div>
@@ -432,8 +444,11 @@ const RawMaterialPurchases = () => {
           </div>
         </div>
 
-        <div className="col-6 col-md">
-          <div className="d_stat_card d_stat_card_warning">
+        <div className="col-6 col-md-6 col-lg">
+          <div
+            className="d_stat_card d_stat_card_warning h-100"
+            style={{ minHeight: "100px" }}
+          >
             <div className="d_stat_icon">
               <MdReceipt />
             </div>
