@@ -64,6 +64,7 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
         }
       });
       const data = await response.json();
+      console.log('Fetched categories:', data);
       setCategories(data || []);
     } catch (err) {
       console.error('Failed to load categories:', err);
@@ -294,9 +295,10 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
     try {
       const payload = {
         name: categoryForm.name.trim(),
-        description: categoryForm.desc.trim(),
+        description: categoryForm.desc ? categoryForm.desc.trim() : '',
         status: categoryForm.status
       };
+      console.log('Saving category payload:', payload);
       
       if (categoryEditId) {
         await fetch(`http://localhost:5000/api/categories/${categoryEditId}`, {
@@ -327,9 +329,6 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
       setSavingCategory(false);
     }
   };
-  const handleSubmit = () => {
-
-  }
 
   const cf = (field) => ({
     value: categoryForm[field] ?? '',
