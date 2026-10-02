@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { MdBarChart, MdInventory2, MdShoppingCart, MdTrendingUp, MdLayers, MdDownload, MdPieChart, MdShowChart } from 'react-icons/md';
+import { MdBarChart, MdInventory2, MdShoppingCart, MdTrendingUp, MdLayers, MdPieChart, MdShowChart } from 'react-icons/md';
 import { rawMaterialsApi } from '../utils/api';
+import ExportMenu from '../components/ExportMenu';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -9,7 +10,7 @@ import {
 const formatCurrency = (value) => `₹${Number(value || 0).toLocaleString('en-IN')}`;
 const formatNumber = (value) => Number(value || 0).toLocaleString('en-IN');
 
-const RawMaterialReport = (setActiveMenu) => {
+const RawMaterialReport = ({ setActiveMenu }) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -128,9 +129,7 @@ const RawMaterialReport = (setActiveMenu) => {
           <h1 className="d_page_title">Raw Material Report</h1>
           <p className="d_page_subtitle">Purchase and stock performance with interactive charts and live inventory metrics.</p>
         </div>
-        <button className="d_btn d_btn_primary" >
-          <MdDownload /> Export
-        </button>
+        <ExportMenu className="d_btn d_btn_primary" label="Export" filename="raw_material_report" data={report} />
       </div>
 
       {error && <div className="alert alert-danger" style={{ padding: '16px', backgroundColor: '#FFB6C1', color: '#C0392B', borderRadius: '8px', marginBottom: '20px', fontSize: '1rem' }}>{error}</div>}

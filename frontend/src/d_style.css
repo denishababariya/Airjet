@@ -1362,6 +1362,100 @@ a {
 
 
 
+/* ---------- PAGE ACTION DROPDOWN (Export / View menus) ---------- */
+
+.d_menu_wrap {
+
+  position: relative;
+
+  display: inline-flex;
+
+}
+
+.d_menu_dropdown {
+
+  position: absolute;
+
+  top: calc(100% + 6px);
+
+  right: 0;
+
+  min-width: 212px;
+
+  max-width: calc(100vw - 24px);
+
+  background: var(--d-white);
+
+  border: 1px solid var(--d-light-border);
+
+  border-radius: var(--d-radius);
+
+  box-shadow: var(--d-shadow-md);
+
+  z-index: 1050;
+
+  overflow: hidden;
+
+  animation: d_fadeDown 0.18s ease;
+
+}
+
+.d_menu_dropdown.d_left {
+
+  right: auto;
+
+  left: 0;
+
+}
+
+.d_menu_dropdown .d_dropdown_item {
+
+  gap: 10px;
+
+  padding: 11px 16px;
+
+  white-space: nowrap;
+
+}
+
+.d_menu_dropdown .d_dropdown_item:disabled,
+.d_menu_dropdown .d_dropdown_item.d_disabled {
+
+  opacity: 0.5;
+
+  cursor: not-allowed;
+
+}
+
+.d_menu_dropdown .d_dropdown_item:disabled:hover,
+.d_menu_dropdown .d_dropdown_item.d_disabled:hover {
+
+  background: transparent;
+
+  color: var(--d-text-main);
+
+}
+
+@media (max-width: 575.98px) {
+
+  .d_menu_wrap { display: flex; width: 100%; }
+
+  .d_menu_dropdown {
+
+    left: 0;
+
+    right: 0;
+
+    min-width: 0;
+
+    width: 100%;
+
+  }
+
+}
+
+
+
 /* ============================================
 
    PAGE CONTENT — this is the ONLY scrolling area
@@ -2879,7 +2973,15 @@ body.d_modal_open {
 
   justify-content: center;
 
-  padding: 16px;
+  /* Fluid side space so the modal never touches the screen edge (320px → 2560px) */
+
+  padding: clamp(8px, 2.5vw, 40px);
+
+  overflow-y: auto;
+
+  overscroll-behavior: contain;
+
+  -webkit-overflow-scrolling: touch;
 
   animation: d_fadeIn 0.18s ease;
 
@@ -2899,8 +3001,6 @@ body.d_modal_open {
 
 }
 
-
-
 .d_modal_box {
 
   background: var(--d-white);
@@ -2909,9 +3009,15 @@ body.d_modal_open {
 
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
 
-  /* width: 100%; */
-  min-width: 430px;
-  max-height: calc(100vh - 40px);
+  /* Fluid width: fills the space between the backdrop padding, never overflows */
+
+  width: 100%;
+
+  min-width: 0;
+
+  max-height: min(92vh, 92dvh);
+
+  margin: auto;
 
   display: flex;
 
@@ -2953,6 +3059,10 @@ body.d_modal_open {
   max-width: 800px;
 }
 
+.d_modal_xl {
+  max-width: 1100px;
+}
+
 
 
 .d_modal_header {
@@ -2963,7 +3073,9 @@ body.d_modal_open {
 
   justify-content: space-between;
 
-  padding: 16px 20px;
+  gap: 12px;
+
+  padding: clamp(12px, 1.6vw, 18px) clamp(14px, 2vw, 22px);
 
   border-bottom: 1px solid var(--d-light-border);
 
@@ -2971,19 +3083,25 @@ body.d_modal_open {
 
   border-radius: var(--d-radius) var(--d-radius) 0 0;
 
+  flex-shrink: 0;
+
 }
 
 
 
 .d_modal_title {
 
-  font-size: 15px;
+  font-size: clamp(14px, 1.1vw, 16px);
 
   font-weight: 700;
 
   color: var(--d-white);
 
   margin: 0;
+
+  min-width: 0;
+
+  overflow-wrap: anywhere;
 
 }
 
@@ -3025,11 +3143,19 @@ body.d_modal_open {
 
 .d_modal_body {
 
-  padding: 20px;
+  padding: clamp(14px, 2vw, 24px);
 
   overflow-y: auto;
 
-  flex: 1;
+  overflow-x: hidden;
+
+  -webkit-overflow-scrolling: touch;
+
+  overscroll-behavior: contain;
+
+  flex: 1 1 auto;
+
+  min-height: 0;
 
   scrollbar-width: thin;
 
@@ -3050,6 +3176,15 @@ body.d_modal_open {
   gap: 14px;
 
   margin-bottom: 14px;
+
+}
+
+/* Grid/flex children must be allowed to shrink, otherwise long content
+   (emails, file inputs, selects) push the modal wider than the screen */
+
+.d_form_row > * {
+
+  min-width: 0;
 
 }
 
@@ -3115,7 +3250,7 @@ body.d_modal_open {
 
   border-radius: 8px;
 
-  padding: 8px 12px;
+  padding: 9px 12px;
 
   font-size: 13px;
 
@@ -3124,6 +3259,10 @@ body.d_modal_open {
   background: var(--d-white);
 
   width: 100%;
+
+  max-width: 100%;
+
+  min-width: 0;
 
   outline: none;
 
@@ -3169,23 +3308,121 @@ textarea.d_form_control {
 
   display: flex;
 
+  flex-wrap: wrap;
+
   justify-content: flex-end;
 
   gap: 10px;
 
   margin-top: 6px;
 
-  padding-top: 14px;
+  padding: 14px 0 2px;
 
   border-top: 1px solid var(--d-light-border);
+
+  /* Keep the actions visible while a long form scrolls */
+
+  position: sticky;
+
+  bottom: 0;
+
+  z-index: 2;
+
+  background: var(--d-white);
+
+}
+
+.d_form_actions .d_btn {
+
+  min-width: 104px;
 
 }
 
 
 
-/* Responsive form grid */
+/* ============================================
+
+   MODAL + FORM RESPONSIVE (320px → 2560px)
+
+   ============================================ */
+
+/* Large / ultra-wide screens: keep the dialog readable, just breathe more */
+
+@media (min-width: 1600px) {
+
+  .d_modal_lg { max-width: 900px; }
+
+  .d_modal_xl { max-width: 1240px; }
+
+  .d_form_control {
+
+    padding: 11px 14px;
+
+    font-size: 14px;
+
+  }
+
+  .d_form_label { font-size: 13.5px; }
+
+  .d_form_row { gap: 16px; }
+
+  .d_form_actions .d_btn { min-width: 120px; }
+
+}
+
+/* Tablet and below */
+
+@media (max-width: 991.98px) {
+
+  .d_modal_box { max-height: min(94vh, 94dvh); }
+
+  .d_modal_sm { max-width: 460px; }
+
+  .d_modal_md { max-width: 680px; }
+
+}
+
+/* Phones: dialog behaves like a bottom sheet, full width, side space kept */
+
+@media (max-width: 767.98px) {
+
+  .d_modal_backdrop {
+
+    align-items: flex-end;
+
+    padding: 10px 8px 8px;
+
+  }
+
+  .d_modal_box {
+
+    max-width: 100% !important;
+
+    max-height: 94dvh;
+
+    border-radius: 14px;
+
+  }
+
+  .d_modal_header {
+
+    border-radius: 14px 14px 0 0;
+
+    padding: 12px 14px;
+
+  }
+
+  .d_modal_body { padding: 14px; }
+
+  .d_form_actions .d_btn { flex: 1 1 auto; }
+
+}
+
+/* Small phones (320 – 430px) */
 
 @media (max-width: 575.98px) {
+
+  .d_modal_backdrop { padding: 8px; }
 
   .d_form_row.cols-2,
 
@@ -3195,9 +3432,69 @@ textarea.d_form_control {
 
   }
 
-  .d_modal_body {
-    padding: 14px;
+  .d_form_row { gap: 12px; margin-bottom: 12px; }
+
+  .d_form_control { padding: 9px 11px; font-size: 13px; }
+
+  .d_modal_body { padding: 12px; }
+
+  .d_modal_title { font-size: 14px; }
+
+  .d_form_actions {
+
+    gap: 8px;
+
+    padding-top: 12px;
+
   }
+
+  .d_form_actions .d_btn {
+
+    min-width: 0;
+
+    padding: 9px 12px;
+
+  }
+
+}
+
+/* Very narrow screens (320px) */
+
+@media (max-width: 380px) {
+
+  .d_modal_backdrop { padding: 6px; }
+
+  .d_modal_body { padding: 10px; }
+
+  .d_form_label { font-size: 12px; }
+
+  .d_form_actions { flex-direction: column-reverse; }
+
+  .d_form_actions .d_btn { width: 100%; }
+
+  .d_confirm_actions { padding: 12px 14px; }
+
+  .d_confirm_actions .d_btn { flex: 1 1 auto; }
+
+}
+
+/* Short viewports (landscape phones, small laptop windows) */
+
+@media (max-height: 520px) {
+
+  .d_modal_backdrop {
+
+    align-items: flex-start;
+
+    padding: 8px;
+
+  }
+
+  .d_modal_box { max-height: 96dvh; }
+
+  .d_modal_header { padding: 10px 14px; }
+
+  .d_modal_body { padding: 12px; }
 
 }
 
@@ -4847,6 +5144,7 @@ textarea.d_form_control {
 
 .d_confirm_actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 20px;

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MdDownload, MdVisibility, MdReceiptLong, MdAdd, MdEdit, MdDelete, MdRefresh } from 'react-icons/md';
+import html2pdf from 'html2pdf.js';
 import Modal from '../../components/Modal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ToastContainer from '../../components/Toast';
@@ -15,6 +16,7 @@ const tabs  = ['GSTR-1', 'GSTR-3B', 'GSTR-2A'];
 
 export default function GSTReports() {
   const [activeTab, setActiveTab] = useState('GSTR-1');
+  const reportRef = useRef(null);
   const [records, setRecords]     = useState([]);
   const [loading, setLoading]     = useState(true);
   const [modal, setModal]         = useState(false);
@@ -43,6 +45,18 @@ export default function GSTReports() {
   const totalIgst    = records.reduce((s,r) => s + toNum(r.igst),    0);
   const totalTax     = records.reduce((s,r) => s + toNum(r.total),   0);
   const filedCount   = records.filter(r => r.status === 'Filed').length;
+
+  const downloadPDF = () => {
+    if (!reportRef.current) return;
+    const opt = {
+      margin: [8, 6],
+      filename: `gst_${activeTab.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+    };
+    html2pdf().set(opt).from(reportRef.current).save();
+  };
 
   const openAdd = () => { setForm(blank); setEditId(null); setErrors({}); setModal(true); };
   const openEdit = (row) => {
@@ -149,7 +163,7 @@ export default function GSTReports() {
         ))}
       </div>
 
-      <div className="d_card">
+      <div className="d_card" ref={reportRef}>
         <div className="d_card_header">
           <div className="d_tabs">{tabs.map(t => <button key={t} className={`d_tab_btn${activeTab===t?' d_active':''}`} onClick={() => setActiveTab(t)}>{t}</button>)}</div>
           <h2 className="d_card_title" style={{ marginLeft:'auto' }}><MdReceiptLong className="d_card_icon" />{records.length} record{records.length!==1?'s':''}</h2>
@@ -169,7 +183,7 @@ export default function GSTReports() {
                     <td><div className="d_action_btns">
                       <button className="d_icon_btn d_view"  title="View"     onClick={() => openEdit(r)}><MdVisibility /></button>
                       <button className="d_icon_btn d_edit"  title="Edit"     onClick={() => openEdit(r)}><MdEdit /></button>
-                      <button className="d_icon_btn"          title="Download" onClick={() => window.print()}><MdDownload /></button>
+                      <button className="d_icon_btn"          title="Download PDF" onClick={downloadPDF}><MdDownload /></button>
                       <button className="d_icon_btn d_del"   title="Delete"   onClick={() => handleDelete(r._id)}><MdDelete /></button>
                     </div></td>
                   </tr>

@@ -172,7 +172,7 @@ const EmployeeMaster = ({ currentUser }) => {
       (e.department?.title || "").toLowerCase().includes(search.toLowerCase()),
   );
 
-  // ── Open Add modal ──────────────────────────────────────────
+  // ── Open Add modal           
   const openAdd = () => {
     setForm({ ...blank, imageFile: null, docImageFile: null });
     setEditId(null);

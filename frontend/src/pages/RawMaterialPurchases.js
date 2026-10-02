@@ -380,52 +380,72 @@ const RawMaterialPurchases = () => {
         </div>
       </div>
 
-      <div className="row ">
-        <div className="col-md-2-4 col-sm-6 mb-3">
+      <div className="row g-3 mb-4">
+
+        <div className="col-6 col-md">
           <div className="d_stat_card d_stat_card_primary">
-            <div className="d_stat_icon"><MdShoppingCart /></div>
+            <div className="d_stat_icon">
+              <MdShoppingCart />
+            </div>
             <div className="d_stat_content">
               <div className="d_stat_label">Total Purchases</div>
               <div className="d_stat_value">{summary.purchases}</div>
             </div>
           </div>
         </div>
-        <div className="col-md-2-4 col-sm-6 mb-3">
+
+        <div className="col-6 col-md">
           <div className="d_stat_card d_stat_card_success">
-            <div className="d_stat_icon"><MdInventory /></div>
+            <div className="d_stat_icon">
+              <MdInventory />
+            </div>
             <div className="d_stat_content">
               <div className="d_stat_label">Total Items</div>
               <div className="d_stat_value">{summary.items}</div>
             </div>
           </div>
         </div>
-        <div className="col-md-2-4 col-sm-6 mb-3">
+
+        <div className="col-6 col-md">
           <div className="d_stat_card d_stat_card_info">
-            <div className="d_stat_icon"><MdTrendingUp /></div>
+            <div className="d_stat_icon">
+              <MdTrendingUp />
+            </div>
             <div className="d_stat_content">
               <div className="d_stat_label">Total Qty</div>
               <div className="d_stat_value">{summary.quantity}</div>
             </div>
           </div>
         </div>
-        <div className="col-md-2-4 col-sm-6 mb-3">
+
+        <div className="col-6 col-md">
           <div className="d_stat_card d_stat_card_accent">
-            <div className="d_stat_icon"><MdAttachMoney /></div>
+            <div className="d_stat_icon">
+              <MdAttachMoney />
+            </div>
             <div className="d_stat_content">
               <div className="d_stat_label">Purchase Value</div>
-              <div className="d_stat_value">{money(summary.amount)}</div>
+              <div className="d_stat_value">
+                {money(summary.amount)}
+              </div>
             </div>
           </div>
         </div>
-        <div className="col-md-2-4 col-sm-6 mb-3">
+
+        <div className="col-6 col-md">
           <div className="d_stat_card d_stat_card_warning">
-            <div className="d_stat_icon"><MdReceipt /></div>
+            <div className="d_stat_icon">
+              <MdReceipt />
+            </div>
             <div className="d_stat_content">
               <div className="d_stat_label">Grand Total</div>
-              <div className="d_stat_value">{money(summary.amount * 1.18)}</div>
+              <div className="d_stat_value">
+                {money(summary.amount * 1.18)}
+              </div>
             </div>
           </div>
         </div>
+
       </div>
 
       <Modal open={modal} onClose={() => setModal(false)} title="Add Raw Material Purchase" size="lg">

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { MdAssessment, MdDownload, MdFilterList } from 'react-icons/md';
+import React, { useState, useEffect, useRef } from 'react';
+import { MdAssessment, MdFilterList } from 'react-icons/md';
 import { payrollApi } from '../../utils/api';
+import ExportMenu from '../../components/ExportMenu';
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -12,6 +13,7 @@ export default function PayrollReports() {
     month: months[new Date().getMonth()],
     year: new Date().getFullYear()
   });
+  const reportRef = useRef(null);
 
   useEffect(() => {
     fetchReport();
@@ -49,11 +51,6 @@ export default function PayrollReports() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleExport = () => {
-    // In a real implementation, this would export to Excel/CSV
-    console.log('Exporting report...');
   };
 
   const renderMonthlyReport = () => (
@@ -199,10 +196,16 @@ export default function PayrollReports() {
           <div className="d_page_title">Payroll Reports</div>
           <div className="d_page_subtitle">View and export payroll reports</div>
         </div>
-        <button className="d_btn d_btn_outline" onClick={handleExport}>
-          <MdDownload /> Export Report
-        </button>
+        <ExportMenu
+          label="Export Report"
+          filename={`payroll_${activeTab}_${filters.month}_${filters.year}`}
+          data={reportData?.length ? { tab: activeTab, ...filters, records: reportData } : null}
+          targetRef={reportRef}
+        />
       </div>
+
+      {/* Captured for PDF export */}
+      <div ref={reportRef}>
 
       {/* Filters */}
       <div className="d_card" style={{ marginBottom: '1.5rem' }}>
@@ -277,6 +280,7 @@ export default function PayrollReports() {
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
