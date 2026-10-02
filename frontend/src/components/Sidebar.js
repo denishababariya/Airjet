@@ -78,11 +78,11 @@ const menuConfig = [
         children: ['Service Tickets', 'Engineer Assignment', 'Service Reports'],
         module: 'Service',
       },
-      {
-        label: 'Accounts & GST', icon: <MdAccountBalance />, id: 'accounts',
-        children: ['Receivables', 'Payables', 'Ledger', 'GST Reports', 'Profit & Loss'],
-        module: 'Accounts',
-      },
+      // {
+      //   label: 'Accounts & GST', icon: <MdAccountBalance />, id: 'accounts',
+      //   children: ['Receivables', 'Payables', 'Ledger', 'GST Reports', 'Profit & Loss'],
+      //   module: 'Accounts',
+      // },
       {
         label: 'Reports', icon: <MdBarChart />, id: 'reports',
         children: ['Sales Report', 'Purchase Report', 'Inventory Report', 'Payroll Report', 'Attendance Report', 'Raw Material Report'],

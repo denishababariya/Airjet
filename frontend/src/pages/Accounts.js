@@ -17,278 +17,249 @@ const statusClass = {
   Filed: "d_success",
 };
 
-const blankReceivable = {
-  party: "",
-  type: "Invoice",
-  amount: "",
-  dueDate: "",
-  status: "Pending",
-  notes: "",
-};
-
-const blankPayable = {
-  party: "",
-  type: "Purchase Order",
-  amount: "",
-  dueDate: "",
-  status: "Pending",
-  notes: "",
-};
-
-const blankLedger = {
-  date: "",
-  party: "",
-  type: "Sales Invoice",
-  debit: "",
-  credit: "",
-  notes: "",
-};
-
-const blankGst = {
-  month: "",
-  taxable: "",
-  cgst: "",
-  sgst: "",
-  igst: "",
-  gstAmount: "",
-  status: "Pending",
-};
-
-const blankPL = {
-  period: "",
-  entityType: "Revenue",
-  notes: "",
-  revenue: "",
-  expenses: "",
-  profit: "",
+const tabConfig = {
+  receivables: {
+    label: "Receivables",
+    menuLabel: "Receivables",
+    apiType: "receivable",
+    apiModule: "accounts",
+    fields: [
+      { key: "party", label: "Party Name", type: "text", required: true, placeholder: "Customer / Supplier name" },
+      { key: "type", label: "Transaction Type", type: "select", options: ["Invoice", "Purchase Order", "Advance", "Credit Note", "Debit Note"], default: "Invoice" },
+      { key: "amount", label: "Amount (₹)", type: "number", required: true, placeholder: "e.g. 25000" },
+      { key: "dueDate", label: "Due Date", type: "date", required: true },
+      { key: "status", label: "Status", type: "select", options: ["Pending", "Received", "Overdue"], default: "Pending" },
+      { key: "notes", label: "Notes", type: "text", placeholder: "Optional notes" },
+    ],
+    tableColumns: [
+      { key: "id", label: "ID", render: (val) => <code>{val}</code> },
+      { key: "party", label: "Party", render: (val) => <strong>{val}</strong> },
+      { key: "type", label: "Type" },
+      { key: "amount", label: "Amount (₹)", render: (val) => <strong>₹{(val ?? 0).toLocaleString()}</strong> },
+      { key: "dueDate", label: "Due Date", render: (val) => val ? new Date(val).toLocaleDateString('en-IN') : '-' },
+      { key: "status", label: "Status", render: (val) => <span className={`d_badge ${statusClass[val]}`}>{val}</span> },
+    ],
+    getBlank: () => ({ party: "", type: "Invoice", amount: "", dueDate: "", status: "Pending", notes: "" }),
+    validate: (form) => validateFields({
+      party: V.required(form.party, 'Party name'),
+      amount: V.amount(form.amount, 'Amount'),
+      dueDate: V.date(form.dueDate, 'Due date'),
+    }),
+    preparePayload: (form) => ({ ...form, amount: parseFloat(String(form.amount).replace(/[^\d.]/g, "")) || 0 }),
+  },
+  payables: {
+    label: "Payables",
+    menuLabel: "Payables",
+    apiType: "payable",
+    apiModule: "accounts",
+    fields: [
+      { key: "party", label: "Party Name", type: "text", required: true, placeholder: "Customer / Supplier name" },
+      { key: "type", label: "Transaction Type", type: "select", options: ["Invoice", "Purchase Order", "Advance", "Credit Note", "Debit Note"], default: "Purchase Order" },
+      { key: "amount", label: "Amount (₹)", type: "number", required: true, placeholder: "e.g. 25000" },
+      { key: "dueDate", label: "Due Date", type: "date", required: true },
+      { key: "status", label: "Status", type: "select", options: ["Pending", "Paid", "Overdue"], default: "Pending" },
+      { key: "notes", label: "Notes", type: "text", placeholder: "Optional notes" },
+    ],
+    tableColumns: [
+      { key: "id", label: "ID", render: (val) => <code>{val}</code> },
+      { key: "party", label: "Party", render: (val) => <strong>{val}</strong> },
+      { key: "type", label: "Type" },
+      { key: "amount", label: "Amount (₹)", render: (val) => <strong>₹{(val ?? 0).toLocaleString()}</strong> },
+      { key: "dueDate", label: "Due Date", render: (val) => val ? new Date(val).toLocaleDateString('en-IN') : '-' },
+      { key: "status", label: "Status", render: (val) => <span className={`d_badge ${statusClass[val]}`}>{val}</span> },
+    ],
+    getBlank: () => ({ party: "", type: "Purchase Order", amount: "", dueDate: "", status: "Pending", notes: "" }),
+    validate: (form) => validateFields({
+      party: V.required(form.party, 'Party name'),
+      amount: V.amount(form.amount, 'Amount'),
+      dueDate: V.date(form.dueDate, 'Due date'),
+    }),
+    preparePayload: (form) => ({ ...form, amount: parseFloat(String(form.amount).replace(/[^\d.]/g, "")) || 0 }),
+  },
+  ledger: {
+    label: "Ledger",
+    menuLabel: "Ledger",
+    apiType: "ledger",
+    apiModule: "erp",
+    fields: [
+      { key: "date", label: "Date", type: "date" },
+      { key: "party", label: "Party", type: "text" },
+      { key: "type", label: "Type", type: "select", options: ["Sales Invoice", "Purchase Payment", "Cash Receipt", "Bank Transfer"], default: "Sales Invoice" },
+      { key: "notes", label: "Narration", type: "text" },
+      { key: "debit", label: "Debit (₹)", type: "number" },
+      { key: "credit", label: "Credit (₹)", type: "number" },
+    ],
+    tableColumns: [
+      { key: "id", label: "ID", render: (val) => <code>{val}</code> },
+      { key: "date", label: "Date", render: (val) => val ? new Date(val).toLocaleDateString('en-IN') : '-' },
+      { key: "party", label: "Party", render: (val) => <strong>{val}</strong> },
+      { key: "type", label: "Type" },
+      { key: "debit", label: "Debit (₹)", render: (val) => val > 0 ? <span style={{ color: "var(--d-danger)" }}>{val.toLocaleString()}</span> : "--" },
+      { key: "credit", label: "Credit (₹)", render: (val) => val > 0 ? <span style={{ color: "var(--d-success)" }}>{val.toLocaleString()}</span> : "--" },
+      { key: "balance", label: "Balance (₹)", render: (val) => <strong style={{ color: val >= 0 ? "var(--d-success)" : "var(--d-danger)" }}>{Math.abs(val || 0).toLocaleString()}</strong> },
+      { key: "notes", label: "Narration", render: (val) => val || '-' },
+    ],
+    getBlank: () => ({ date: "", party: "", type: "Sales Invoice", debit: "", credit: "", notes: "" }),
+    validate: (form) => validateFields({
+      date: V.date(form.date, 'Date'),
+      party: V.required(form.party, 'Party'),
+      debit: form.debit !== '' ? V.optionalAmount(form.debit, 'Debit') : '',
+      credit: form.credit !== '' ? V.optionalAmount(form.credit, 'Credit') : '',
+    }),
+    preparePayload: (form) => {
+      const debit = parseFloat(String(form.debit).replace(/[^\d.]/g, "")) || 0;
+      const credit = parseFloat(String(form.credit).replace(/[^\d.]/g, "")) || 0;
+      return { ...form, debit, credit, balance: credit - debit };
+    },
+  },
+  gst: {
+    label: "GST Reports",
+    menuLabel: "GST Reports",
+    apiType: "gst",
+    apiModule: "erp",
+    fields: [
+      { key: "month", label: "Month", type: "text", placeholder: "e.g. Jun 2026" },
+      { key: "taxable", label: "Taxable Amount", type: "text" },
+      { key: "cgst", label: "CGST", type: "text" },
+      { key: "sgst", label: "SGST", type: "text" },
+      { key: "igst", label: "IGST", type: "text" },
+      { key: "gstAmount", label: "Total Tax", type: "text" },
+      { key: "status", label: "Status", type: "select", options: ["Pending", "Filed"], default: "Pending" },
+    ],
+    tableColumns: [
+      { key: "id", label: "ID", render: (val) => <code>{val}</code> },
+      { key: "month", label: "Month", render: (val) => <strong>{val}</strong> },
+      { key: "taxable", label: "Taxable Amount" },
+      { key: "cgst", label: "CGST" },
+      { key: "sgst", label: "SGST" },
+      { key: "igst", label: "IGST" },
+      { key: "gstAmount", label: "Total Tax", render: (val) => <strong>{val ?? 0}</strong> },
+      { key: "status", label: "Status", render: (val) => <span className={`d_badge ${val === "Filed" ? "d_success" : "d_warning"}`}>{val}</span> },
+    ],
+    getBlank: () => ({ month: "", taxable: "", cgst: "", sgst: "", igst: "", gstAmount: "", status: "Pending" }),
+    validate: (form) => validateFields({
+      month: V.required(form.month, 'Month'),
+      taxable: V.amount(form.taxable, 'Taxable amount'),
+      cgst: V.amount(form.cgst, 'CGST'),
+      sgst: V.amount(form.sgst, 'SGST'),
+      igst: V.amount(form.igst, 'IGST'),
+      gstAmount: V.amount(form.gstAmount, 'Total tax'),
+    }),
+    preparePayload: (form) => form,
+  },
+  pl: {
+    label: "Profit & Loss",
+    menuLabel: "Profit & Loss",
+    apiType: "pl",
+    apiModule: "erp",
+    fields: [
+      { key: "entityType", label: "Type", type: "select", options: ["Revenue", "Expense", "Profit"], default: "Revenue" },
+      { key: "period", label: "Period", type: "text", placeholder: "e.g. Jun 2026" },
+      { key: "notes", label: "Notes", type: "text", placeholder: "Optional entry details" },
+      { key: "revenue", label: "Revenue", type: "number" },
+      { key: "expenses", label: "Expenses", type: "number" },
+      { key: "profit", label: "Profit", type: "number" },
+    ],
+    formLayout: "cols-3", // Special layout for PL tab
+    formFieldGroups: [
+      ["entityType", "period"],
+      ["notes"],
+      ["revenue", "expenses", "profit"],
+    ],
+    tableColumns: [
+      { key: "id", label: "ID", render: (val) => <code>{val}</code> },
+      { key: "period", label: "Period", render: (val) => val || '-' },
+      { key: "entityType", label: "Type", render: (val) => <span className={`d_badge ${val === "Revenue" ? "d_success" : val === "Profit" ? "d_info" : "d_danger"}`}>{val}</span> },
+      { key: "notes", label: "Notes", render: (val) => <strong>{val || '-'}</strong> },
+      { key: "revenue", label: "Revenue", render: (val) => val ?? 0 },
+      { key: "expenses", label: "Expenses", render: (val) => val ?? 0 },
+      { key: "profit", label: "Profit", render: (val) => val ?? 0 },
+    ],
+    getBlank: () => ({ period: "", entityType: "Revenue", notes: "", revenue: "", expenses: "", profit: "" }),
+    validate: (form) => validateFields({ period: V.required(form.period, 'Period') }),
+    preparePayload: (form) => ({ ...form, revenue: Number(form.revenue) || 0, expenses: Number(form.expenses) || 0, profit: Number(form.profit) || 0 }),
+  },
 };
 
 const Accounts = ({ defaultTab = "receivables", setActiveMenu }) => {
   const [tab, setTab] = useState(defaultTab);
-
-  // Map tab keys to sidebar menu labels
-  const tabToMenuMap = {
-    'receivables': 'Receivables',
-    'payables': 'Payables',
-    'ledger': 'Ledger',
-    'gst': 'GST Reports',
-    'pl': 'Profit & Loss',
-  };
-  const [receivables, setReceivables] = useState([]);
-  const [payables, setPayables] = useState([]);
-  const [ledger, setLedger] = useState([]);
-  const [gst, setGst] = useState([]);
-  const [pl, setPL] = useState([]);
+  const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState(blankReceivable);
+  const [form, setForm] = useState({});
   const [editId, setEditId] = useState(null);
   const [errors, setErrors] = useState({});
 
-  const isRcv = tab === "receivables";
-  const isPay = tab === "payables";
+  const currentConfig = tabConfig[tab];
 
-  const fetchReceivables = async () => {
-    try {
-      const { data } = await accountsApi.getAll("accounts", "receivable");
-      setReceivables(data);
-    } catch (err) {
-      setError(err.displayMessage || "Failed to load receivables");
-    }
-  };
+  const fetchData = async () => {
+    const promises = Object.entries(tabConfig).map(async ([key, config]) => {
+      try {
+        const api = config.apiModule === "accounts" ? accountsApi : erpApi;
+        const { data: result } = await api.getAll(config.apiModule, config.apiType);
+        return { key, data: result };
+      } catch (err) {
+        return { key, error: err.displayMessage || `Failed to load ${config.label}` };
+      }
+    });
 
-  const fetchPayables = async () => {
-    try {
-      const { data } = await accountsApi.getAll("accounts", "payable");
-      setPayables(data);
-    } catch (err) {
-      setError(err.displayMessage || "Failed to load payables");
-    }
-  };
-
-  const fetchLedger = async () => {
-    try {
-      const { data } = await erpApi.getAll("accounts", "ledger");
-      setLedger(data);
-    } catch (err) {
-      setError(err.displayMessage || "Failed to load ledger");
-    }
-  };
-
-  const fetchGst = async () => {
-    try {
-      const { data } = await erpApi.getAll("accounts", "gst");
-      setGst(data);
-    } catch (err) {
-      setError(err.displayMessage || "Failed to load GST reports");
-    }
-  };
-
-  const fetchPL = async () => {
-    try {
-      const { data } = await erpApi.getAll("accounts", "pl");
-      setPL(data);
-    } catch (err) {
-      setError(err.displayMessage || "Failed to load profit & loss");
-    }
+    const results = await Promise.all(promises);
+    const newData = {};
+    results.forEach(({ key, data: result, error: err }) => {
+      if (err) setError(err);
+      else newData[key] = result;
+    });
+    setData(newData);
   };
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       setError("");
-      await Promise.all([fetchReceivables(), fetchPayables(), fetchLedger(), fetchGst(), fetchPL()]);
+      await fetchData();
       setLoading(false);
     };
     load();
   }, []);
 
-  const getBlank = () => {
-    if (isRcv) return blankReceivable;
-    if (isPay) return blankPayable;
-    if (tab === "ledger") return blankLedger;
-    if (tab === "gst") return blankGst;
-    return blankPL;
-  };
-
   const openAdd = () => {
-    setForm(getBlank());
+    setForm(currentConfig.getBlank());
     setEditId(null);
     setErrors({});
     setModal(true);
   };
 
   const openEdit = (row) => {
-    if (isRcv || isPay) {
-      setForm({
-        party: row.party || "",
-        type: row.type || "Invoice",
-        amount: row.amount || "",
-        dueDate: row.dueDate || "",
-        status: row.status || "Pending",
-        notes: row.notes || "",
-      });
-    } else if (tab === "ledger") {
-      setForm({
-        date: row.date ? row.date.split("T")[0] : "",
-        party: row.party || "",
-        type: row.type || "Sales Invoice",
-        debit: row.debit || "",
-        credit: row.credit || "",
-        notes: row.notes || "",
-      });
-    } else if (tab === "gst") {
-      setForm({
-        month: row.month || "",
-        taxable: row.taxable || "",
-        cgst: row.cgst || "",
-        sgst: row.sgst || "",
-        igst: row.igst || "",
-        gstAmount: row.gstAmount || "",
-        status: row.status || "Pending",
-      });
-    } else {
-      setForm({
-        period: row.period || "",
-        entityType: row.entityType || "Revenue",
-        notes: row.notes || "",
-        revenue: row.revenue || "",
-        expenses: row.expenses || "",
-        profit: row.profit || "",
-      });
-    }
+    const editedForm = {};
+    currentConfig.fields.forEach(field => {
+      if (field.key === "date" && row[field.key]) {
+        editedForm[field.key] = row[field.key].split("T")[0];
+      } else {
+        editedForm[field.key] = row[field.key] ?? field.default ?? "";
+      }
+    });
+    setForm(editedForm);
     setEditId(row._id);
     setErrors({});
     setModal(true);
   };
 
-  const validate = () => {
-    if (isRcv || isPay) return validateFields({
-      party: V.required(form.party, 'Party name'),
-      amount: V.amount(form.amount, 'Amount'),
-      dueDate: V.date(form.dueDate, 'Due date'),
-    });
-    if (tab === 'ledger') return validateFields({
-      date: V.date(form.date, 'Date'),
-      party: V.required(form.party, 'Party'),
-      debit: form.debit !== '' ? V.optionalAmount(form.debit, 'Debit') : '',
-      credit: form.credit !== '' ? V.optionalAmount(form.credit, 'Credit') : '',
-    });
-    if (tab === 'gst') return validateFields({
-      month: V.required(form.month, 'Month'),
-      taxable: V.amount(form.taxable, 'Taxable amount'),
-      cgst: V.amount(form.cgst, 'CGST'), sgst: V.amount(form.sgst, 'SGST'),
-      igst: V.amount(form.igst, 'IGST'), gstAmount: V.amount(form.gstAmount, 'Total tax'),
-    });
-    return validateFields({ period: V.required(form.period, 'Period') });
-  };
-
   const handleSave = async () => {
-    const e = validate();
-    if (Object.keys(e).length) {
-      setErrors(e);
+    const validationErrors = currentConfig.validate(form);
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
       return;
     }
     try {
-      const amount = parseFloat(String(form.amount).replace(/[^\d.]/g, "")) || 0;
-      if (isRcv) {
-        const payload = { module: "accounts", recordType: "receivable", ...form, amount };
-        if (editId) await erpApi.update(editId, payload);
-        else await erpApi.create(payload);
-        fetchReceivables();
-      } else if (isPay) {
-        const payload = { module: "accounts", recordType: "payable", ...form, amount };
-        if (editId) await erpApi.update(editId, payload);
-        else await erpApi.create(payload);
-        fetchPayables();
-      } else if (tab === "ledger") {
-        const debit = parseFloat(String(form.debit).replace(/[^\d.]/g, "")) || 0;
-        const credit = parseFloat(String(form.credit).replace(/[^\d.]/g, "")) || 0;
-        const payload = {
-          module: "accounts",
-          recordType: "ledger",
-          date: form.date,
-          party: form.party,
-          type: form.type,
-          debit,
-          credit,
-          balance: credit - debit,
-          notes: form.notes,
-        };
-        if (editId) await erpApi.update(editId, payload);
-        else await erpApi.create(payload);
-        fetchLedger();
-      } else if (tab === "gst") {
-        const payload = {
-          module: "accounts",
-          recordType: "gst",
-          month: form.month,
-          taxable: form.taxable,
-          cgst: form.cgst,
-          sgst: form.sgst,
-          igst: form.igst,
-          gstAmount: form.gstAmount,
-          status: form.status,
-        };
-        if (editId) await erpApi.update(editId, payload);
-        else await erpApi.create(payload);
-        fetchGst();
-      } else {
-        const payload = {
-          module: "accounts",
-          recordType: "pl",
-          period: form.period,
-          entityType: form.entityType,
-          notes: form.notes,
-          revenue: Number(form.revenue) || 0,
-          expenses: Number(form.expenses) || 0,
-          profit: Number(form.profit) || 0,
-        };
-        if (editId) await erpApi.update(editId, payload);
-        else await erpApi.create(payload);
-        fetchPL();
-      }
+      const payload = {
+        module: currentConfig.apiModule,
+        recordType: currentConfig.apiType,
+        ...currentConfig.preparePayload(form),
+      };
+      if (editId) await erpApi.update(editId, payload);
+      else await erpApi.create(payload);
+      await fetchData();
       setModal(false);
     } catch (err) {
       setError(err.displayMessage || "Failed to save");
@@ -299,11 +270,7 @@ const Accounts = ({ defaultTab = "receivables", setActiveMenu }) => {
     if (!window.confirm("Delete this record?")) return;
     try {
       await erpApi.remove(id);
-      if (isRcv) fetchReceivables();
-      else if (isPay) fetchPayables();
-      else if (tab === "ledger") fetchLedger();
-      else if (tab === "gst") fetchGst();
-      else fetchPL();
+      await fetchData();
     } catch (err) {
       setError(err.displayMessage || "Failed to delete");
     }
@@ -317,8 +284,8 @@ const Accounts = ({ defaultTab = "receivables", setActiveMenu }) => {
     },
   });
 
-  const totalRcv = receivables.reduce((s, r) => s + (r.amount || 0), 0);
-  const totalPay = payables.reduce((s, p) => s + (p.amount || 0), 0);
+  const totalRcv = (data.receivables || []).reduce((s, r) => s + (r.amount || 0), 0);
+  const totalPay = (data.payables || []).reduce((s, p) => s + (p.amount || 0), 0);
 
   return (
     <div>
@@ -373,34 +340,28 @@ const Accounts = ({ defaultTab = "receivables", setActiveMenu }) => {
       </div>
 
       <div className="d_tabs mb-3">
-        {[
-          ["receivables", "Receivables"],
-          ["payables", "Payables"],
-          ["ledger", "Ledger"],
-          ["gst", "GST Reports"],
-          ["pl", "Profit & Loss"],
-        ].map(([k, v]) => (
+        {Object.entries(tabConfig).map(([key, config]) => (
           <button
-            key={k}
-            className={`d_tab_btn ${tab === k ? "d_active" : ""}`}
+            key={key}
+            className={`d_tab_btn ${tab === key ? "d_active" : ""}`}
             onClick={() => {
-              setTab(k);
+              setTab(key);
               if (setActiveMenu) {
-                setActiveMenu(tabToMenuMap[k]);
+                setActiveMenu(config.menuLabel);
               }
             }}
           >
-            {v}
+            {config.label}
           </button>
         ))}
       </div>
 
-      {tab === "receivables" && (
+      {currentConfig && (
         <div className="d_card">
           <div className="d_card_header">
             <h2 className="d_card_title">
-              <MdAccountBalance className="d_card_icon" /> Receivables (
-              {receivables.length})
+              <MdAccountBalance className="d_card_icon" /> {currentConfig.label} (
+              {(data[tab] || []).length})
             </h2>
           </div>
           <div className="d_card_body p-0">
@@ -408,389 +369,45 @@ const Accounts = ({ defaultTab = "receivables", setActiveMenu }) => {
               <table className="d_table">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Party</th>
-                    <th>Type</th>
-                    <th>Amount (₹)</th>
-                    <th>Due Date</th>
-                    <th>Status</th>
+                    {currentConfig.tableColumns.map((col) => (
+                      <th key={col.key}>{col.label}</th>
+                    ))}
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {receivables.length === 0 && (
+                  {(data[tab] || []).length === 0 && (
                     <tr className="d_empty">
-                      <td colSpan={7} className="text-center py-4">
-                        No receivables found.
+                      <td colSpan={currentConfig.tableColumns.length + 1} className="text-center py-4">
+                        No {currentConfig.label.toLowerCase()} found.
                       </td>
                     </tr>
                   )}
-                  {receivables.map((r) => (
-                    <tr key={r._id}>
-                      <td>
-                        <code>{r.id}</code>
-                      </td>
-                      <td>
-                        <strong>{r.party}</strong>
-                      </td>
-                      <td>{r.type}</td>
-                      <td>
-                        <strong>₹{(r.amount ?? 0).toLocaleString()}</strong>
-                      </td>
-                      <td>{r.dueDate ? new Date(r.dueDate).toLocaleDateString('en-IN') : '-'}</td>
-                      <td>
-                        <span className={`d_badge ${statusClass[r.status]}`}>
-                          {r.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="d_action_btns">
-                          <button
-                            className="d_icon_btn d_edit"
-                            onClick={() => openEdit(r)}
-                          >
-                            <MdEdit />
-                          </button>
-                          <button
-                            className="d_icon_btn d_del"
-                            onClick={() => handleDelete(r._id)}
-                          >
-                            <MdDelete />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {tab === "payables" && (
-        <div className="d_card">
-          <div className="d_card_header">
-            <h2 className="d_card_title">
-              <MdAccountBalance className="d_card_icon" /> Payables (
-              {payables.length})
-            </h2>
-          </div>
-          <div className="d_card_body p-0">
-            <div className="d_table_wrap">
-              <table className="d_table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Party</th>
-                    <th>Type</th>
-                    <th>Amount (₹)</th>
-                    <th>Due Date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payables.length === 0 && (
-                    <tr className="d_empty">
-                      <td colSpan={7} className="text-center py-4">
-                        No payables found.
-                      </td>
-                    </tr>
-                  )}
-                  {payables.map((p) => (
-                    <tr key={p._id}>
-                      <td>
-                        <code>{p.id}</code>
-                      </td>
-                      <td>
-                        <strong>{p.party}</strong>
-                      </td>
-                      <td>{p.type}</td>
-                      <td>
-                        <strong>₹{(p.amount ?? 0).toLocaleString()}</strong>
-                      </td>
-                      <td>{p.dueDate ? new Date(p.dueDate).toLocaleDateString('en-IN') : '-'}</td>
-                      <td>
-                        <span className={`d_badge ${statusClass[p.status]}`}>
-                          {p.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="d_action_btns">
-                          <button
-                            className="d_icon_btn d_edit"
-                            onClick={() => openEdit(p)}
-                          >
-                            <MdEdit />
-                          </button>
-                          <button
-                            className="d_icon_btn d_del"
-                            onClick={() => handleDelete(p._id)}
-                          >
-                            <MdDelete />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {tab === "ledger" && (
-        <div className="d_card">
-          <div className="d_card_header">
-            <h2 className="d_card_title">
-              <MdAccountBalance className="d_card_icon" /> Ledger ({ledger.length})
-            </h2>
-            <button className="d_btn d_btn_primary d_btn_sm" onClick={openAdd}>
-              <MdAdd /> Add Entry
-            </button>
-          </div>
-          <div className="d_card_body p-0">
-            <div className="d_table_wrap">
-              <table className="d_table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Date</th>
-                    <th>Party</th>
-                    <th>Type</th>
-                    <th>Debit (₹)</th>
-                    <th>Credit (₹)</th>
-                    <th>Balance (₹)</th>
-                    <th>Narration</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ledger.length === 0 && (
-                    <tr className="d_empty">
-                      <td colSpan={9} className="text-center py-4">
-                        No ledger entries found.
-                      </td>
-                    </tr>
-                  )}
-                  {ledger.map((l) => (
-                    <tr key={l._id}>
-                      <td>
-                        <code>{l.id}</code>
-                      </td>
-                      <td>{l.date ? new Date(l.date).toLocaleDateString('en-IN') : '-'}</td>
-                      <td>
-                        <strong>{l.party}</strong>
-                      </td>
-                      <td>{l.type}</td>
-                      <td>
-                        {l.debit > 0 ? (
-                          <span style={{ color: "var(--d-danger)" }}>
-                            {l.debit.toLocaleString()}
-                          </span>
-                        ) : (
-                          "--"
-                        )}
-                      </td>
-                      <td>
-                        {l.credit > 0 ? (
-                          <span style={{ color: "var(--d-success)" }}>
-                            {l.credit.toLocaleString()}
-                          </span>
-                        ) : (
-                          "--"
-                        )}
-                      </td>
-                      <td>
-                        <strong
-                          style={{
-                            color:
-                              l.balance >= 0
-                                ? "var(--d-success)"
-                                : "var(--d-danger)",
-                          }}
-                        >
-                          {Math.abs(l.balance || 0).toLocaleString()}
-                        </strong>
-                      </td>
-                      <td>{l.notes || '-'}</td>
-                      <td>
-                        <div className="d_action_btns">
-                          <button
-                            className="d_icon_btn d_edit"
-                            onClick={() => openEdit(l)}
-                          >
-                            <MdEdit />
-                          </button>
-                          <button
-                            className="d_icon_btn d_del"
-                            onClick={() => handleDelete(l._id)}
-                          >
-                            <MdDelete />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {tab === "gst" && (
-        <div className="d_card">
-          <div className="d_card_header">
-            <h2 className="d_card_title">
-              <MdAccountBalance className="d_card_icon" /> GST Reports (
-              {gst.length})
-            </h2>
-          </div>
-          <div className="d_card_body p-0">
-            <div className="d_table_wrap">
-              <table className="d_table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Month</th>
-                    <th>Taxable Amount</th>
-                    <th>CGST</th>
-                    <th>SGST</th>
-                    <th>IGST</th>
-                    <th>Total Tax</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {gst.length === 0 && (
-                    <tr className="d_empty">
-                      <td colSpan={9} className="text-center py-4">
-                        No GST reports found.
-                      </td>
-                    </tr>
-                  )}
-                  {gst.map((g) => (
-                    <tr key={g._id}>
-                      <td>
-                        <code>{g.id}</code>
-                      </td>
-                      <td>
-                        <strong>{g.month}</strong>
-                      </td>
-                      <td>{g.taxable}</td>
-                      <td>{g.cgst}</td>
-                      <td>{g.sgst}</td>
-                      <td>{g.igst}</td>
-                      <td>
-                        <strong>{g.gstAmount ?? 0}</strong>
-                      </td>
-                      <td>
-                        <span
-                          className={`d_badge ${g.status === "Filed" ? "d_success" : "d_warning"}`}
-                        >
-                          {g.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="d_action_btns">
-                          <button
-                            className="d_icon_btn d_edit"
-                            onClick={() => openEdit(g)}
-                          >
-                            <MdEdit />
-                          </button>
-                          <button
-                            className="d_icon_btn d_del"
-                            onClick={() => handleDelete(g._id)}
-                          >
-                            <MdDelete />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {tab === "pl" && (
-        <div className="d_card">
-          <div className="d_card_header">
-            <h2 className="d_card_title">
-              <MdAccountBalance className="d_card_icon" /> Profit & Loss
-              Statement
-            </h2>
-            <button className="d_btn d_btn_primary d_btn_sm" onClick={openAdd}>
-              <MdAdd /> Add Entry
-            </button>
-          </div>
-          <div className="d_card_body p-0">
-            <div className="d_table_wrap">
-              <table className="d_table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Period</th>
-                    <th>Type</th>
-                    <th>Notes</th>
-                    <th>Revenue</th>
-                    <th>Expenses</th>
-                    <th>Profit</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pl.length === 0 && (
-                    <tr className="d_empty">
-                      <td colSpan={8} className="text-center py-4">
-                        No profit & loss entries found.
-                      </td>
-                    </tr>
-                  )}
-                  {pl.map((p) => (
-                    <tr
-                      key={p._id}
+                  {(data[tab] || []).map((row) => (
+                    <tr 
+                      key={row._id}
                       style={
-                        p.entityType === "Profit"
+                        tab === "pl" && row.entityType === "Profit"
                           ? { fontWeight: 700, background: "#f0f9ff" }
                           : {}
                       }
                     >
-                      <td>
-                        <code>{p.id}</code>
-                      </td>
-                      <td>{p.period || '-'}</td>
-                      <td>
-                        <span
-                          className={`d_badge ${p.entityType === "Revenue" ? "d_success" : p.entityType === "Profit" ? "d_info" : "d_danger"}`}
-                        >
-                          {p.entityType}
-                        </span>
-                      </td>
-                      <td>
-                        <strong>{p.notes || '-'}</strong>
-                      </td>
-                      <td>{p.revenue ?? 0}</td>
-                      <td>{p.expenses ?? 0}</td>
-                      <td>{p.profit ?? 0}</td>
+                      {currentConfig.tableColumns.map((col) => (
+                        <td key={col.key}>
+                          {col.render ? col.render(row[col.key]) : row[col.key]}
+                        </td>
+                      ))}
                       <td>
                         <div className="d_action_btns">
                           <button
                             className="d_icon_btn d_edit"
-                            onClick={() => openEdit(p)}
+                            onClick={() => openEdit(row)}
                           >
                             <MdEdit />
                           </button>
                           <button
                             className="d_icon_btn d_del"
-                            onClick={() => handleDelete(p._id)}
+                            onClick={() => handleDelete(row._id)}
                           >
                             <MdDelete />
                           </button>
@@ -808,203 +425,114 @@ const Accounts = ({ defaultTab = "receivables", setActiveMenu }) => {
       <Modal
         open={modal}
         onClose={() => setModal(false)}
-        title={
-          editId
-            ? "Edit Entry"
-            : `Add ${isRcv ? "Receivable" : isPay ? "Payable" : tab === "ledger" ? "Ledger Entry" : tab === "gst" ? "GST Report" : "P&L Entry"}`
-        }
+        title={editId ? "Edit Entry" : `Add ${tab === "pl" ? "P&L Entry" : currentConfig.label.slice(0, -1)}`}
         size="md"
       >
-        {isRcv || isPay ? (
-          <>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">
-                  Party Name <span className="d_req">*</span>
-                </label>
-                <input
-                  className="d_form_control"
-                  placeholder="Customer / Supplier name"
-                  {...f("party")}
-                />
-                {errors.party && (
-                  <span style={{ color: "var(--d-danger)", fontSize: 12 }}>
-                    {errors.party}
-                  </span>
-                )}
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Transaction Type</label>
-                <select className="d_form_control" {...f("type")}>
-                  <option>Invoice</option>
-                  <option>Purchase Order</option>
-                  <option>Advance</option>
-                  <option>Credit Note</option>
-                  <option>Debit Note</option>
-                </select>
-              </div>
+        {currentConfig.formFieldGroups ? (
+          currentConfig.formFieldGroups.map((group, groupIndex) => (
+            <div key={groupIndex} className={`d_form_row ${currentConfig.formLayout || "cols-2"}`}>
+              {group.map((fieldKey) => {
+                const field = currentConfig.fields.find(f => f.key === fieldKey);
+                if (!field) return null;
+                return (
+                  <div key={field.key} className="d_form_group">
+                    <label className="d_form_label">
+                      {field.label}
+                      {field.required && <span className="d_req">*</span>}
+                    </label>
+                    {field.type === "select" ? (
+                      <select className="d_form_control" {...f(field.key)}>
+                        {field.options.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={field.type}
+                        className="d_form_control"
+                        placeholder={field.placeholder || ""}
+                        {...f(field.key)}
+                      />
+                    )}
+                    {errors[field.key] && (
+                      <span style={{ color: "var(--d-danger)", fontSize: 12 }}>
+                        {errors[field.key]}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">
-                  Amount (₹) <span className="d_req">*</span>
-                </label>
-                <input
-                  type="number"
-                  className="d_form_control"
-                  placeholder="e.g. 25000"
-                  {...f("amount")}
-                />
-                {errors.amount && (
-                  <span style={{ color: "var(--d-danger)", fontSize: 12 }}>
-                    {errors.amount}
-                  </span>
-                )}
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">
-                  Due Date <span className="d_req">*</span>
-                </label>
-                <input type="date" className="d_form_control" {...f("dueDate")} />
-                {errors.dueDate && (
-                  <span style={{ color: "var(--d-danger)", fontSize: 12 }}>
-                    {errors.dueDate}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">Status</label>
-                <select className="d_form_control" {...f("status")}>
-                  <option>Pending</option>
-                  <option>{isRcv ? "Received" : "Paid"}</option>
-                  <option>Overdue</option>
-                </select>
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Notes</label>
-                <input
-                  className="d_form_control"
-                  placeholder="Optional notes"
-                  {...f("notes")}
-                />
-              </div>
-            </div>
-          </>
-        ) : tab === "ledger" ? (
-          <>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">Date</label>
-                <input type="date" className="d_form_control" {...f("date")} />
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Party</label>
-                <input className="d_form_control" {...f("party")} />
-              </div>
-            </div>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">Type</label>
-                <select className="d_form_control" {...f("type")}>
-                  <option>Sales Invoice</option>
-                  <option>Purchase Payment</option>
-                  <option>Cash Receipt</option>
-                  <option>Bank Transfer</option>
-                </select>
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Narration</label>
-                <input className="d_form_control" {...f("notes")} />
-              </div>
-            </div>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">Debit (₹)</label>
-                <input type="number" className="d_form_control" {...f("debit")} />
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Credit (₹)</label>
-                <input type="number" className="d_form_control" {...f("credit")} />
-              </div>
-            </div>
-          </>
-        ) : tab === "gst" ? (
-          <>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">Month</label>
-                <input className="d_form_control" placeholder="e.g. Jun 2026" {...f("month")} />
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Taxable Amount</label>
-                <input className="d_form_control" {...f("taxable")} />
-              </div>
-            </div>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">CGST</label>
-                <input className="d_form_control" {...f("cgst")} />
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">SGST</label>
-                <input className="d_form_control" {...f("sgst")} />
-              </div>
-            </div>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">IGST</label>
-                <input className="d_form_control" {...f("igst")} />
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Total Tax</label>
-                <input className="d_form_control" {...f("gstAmount")} />
-              </div>
-            </div>
-            <div className="d_form_group">
-              <label className="d_form_label">Status</label>
-              <select className="d_form_control" {...f("status")}>
-                <option>Pending</option>
-                <option>Filed</option>
-              </select>
-            </div>
-          </>
+          ))
         ) : (
-          <>
-            <div className="d_form_row cols-2">
-              <div className="d_form_group">
-                <label className="d_form_label">Type</label>
-                <select className="d_form_control" {...f("entityType")}>
-                  <option>Revenue</option>
-                  <option>Expense</option>
-                  <option>Profit</option>
-                </select>
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Period</label>
-                <input className="d_form_control" placeholder="e.g. Jun 2026" {...f("period")} />
-              </div>
-            </div>
-            <div className="d_form_group mb-3">
-              <label className="d_form_label">Notes</label>
-              <input className="d_form_control" placeholder="Optional entry details" {...f("notes")} />
-            </div>
-            <div className="d_form_row cols-3">
-              <div className="d_form_group">
-                <label className="d_form_label">Revenue</label>
-                <input type="number" className="d_form_control" {...f("revenue")} />
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Expenses</label>
-                <input type="number" className="d_form_control" {...f("expenses")} />
-              </div>
-              <div className="d_form_group">
-                <label className="d_form_label">Profit</label>
-                <input type="number" className="d_form_control" {...f("profit")} />
-              </div>
-            </div>
-          </>
+          currentConfig.fields.map((field, index) => {
+            if (index % 2 === 0) {
+              const nextField = currentConfig.fields[index + 1];
+              return (
+                <div key={field.key} className="d_form_row cols-2">
+                  <div className="d_form_group">
+                    <label className="d_form_label">
+                      {field.label}
+                      {field.required && <span className="d_req">*</span>}
+                    </label>
+                    {field.type === "select" ? (
+                      <select className="d_form_control" {...f(field.key)}>
+                        {field.options.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={field.type}
+                        className="d_form_control"
+                        placeholder={field.placeholder || ""}
+                        {...f(field.key)}
+                      />
+                    )}
+                    {errors[field.key] && (
+                      <span style={{ color: "var(--d-danger)", fontSize: 12 }}>
+                        {errors[field.key]}
+                      </span>
+                    )}
+                  </div>
+                  {nextField && (
+                    <div className="d_form_group">
+                      <label className="d_form_label">
+                        {nextField.label}
+                        {nextField.required && <span className="d_req">*</span>}
+                      </label>
+                      {nextField.type === "select" ? (
+                        <select className="d_form_control" {...f(nextField.key)}>
+                          {nextField.options.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={nextField.type}
+                          className="d_form_control"
+                          placeholder={nextField.placeholder || ""}
+                          {...f(nextField.key)}
+                        />
+                      )}
+                      {errors[nextField.key] && (
+                        <span style={{ color: "var(--d-danger)", fontSize: 12 }}>
+                          {errors[nextField.key]}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            return null;
+          })
         )}
         <div className="d_form_actions">
           <button

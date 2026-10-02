@@ -62,6 +62,7 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
         }
       });
       const data = await response.json();
+      console.log('Fetched categories:', data);
       setCategories(data || []);
     } catch (err) {
       console.error('Failed to load categories:', err);
@@ -253,9 +254,10 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
     try {
       const payload = {
         name: categoryForm.name.trim(),
-        description: categoryForm.desc.trim(),
+        description: categoryForm.desc ? categoryForm.desc.trim() : '',
         status: categoryForm.status
       };
+      console.log('Saving category payload:', payload);
       
       if (categoryEditId) {
         await fetch(`http://localhost:5000/api/categories/${categoryEditId}`, {
@@ -297,12 +299,19 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
       onConfirm: async () => {
         closeConfirm();
         try {
-          await fetch(`http://localhost:5000/api/categories/${id}`, {
+          const response = await fetch(`http://localhost:5000/api/categories/${id}`, {
             method: 'DELETE',
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
           });
+          const data = await response.json();
+          
+          if (!response.ok) {
+            toast.error(data.error || 'Failed to delete category');
+            return;
+          }
+          
           toast.success('Category deleted.');
           fetchCategories();
         } catch (err) {
