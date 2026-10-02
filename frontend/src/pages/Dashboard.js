@@ -369,7 +369,7 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
           { icon: <MdPeople />, label: 'Total Employees', value: String(stats[4].value), color: 'var(--d-primary)', menu: 'Employee Master' },
           { icon: <MdBuildCircle />, label: 'Open Tickets', value: String(openTickets), color: 'var(--d-warning)', menu: 'Service Tickets' },
         ].map((item, i) => (
-          <div key={i} className="col-6 col-md-3">
+          <div key={i} className="col-12 col-sm-6 col-xl-3">
             <div
               className="d_card"
               style={{ borderLeft: `4px solid ${item.color}`, cursor: item.menu ? 'pointer' : 'default' }}

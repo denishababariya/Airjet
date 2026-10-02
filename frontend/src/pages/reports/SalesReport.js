@@ -1,5 +1,6 @@
 import React from 'react';
-import { MdDownload, MdBarChart, MdShoppingBag, MdMonetizationOn, MdCheckCircle, MdPendingActions } from 'react-icons/md';
+import { MdBarChart, MdShoppingBag, MdMonetizationOn, MdCheckCircle, MdPendingActions } from 'react-icons/md';
+import ExportMenu from '../../components/ExportMenu';
 
 const salesData = [
   { month: 'Jan 2026', orders: 18, amount: 1890000, invoiced: 1820000, collected: 1780000, pending: 110000 },
@@ -25,7 +26,7 @@ export default function SalesReport() {
           <div className="d_page_title">Sales Report</div>
           <div className="d_page_subtitle">Monthly sales performance — Jan to Jun 2026</div>
         </div>
-        <button className="d_btn d_btn_accent"><MdDownload /> Export</button>
+        <ExportMenu className="d_btn d_btn_accent" label="Export" filename="sales_report" data={salesData} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>

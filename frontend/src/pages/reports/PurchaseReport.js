@@ -1,5 +1,6 @@
 import React from 'react';
-import { MdDownload, MdBarChart, MdLocalShipping, MdMonetizationOn, MdCheckCircle, MdAssignmentReturn } from 'react-icons/md';
+import { MdBarChart, MdLocalShipping, MdMonetizationOn, MdCheckCircle, MdAssignmentReturn } from 'react-icons/md';
+import ExportMenu from '../../components/ExportMenu';
 
 const purchaseData = [
   { month: 'Jan 2026', pos: 12, amount: 1450000, received: 1380000, grnValue: 1340000, returns: 42000 },
@@ -25,7 +26,7 @@ export default function PurchaseReport() {
           <div className="d_page_title">Purchase Report</div>
           <div className="d_page_subtitle">Monthly purchase performance — Jan to Jun 2026</div>
         </div>
-        <button className="d_btn d_btn_accent"><MdDownload /> Export</button>
+        <ExportMenu className="d_btn d_btn_accent" label="Export" filename="purchase_report" data={purchaseData} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>

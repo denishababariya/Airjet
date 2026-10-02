@@ -42,15 +42,52 @@ const generateQrToken = () => {
   return `AJ_${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 };
 
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+
+// Email and phone must be unique across all employees
+const findDuplicateEmployee = async ({ email, phoneNo }, excludeId = null) => {
+  const filter = { $or: [] };
+
+  if (email) filter.$or.push({ email: normalizeEmail(email) });
+  if (phoneNo) filter.$or.push({ phoneNo: Number(phoneNo) });
+
+  if (!filter.$or.length) return null;
+
+  if (excludeId) filter._id = { $ne: excludeId };
+
+  const duplicate = await emp.findOne(filter);
+  if (!duplicate) return null;
+
+  const sameEmail = email && normalizeEmail(duplicate.email) === normalizeEmail(email);
+  const samePhone = phoneNo && Number(duplicate.phoneNo) === Number(phoneNo);
+
+  return { message: samePhone ? 'Phone number already exists' : 'Email already exists', duplicate };
+};
+
 const createEmployee = async (req, res) => {
   try {
     const payload = {
       ...req.body,
       id: req.body.id || generateEmpId(),
       qrToken: req.body.qrToken || generateQrToken(),
+      email: normalizeEmail(req.body.email),
       phoneNo: req.body.phoneNo ? Number(req.body.phoneNo) : req.body.phoneNo,
       age: calculateAge(req.body.bod),
     };
+
+    if (!payload.email || !payload.phoneNo) {
+      return res.status(400).json({ error: 'Email and phone number are required' });
+    }
+
+    const duplicate = await findDuplicateEmployee({
+      email: payload.email,
+      phoneNo: payload.phoneNo,
+    });
+
+    if (duplicate) {
+      return res.status(409).json({ error: duplicate.message });
+    }
+
     if (req.files?.image?.[0]) {
       payload.image = `/uploads/${req.files.image[0].filename}`;
     }
@@ -67,6 +104,14 @@ const createEmployee = async (req, res) => {
       .populate('designation');
     res.status(201).json(populated);
   } catch (error) {
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || { field: 1 })[0];
+      return res.status(409).json({
+        error: field.toLowerCase().includes('phone')
+          ? 'Phone number already exists'
+          : 'Email already exists',
+      });
+    }
     res.status(500).json({ error: error.message || "Error creating employee" });
   }
 };
@@ -107,8 +152,21 @@ const updateEmployee = async (req, res) => {
     }
 
     const payload = { ...req.body };
+    if (payload.email !== undefined) payload.email = normalizeEmail(payload.email);
     if (payload.phoneNo) payload.phoneNo = Number(payload.phoneNo);
     if (payload.bod) payload.age = calculateAge(payload.bod);
+
+    const duplicate = await findDuplicateEmployee(
+      {
+        email: payload.email ?? existingEmployee.email,
+        phoneNo: payload.phoneNo ?? existingEmployee.phoneNo,
+      },
+      existingEmployee._id
+    );
+
+    if (duplicate) {
+      return res.status(409).json({ error: duplicate.message });
+    }
     
     // If new image is uploaded, delete the old one
     if (req.files?.image?.[0]) {

@@ -90,22 +90,22 @@ const TodayAttendance = () => {
       {error && <div className="alert alert-danger">{error}</div>}
 
       <div className="row g-3 mb-4">
-        <div className="col-md-2">
+        <div className="col-sm-6 col-lg-4 col-xl-2">
           <StatCard title="Total" value={stats.total} icon={<MdPeople />} color="var(--d-primary)" bg="#eff6ff" />
         </div>
-        <div className="col-md-2">
+        <div className="col-sm-6 col-lg-4 col-xl-2">
           <StatCard title="Present" value={stats.present} icon={<MdCheckCircle />} color="#22c55e" bg="#f0fdf4" />
         </div>
-        <div className="col-md-2">
+        <div className="col-sm-6 col-lg-4 col-xl-2">
           <StatCard title="Late" value={stats.late} icon={<MdWarning />} color="#f59e0b" bg="#fffbeb" />
         </div>
-        <div className="col-md-2">
+        <div className="col-sm-6 col-lg-4 col-xl-2">
           <StatCard title="Absent" value={stats.absent} icon={<MdCancel />} color="#ef4444" bg="#fef2f2" />
         </div>
-        <div className="col-md-2">
+        <div className="col-sm-6 col-lg-4 col-xl-2">
           <StatCard title="On Leave" value={stats.onLeave} icon={<MdBeachAccess />} color="#3b82f6" bg="#eff6ff" />
         </div>
-        <div className="col-md-2">
+        <div className="col-sm-6 col-lg-4 col-xl-2">
           <StatCard title="Early Out" value={stats.earlyCheckout} icon={<MdHighlightOff />} color="#ef4444" bg="#fef2f2" />
         </div>
       </div>

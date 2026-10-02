@@ -172,7 +172,7 @@ const EmployeeMaster = ({ currentUser }) => {
       (e.department?.title || "").toLowerCase().includes(search.toLowerCase()),
   );
 
-  // ── Open Add modal ──────────────────────────────────────────
+  // ── Open Add modal           
   const openAdd = () => {
     setForm({ ...blank, imageFile: null, docImageFile: null });
     setEditId(null);
@@ -240,6 +240,25 @@ const EmployeeMaster = ({ currentUser }) => {
     });
     if (!form.department) e.department = "Department is required";
     if (!form.designation) e.designation = "Designation is required";
+
+    // Email and phone must be unique across all employees
+    const email = form.email.trim().toLowerCase();
+    const phone = form.phone.trim();
+    const others = data.filter((emp) => (emp._id || emp.id) !== editId);
+
+    if (email) {
+      const dupEmail = others.find(
+        (emp) => (emp.email || "").trim().toLowerCase() === email,
+      );
+      if (dupEmail) e.email = `Email already used by ${dupEmail.name}`;
+    }
+
+    if (phone) {
+      const dupPhone = others.find(
+        (emp) => String(emp.phoneNo || "").trim() === phone,
+      );
+      if (dupPhone) e.phone = `Phone number already used by ${dupPhone.name}`;
+    }
 
     // Password rules for login-account designations
     if (needsLoginAccount()) {

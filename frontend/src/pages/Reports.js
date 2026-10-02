@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { MdBarChart, MdDownload } from 'react-icons/md';
+import { MdBarChart } from 'react-icons/md';
 import { reportsApi } from '../utils/api';
+import ExportMenu from '../components/ExportMenu';
 
 const statusClass = { 'In Stock':'d_success', 'Low Stock':'d_warning', 'Out of Stock':'d_danger', Generated:'d_info', Paid:'d_success', Available:'d_success' };
 
@@ -42,7 +43,7 @@ const Reports = ({ defaultTab = 'sales', setActiveMenu }) => {
           <h1 className="d_page_title">Reports</h1>
           <p className="d_page_subtitle">View business reports from live data</p>
         </div>
-        <button className="d_btn d_btn_outline"><MdDownload /> Export Report</button>
+        <ExportMenu label="Export Report" filename={`report_${tab}`} data={data} />
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}

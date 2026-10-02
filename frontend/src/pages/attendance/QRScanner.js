@@ -22,8 +22,8 @@ const QRScanner = () => {
   const handleScan = async (qrToken) => {
     if (!qrToken) return;
 
-    if (lastScanned && Date.now() - lastScanned < 30000) {
-      setError('Please wait 30 seconds before scanning again');
+    if (lastScanned && Date.now() - lastScanned < 3000) {
+      setError('Please wait 3 seconds before scanning again');
       return;
     }
 

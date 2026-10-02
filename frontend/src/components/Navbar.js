@@ -173,7 +173,7 @@ const Navbar = ({
             <div className="d_profile_avatar">
               {userName.charAt(0).toUpperCase()}
             </div>
-            <div>
+            <div className="d_profile_info">
               <div className="d_profile_name">{userName}</div>
               <div className="d_profile_role">{userRole}</div>
             </div>

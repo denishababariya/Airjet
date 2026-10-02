@@ -101,7 +101,7 @@ const PAGE_MAP = {
 
   // ── Sales ──────────────────────────────────────────────────
   sales:               { component: SalesDashboard },
-  'Sales Dashboard':   { component: SalesDashboard },
+  // 'Sales Dashboard':   { component: SalesDashboard },
   'Customers':         { component: Customers },
   'Quotations':        { component: Quotations },
   'Sales Orders':      { component: SalesOrders },

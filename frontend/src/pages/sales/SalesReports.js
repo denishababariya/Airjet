@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { MdCalendarToday, MdTrendingUp, MdPeople, MdInventory, MdDownload, MdFilterList } from 'react-icons/md';
+import React, { useState, useEffect, useRef } from 'react';
+import { MdCalendarToday, MdTrendingUp, MdPeople, MdInventory, MdFilterList } from 'react-icons/md';
 import api from '../../utils/api';
+import ExportMenu from '../../components/ExportMenu';
 
 const tabs = ['Daily', 'Monthly', 'Customer', 'Product', 'GST'];
 
@@ -19,6 +20,7 @@ export default function SalesReports() {
     const [selectedCustomer, setSelectedCustomer] = useState('');
     const [selectedProduct, setSelectedProduct] = useState('');
     const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+    const reportRef = useRef(null);
 
     useEffect(() => {
         fetchReferenceData();
@@ -91,49 +93,12 @@ export default function SalesReports() {
         }).format(amount || 0);
     };
 
-    const exportReport = () => {
-        // Simple CSV export
-        let csv = '';
-        let filename = '';
-
-        if (activeTab === 'Daily') {
-            csv = 'Date,Orders,Total Sales,Total GST\n';
-            data.forEach(row => {
-                csv += `${row.date},${row.orders},${row.totalSales},${row.totalGST}\n`;
-            });
-            filename = `daily-sales-${startDate}-to-${endDate}.csv`;
-        } else if (activeTab === 'Monthly') {
-            csv = 'Day,Orders,Total Sales,Total GST\n';
-            data.forEach(row => {
-                csv += `${row.day},${row.orders},${row.totalSales},${row.totalGST}\n`;
-            });
-            filename = `monthly-sales-${selectedMonth}.csv`;
-        } else if (activeTab === 'Customer') {
-            csv = 'Customer,Orders,Total Purchased,Total Amount,Outstanding\n';
-            data.forEach(row => {
-                csv += `"${row.customer?.name}",${row.totalOrders},${row.totalQuantity},${row.totalAmount},${row.outstanding}\n`;
-            });
-            filename = 'customer-sales-report.csv';
-        } else if (activeTab === 'Product') {
-            csv = 'Product,Part Number,Quantity Sold,Total Revenue\n';
-            data.forEach(row => {
-                csv += `"${row.part?.partName}",${row.part?.partNumber},${row.totalQuantity},${row.totalRevenue}\n`;
-            });
-            filename = 'product-sales-report.csv';
-        } else if (activeTab === 'GST') {
-            csv = 'Date,Total Sales,CGST,SGST,IGST,Total GST\n';
-            data.forEach(row => {
-                csv += `${row.date},${row.totalSales},${row.totalCGST},${row.totalSGST},${row.totalIGST},${row.totalGST}\n`;
-            });
-            filename = `gst-report-${startDate}-to-${endDate}.csv`;
-        }
-
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
+    const exportFileName = () => {
+        if (activeTab === 'Daily')   return `daily-sales-${startDate}-to-${endDate}`;
+        if (activeTab === 'Monthly') return `monthly-sales-${selectedMonth}`;
+        if (activeTab === 'Customer') return 'customer-sales-report';
+        if (activeTab === 'Product')  return 'product-sales-report';
+        return `gst-report-${startDate}-to-${endDate}`;
     };
 
     return (
@@ -143,11 +108,18 @@ export default function SalesReports() {
                     <div className="d_page_title">Sales Reports</div>
                     <div className="d_page_subtitle">View and analyze sales data</div>
                 </div>
-                <button className="d_btn d_btn_outline" onClick={exportReport}><MdDownload /> Export CSV</button>
+                <ExportMenu
+                    label="Export Report"
+                    filename={exportFileName()}
+                    data={data?.length ? { tab: activeTab, startDate, endDate, selectedMonth, records: data } : null}
+                    targetRef={reportRef}
+                />
             </div>
 
             {error && <div style={{ padding: '12px', background: '#fee', color: '#c33', marginBottom: '16px', borderRadius: '4px' }}>{error}</div>}
 
+            {/* Captured for PDF export */}
+            <div ref={reportRef}>
             <div className="d_card">
                 <div className="d_card_header">
                     <div className="d_tabs">
@@ -408,6 +380,7 @@ export default function SalesReports() {
                         </div>
                     )}
                 </div>
+            </div>
             </div>
         </div>
     );
