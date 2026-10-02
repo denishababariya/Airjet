@@ -146,16 +146,18 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
       {loading && <div className="text-center py-3">Loading dashboard…</div>}
 
       {/* ── Stat Cards ─────────────────────────────────────────── */}
-      <div className="row g-3 mb-4">
+      <div className="row g-3 mb-4 d_stat_cards_section">
         {stats.map((s, i) => (
           <div key={i} className="col-12 col-md-4 col-xl-2">
             <div className={`d_stat_card ${s.cardClass}`}>
               <div className={`d_stat_icon ${s.iconClass}`}>{s.icon}</div>
-              <div className="d_stat_value">{s.value}</div>
-              <div className="d_stat_label">{s.label}</div>
-              <div className={`d_stat_change ${s.dir === 'up' ? 'd_up' : 'd_down'}`}>
-                {s.dir === 'up' ? <MdArrowUpward /> : <MdArrowDownward />}
-                {s.change}
+              <div className="d_stat_card_content">
+                <div className="d_stat_value">{s.value}</div>
+                <div className="d_stat_label">{s.label}</div>
+                <div className={`d_stat_change ${s.dir === 'up' ? 'd_up' : 'd_down'}`}>
+                  {s.dir === 'up' ? <MdArrowUpward /> : <MdArrowDownward />}
+                  {s.change}
+                </div>
               </div>
             </div>
           </div>
@@ -163,37 +165,45 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
       </div>
 
       {/* ── Attendance Stats ───────────────────────────────────── */}
-      <div className="d-flex align-items-center justify-content-between gap-2 mb-3">
+      <div className="d-flex align-items-center justify-content-between gap-2 mb-3 ">
         <h5 className="mb-0">Today's Attendance</h5>
         <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('Today Attendance')}>View All</button>
       </div>
-      <div className="row g-3 mb-4">
+      <div className="row g-3 mb-4 d_stat_cards_section">
         <div className="col-12 col-md-3">
           <div className="d_stat_card d_success">
             <div className="d_stat_icon d_success"><MdCheckCircle /></div>
-            <div className="d_stat_value">{attendanceStats.todayPresent}</div>
-            <div className="d_stat_label">Present</div>
+            <div className="d_stat_card_content">
+              <div className="d_stat_value">{attendanceStats.todayPresent}</div>
+              <div className="d_stat_label">Present</div>
+            </div>
           </div>
         </div>
         <div className="col-12 col-md-3">
           <div className="d_stat_card d_danger">
             <div className="d_stat_icon d_danger"><MdCancel /></div>
-            <div className="d_stat_value">{attendanceStats.todayAbsent}</div>
-            <div className="d_stat_label">Absent</div>
+            <div className="d_stat_card_content">
+              <div className="d_stat_value">{attendanceStats.todayAbsent}</div>
+              <div className="d_stat_label">Absent</div>
+            </div>
           </div>
         </div>
         <div className="col-12 col-md-3">
           <div className="d_stat_card d_info">
             <div className="d_stat_icon d_info"><MdEventBusy /></div>
-            <div className="d_stat_value">{attendanceStats.todayLeave}</div>
-            <div className="d_stat_label">Leave</div>
+            <div className="d_stat_card_content">
+              <div className="d_stat_value">{attendanceStats.todayLeave}</div>
+              <div className="d_stat_label">Leave</div>
+            </div>
           </div>
         </div>
         <div className="col-12 col-md-3">
           <div className="d_stat_card d_warning">
             <div className="d_stat_icon d_warning"><MdAccessTime /></div>
-            <div className="d_stat_value">{attendanceStats.todayLate}</div>
-            <div className="d_stat_label">Late</div>
+            <div className="d_stat_card_content">
+              <div className="d_stat_value">{attendanceStats.todayLate}</div>
+              <div className="d_stat_label">Late</div>
+            </div>
           </div>
         </div>
       </div>
