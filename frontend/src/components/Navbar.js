@@ -24,6 +24,7 @@ const Navbar = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef(null);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const { setSearchQuery: setGlobalSearchQuery } = useSearch();
 
   // Close dropdown on outside click
@@ -39,6 +40,13 @@ const Navbar = ({
       document.removeEventListener("mousedown", handler);
       document.removeEventListener("touchstart", handler);
     };
+  }, []);
+
+  // Update window width on resize
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Focus search input when opened
@@ -113,10 +121,23 @@ const Navbar = ({
         </div>
       </div>
       {/* Right actions */}
-      <div className="d_navbar_actions">
+      <div className="d_navbar_actions" style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: windowWidth < 480 ? '4px' : '8px',
+      }}>
         {/* Search */}
         {searchOpen ? (
-          <div className="d_search_box">
+          <div className="d_search_box" style={{
+            position: windowWidth < 480 ? 'absolute' : 'relative',
+            right: windowWidth < 480 ? '10px' : 'auto',
+            top: windowWidth < 480 ? '50px' : 'auto',
+            zIndex: 1000,
+            background: 'white',
+            padding: windowWidth < 480 ? '8px' : '0',
+            borderRadius: '4px',
+            boxShadow: windowWidth < 480 ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+          }}>
             <MdSearch className="d_search_icon" />
             <input
               ref={searchInputRef}
@@ -138,6 +159,9 @@ const Navbar = ({
                   setSearchOpen(false);
                 }, 150);
               }}
+              style={{
+                width: windowWidth < 480 ? '150px' : 'auto',
+              }}
             />
           </div>
         ) : (
@@ -152,7 +176,8 @@ const Navbar = ({
 
         {/* Fullscreen */}
         <button
-          className="d_nav_action_btn d-none d-md-flex"
+          className="d_nav_action_btn"
+          style={{ display: windowWidth < 480 ? 'none' : 'flex' }}
           aria-label="Fullscreen"
           onClick={() => {
             if (!document.fullscreenElement)
@@ -183,7 +208,17 @@ const Navbar = ({
           </button>
 
           {profileOpen && (
-            <div className="d_profile_dropdown w-">
+            <div
+              className="d_profile_dropdown"
+              style={{
+                position: 'absolute',
+                right: windowWidth < 480 ? '-10px' : 0,
+                top: '100%',
+                minWidth: windowWidth < 480 ? '160px' : '180px',
+                zIndex: 1000,
+                maxWidth: windowWidth < 480 ? 'calc(100vw - 20px)' : 'none',
+              }}
+            >
               <div
                 className="d_dropdown_item"
                 onClick={() => {
