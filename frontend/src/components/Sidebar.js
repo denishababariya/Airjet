@@ -65,7 +65,7 @@ const menuConfig = [
       },
       {
         label: 'Warehouse', icon: <MdWarehouse />, id: 'warehouse',
-        children: ['Warehouses', 'Stock Transfers', 'Stock Audits'],
+        children: ['Warehouses', 'Stock Transfers'],
         module: 'Inventory',
       },
     ],
