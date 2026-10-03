@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MdVisibility, MdDownload, MdDescription, MdArrowBack, MdPrint } from 'react-icons/md';
+import { MdDownload, MdDescription, MdArrowBack } from 'react-icons/md';
 import { payrollApi } from '../../utils/api';
-import Payslip from './Payslip';
 import html2pdf from 'html2pdf.js';
 import Modal from '../../components/Modal';
 
@@ -11,7 +10,6 @@ export default function PayslipDownload() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [month, setMonth] = useState('');
-  const [selectedPayslip, setSelectedPayslip] = useState(null);
   const [availableMonths, setAvailableMonths] = useState([]);
   const [downloadingId, setDownloadingId] = useState(null);
   const [showPayslipModal, setShowPayslipModal] = useState(null);
@@ -65,10 +63,6 @@ export default function PayslipDownload() {
     }
   };
 
-  const handleView = (payslipId) => {
-    setSelectedPayslip(payslipId);
-  };
-
   const handleDownload = async (payslip) => {
     setDownloadingId(payslip._id);
     
@@ -93,13 +87,15 @@ export default function PayslipDownload() {
     const filename = `Payslip_${employeeName}_${month}.pdf`;
     
     const opt = {
-      margin: [10, 10, 10, 10],
+      margin: 10,
       filename: filename,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2,
         useCORS: true,
-        logging: false
+        logging: false,
+        scrollX: 0,
+        scrollY: 0
       },
       jsPDF: { 
         unit: 'mm', 
@@ -120,23 +116,11 @@ export default function PayslipDownload() {
       });
   };
 
-  const handleModalPrint = () => {
-    window.print();
-  };
-
   const handleCloseModal = () => {
     setShowPayslipModal(null);
     setModalSalaryData(null);
     setDownloadingId(null);
   };
-
-  const handleBack = () => {
-    setSelectedPayslip(null);
-  };
-
-  if (selectedPayslip) {
-    return <Payslip salaryId={selectedPayslip} onBack={handleBack} />;
-  }
 
   return (
     <div>
@@ -199,18 +183,10 @@ export default function PayslipDownload() {
                       <td>
                         <div className="d_action_btns">
                           <button 
-                            className="d_icon_btn d_view" 
-                            onClick={() => handleView(p._id)}
-                            disabled={p.status === 'Pending' || p.status === 'Draft'}
-                            title="View Payslip"
-                          >
-                            <MdVisibility />
-                          </button>
-                          <button 
                             className="d_icon_btn d_edit" 
                             onClick={() => handleDownload(p)}
                             disabled={p.status === 'Pending' || p.status === 'Draft' || downloadingId === p._id}
-                            title={downloadingId === p._id ? 'Downloading...' : 'Download Payslip'}
+                            title={downloadingId === p._id ? 'Downloading...' : 'View Payslip'}
                             style={{ opacity: downloadingId === p._id ? 0.6 : 1 }}
                           >
                             {downloadingId === p._id ? (
@@ -240,6 +216,13 @@ export default function PayslipDownload() {
         {modalSalaryData && (
           <div>
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button 
+                className="d_btn d_btn_primary" 
+                onClick={handleModalDownload}
+                disabled={downloadingId !== null}
+              >
+                <MdDownload /> Download PDF
+              </button>
               <button className="d_btn d_btn_outline" onClick={handleCloseModal}>
                 <MdArrowBack /> Close
               </button>
@@ -247,6 +230,7 @@ export default function PayslipDownload() {
             
             {/* Payslip Document */}
             <div 
+            className='payslip-container'
               ref={hiddenPayslipRef}
               style={{
                 maxWidth: '800px',

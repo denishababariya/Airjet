@@ -121,24 +121,111 @@ const Profile = ({ currentUser }) => {
 
   return (
     <div>
-      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div style={{ minWidth: 0 }}>
-          <h1 className="d_page_title">My Profile</h1>
-          <p className="d_page_subtitle">Manage your personal information</p>
-        </div>
-        {!isEditing && (
-          <button className="d_btn d_btn_primary" onClick={() => setIsEditing(true)}>
-            <MdEdit /> Edit Profile
-          </button>
-        )}
-      </div>
-
       {error && <div className="alert alert-danger">{error}</div>}
 
+      {/* Profile Header */}
+      <div className="d_card" style={{ marginBottom: '1.5rem' }}>
+        <div className="d_card_body" style={{ padding: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem', alignItems: 'center' }}>
+            {/* Profile Image */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{ position: 'relative' }}>
+                {profileImage ? (
+                  <img
+                    src={`http://localhost:5000${profileImage}`}
+                    alt="Profile"
+                    style={{ 
+                      width: 150, 
+                      height: 150, 
+                      objectFit: 'cover', 
+                      borderRadius: '50%', 
+                      border: '4px solid var(--d-primary)',
+                      boxShadow: '0 4px 20px rgba(0,123,255,0.3)'
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: 150, 
+                    height: 150, 
+                    borderRadius: '50%', 
+                    border: '4px solid var(--d-primary)',
+                    background: 'linear-gradient(135deg, var(--d-primary) 0%, var(--d-primary-dark) 100%)',
+                    color: 'white',
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    fontSize: 64,
+                    boxShadow: '0 4px 20px rgba(0,123,255,0.3)'
+                  }}>
+                    <MdPerson />
+                  </div>
+                )}
+                {isEditing && (
+                  <label style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    background: 'var(--d-primary)',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                  }}>
+                    <MdCameraAlt style={{ fontSize: 20 }} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Profile Info */}
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--d-text-main)', marginBottom: '0.5rem' }}>
+                {formData.firstName} {formData.lastName}
+              </h1>
+              <p style={{ fontSize: '1.1rem', color: 'var(--d-text-muted)', marginBottom: '1rem' }}>
+                {formData.designation || 'Employee'}
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                <span className="d_badge d_primary">{profile?.role || 'User'}</span>
+                <span className={`d_badge ${profile?.status === 'Active' ? 'd_success' : 'd_danger'}`}>
+                  {profile?.status || 'Active'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                {!isEditing ? (
+                  <button className="d_btn d_btn_primary" onClick={() => setIsEditing(true)}>
+                    <MdEdit /> Edit Profile
+                  </button>
+                ) : (
+                  <>
+                    <button className="d_btn d_btn_outline" onClick={() => setIsEditing(false)}>Cancel</button>
+                    <button className="d_btn d_btn_primary" onClick={handleSave}>
+                      <MdSave /> Save Changes
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         {stats.map((stat, i) => (
           <div key={i}>
-            <div className="d_card" style={{ borderLeft: `4px solid ${stat.color}` }}>
+            <div className="d_card" style={{ borderLeft: `4px solid ${stat.color}`, marginBottom: 0 }}>
               <div className="d_card_body d-flex align-items-center gap-3" style={{ padding: '16px 18px' }}>
                 <div style={{
                   width: 42, height: 42, borderRadius: 10, flexShrink: 0,
@@ -157,150 +244,109 @@ const Profile = ({ currentUser }) => {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-        <div>
-          <div className="d_card">
-            <div className="d_card_header">
-              <h2 className="d_card_title"><MdCameraAlt className="d_card_icon" /> Profile Photo</h2>
+      {/* Information Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+        {/* Personal Information */}
+        <div className="d_card">
+          <div className="d_card_header">
+            <h2 className="d_card_title"><MdPerson className="d_card_icon" /> Personal Information</h2>
+          </div>
+          <div className="d_card_body">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="d_form_group">
+                <label className="d_form_label">First Name</label>
+                {isEditing ? (
+                  <input type="text" className="d_form_control" name="firstName" value={formData.firstName} onChange={handleChange} pattern="[A-Za-z .'-]+" />
+                ) : (
+                  <div className="d_form_value">{formData.firstName}</div>
+                )}
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Last Name</label>
+                {isEditing ? (
+                  <input type="text" className="d_form_control" name="lastName" value={formData.lastName} onChange={handleChange} pattern="[A-Za-z .'-]+" />
+                ) : (
+                  <div className="d_form_value">{formData.lastName}</div>
+                )}
+              </div>
             </div>
-            <div className="d_card_body d-flex flex-column align-items-center">
-              {profileImage ? (
-                <img
-                  src={`http://localhost:5000${profileImage}`}
-                  alt="Profile"
-                  style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 10, border: '3px solid var(--d-primary)' }}
-                />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="d_form_group">
+                <label className="d_form_label">Designation</label>
+                <div className="d_form_value">{formData.designation || '-'}</div>
+              </div>
+              <div className="d_form_group">
+                <label className="d_form_label">Work Shift</label>
+                <div className="d_form_value">{formData.workShift || '-'}</div>
+              </div>
+            </div>
+            <div className="d_form_group" style={{ marginBottom: '1rem' }}>
+              <label className="d_form_label">Address</label>
+              {isEditing ? (
+                <input type="text" className="d_form_control" name="address" value={formData.address} onChange={handleChange} />
               ) : (
-                <div style={{
-                  width: 120, height: 120, borderRadius: 10, border: '3px solid var(--d-primary)',
-                  background: 'var(--d-primary)18', color: 'var(--d-primary)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48
-                }}>
-                  <MdPerson />
-                </div>
+                <div className="d_form_value">{formData.address || '-'}</div>
               )}
-              {isEditing && (
-                <div style={{ marginTop: 12 }}>
-                  <input
-                    type="file"
-                    className="d_form_control"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    style={{ fontSize: 13 }}
-                  />
-                  {imageFile && (
-                    <span style={{ fontSize: 12, color: '#666', marginTop: 4, display: 'block' }}>
-                      {imageFile.name}
-                    </span>
-                  )}
-                </div>
+            </div>
+            {isEditing && (
+              <div className="d_form_actions">
+                <button className="d_btn d_btn_outline" onClick={() => setIsEditing(false)}>Cancel</button>
+                <button className="d_btn d_btn_primary" onClick={handleSave}><MdSave /> Save Changes</button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Contact Information */}
+        <div className="d_card">
+          <div className="d_card_header">
+            <h2 className="d_card_title"><MdEmail className="d_card_icon" /> Contact Information</h2>
+          </div>
+          <div className="d_card_body">
+            <div className="d_contact_item" style={{ marginBottom: '1rem' }}>
+              <div className="d_contact_label">Email</div>
+              {isEditing ? (
+                <input type="email" className="d_form_control" name="email" value={formData.email} onChange={handleChange} />
+              ) : (
+                <div className="d_contact_value">{formData.email}</div>
               )}
+            </div>
+            <div className="d_contact_item" style={{ marginBottom: '1rem' }}>
+              <div className="d_contact_label">Phone</div>
+              {isEditing ? (
+                <input type="text" className="d_form_control" name="phone" value={formData.phone} onChange={handleChange} inputMode="numeric" maxLength={10} />
+              ) : (
+                <div className="d_contact_value">{formData.phone || '-'}</div>
+              )}
+            </div>
+            <div className="d_contact_item">
+              <div className="d_contact_label">Location</div>
+              <div className="d_contact_value">
+                <MdLocationOn style={{ marginRight: 8, color: 'var(--d-primary)' }} />
+                {formData.address || 'Not set'}
+              </div>
             </div>
           </div>
         </div>
 
-        <div>
-          <div className="d_card">
-            <div className="d_card_header">
-              <h2 className="d_card_title"><MdPerson className="d_card_icon" /> Personal Information</h2>
-            </div>
-            <div className="d_card_body">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-                <div className="d_form_group">
-                  <label className="d_form_label">First Name</label>
-                  {isEditing ? (
-                    <input type="text" className="d_form_control" name="firstName" value={formData.firstName} onChange={handleChange} pattern="[A-Za-z .'-]+" />
-                  ) : (
-                    <div className="d_form_value">{formData.firstName}</div>
-                  )}
-                </div>
-                <div className="d_form_group">
-                  <label className="d_form_label">Last Name</label>
-                  {isEditing ? (
-                    <input type="text" className="d_form_control" name="lastName" value={formData.lastName} onChange={handleChange} pattern="[A-Za-z .'-]+" />
-                  ) : (
-                    <div className="d_form_value">{formData.lastName}</div>
-                  )}
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-                <div className="d_form_group">
-                  <label className="d_form_label">Designation</label>
-                  <div className="d_form_value">{formData.designation || '-'}</div>
-                </div>
-                <div className="d_form_group">
-                  <label className="d_form_label">Work Shift</label>
-                  <div className="d_form_value">{formData.workShift || '-'}</div>
-                </div>
-              </div>
-              <div className="d_form_group" style={{ marginBottom: '1rem' }}>
-                <label className="d_form_label">Address</label>
-                {isEditing ? (
-                  <input type="text" className="d_form_control" name="address" value={formData.address} onChange={handleChange} />
-                ) : (
-                  <div className="d_form_value">{formData.address || '-'}</div>
-                )}
-              </div>
-              {isEditing && (
-                <div className="d_form_actions">
-                  <button className="d_btn d_btn_outline" onClick={() => setIsEditing(false)}>Cancel</button>
-                  <button className="d_btn d_btn_primary" onClick={handleSave}><MdSave /> Save Changes</button>
-                </div>
-              )}
-            </div>
+        {/* Account Status */}
+        <div className="d_card">
+          <div className="d_card_header">
+            <h2 className="d_card_title"><MdSecurity className="d_card_icon" /> Account Status</h2>
           </div>
-        </div>
-
-        <div>
-          <div className="d_card" style={{ marginBottom: '1.5rem' }}>
-            <div className="d_card_header">
-              <h2 className="d_card_title"><MdEmail className="d_card_icon" /> Contact</h2>
-            </div>
-            <div className="d_card_body">
-              <div className="d_contact_item" style={{ marginBottom: '1rem' }}>
-                <div className="d_contact_label">Email</div>
-                {isEditing ? (
-                  <input type="email" className="d_form_control" name="email" value={formData.email} onChange={handleChange} />
-                ) : (
-                  <div className="d_contact_value">{formData.email}</div>
-                )}
-              </div>
-              <div className="d_contact_item" style={{ marginBottom: '1rem' }}>
-                <div className="d_contact_label">Phone</div>
-                {isEditing ? (
-                  <input type="text" className="d_form_control" name="phone" value={formData.phone} onChange={handleChange} inputMode="numeric" maxLength={10} />
-                ) : (
-                  <div className="d_contact_value">{formData.phone || '-'}</div>
-                )}
-              </div>
-              <div className="d_contact_item">
-                <div className="d_contact_label">Location</div>
-                <div className="d_contact_value">
-                  <MdLocationOn style={{ marginRight: 8, color: 'var(--d-primary)' }} />
-                  {formData.address || 'Not set'}
-                </div>
+          <div className="d_card_body">
+            <div className="d_status_item" style={{ marginBottom: '1rem' }}>
+              <div className="d_status_label">Role</div>
+              <div className="d_status_value">
+                <span className="d_badge d_primary">{profile?.role || 'User'}</span>
               </div>
             </div>
-          </div>
-
-          <div className="d_card">
-            <div className="d_card_header">
-              <h2 className="d_card_title"><MdSecurity className="d_card_icon" /> Account Status</h2>
-            </div>
-            <div className="d_card_body">
-              <div className="d_status_item" style={{ marginBottom: '1rem' }}>
-                <div className="d_status_label">Role</div>
-                <div className="d_status_value">
-                  <span className="d_badge d_primary">{profile?.role || 'User'}</span>
-                </div>
-              </div>
-              <div className="d_status_item">
-                <div className="d_status_label">Status</div>
-                <div className="d_status_value">
-                  <span className={`d_badge ${profile?.status === 'Active' ? 'd_success' : 'd_danger'}`}>
-                    {profile?.status || 'Active'}
-                  </span>
-                </div>
+            <div className="d_status_item">
+              <div className="d_status_label">Status</div>
+              <div className="d_status_value">
+                <span className={`d_badge ${profile?.status === 'Active' ? 'd_success' : 'd_danger'}`}>
+                  {profile?.status || 'Active'}
+                </span>
               </div>
             </div>
           </div>

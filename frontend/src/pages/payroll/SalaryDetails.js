@@ -417,20 +417,20 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
           <div className="d_card_title">Final Calculation</div>
         </div>
         <div className="d_card_body">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: '0.9rem', color: '#666' }}>Gross Salary</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 600 }}>₹{(salary.grossSalary || 0).toLocaleString('en-IN')}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ minWidth: 100, textAlign: 'center' }}>
+              <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.25rem' }}>Gross Salary</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>₹{(salary.grossSalary || 0).toLocaleString('en-IN')}</div>
             </div>
-            <div style={{ textAlign: 'center', fontSize: '2rem' }}>−</div>
-            <div>
-              <div style={{ fontSize: '0.9rem', color: '#666' }}>Total Deductions</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--d-danger)' }}>₹{(salary.totalDeduction || 0).toLocaleString('en-IN')}</div>
+            <div style={{ fontSize: '1.5rem', color: '#999', minWidth: 20, textAlign: 'center' }}>−</div>
+            <div style={{ minWidth: 100, textAlign: 'center' }}>
+              <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.25rem' }}>Total Deductions</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--d-danger)' }}>₹{(salary.totalDeduction || 0).toLocaleString('en-IN')}</div>
             </div>
-            <div style={{ textAlign: 'center', fontSize: '2rem' }}>=</div>
-            <div>
-              <div style={{ fontSize: '0.9rem', color: '#666' }}>Net Salary</div>
-              <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--d-success)' }}>₹{(salary.netSalary || 0).toLocaleString('en-IN')}</div>
+            <div style={{ fontSize: '1.5rem', color: '#999', minWidth: 20, textAlign: 'center' }}>=</div>
+            <div style={{ minWidth: 100, textAlign: 'center' }}>
+              <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.25rem' }}>Net Salary</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--d-success)' }}>₹{(salary.netSalary || 0).toLocaleString('en-IN')}</div>
             </div>
           </div>
         </div>
