@@ -122,7 +122,7 @@ const Profile = ({ currentUser }) => {
   return (
     <div>
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div>
+        <div style={{ minWidth: 0 }}>
           <h1 className="d_page_title">My Profile</h1>
           <p className="d_page_subtitle">Manage your personal information</p>
         </div>
@@ -135,9 +135,9 @@ const Profile = ({ currentUser }) => {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <div className="row g-3 mb-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         {stats.map((stat, i) => (
-          <div key={i} className="col-12 col-md-3">
+          <div key={i}>
             <div className="d_card" style={{ borderLeft: `4px solid ${stat.color}` }}>
               <div className="d_card_body d-flex align-items-center gap-3" style={{ padding: '16px 18px' }}>
                 <div style={{
@@ -147,7 +147,7 @@ const Profile = ({ currentUser }) => {
                 }}>
                   {stat.icon}
                 </div>
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--d-text-main)', lineHeight: 1.1 }}>{stat.value}</div>
                   <div style={{ fontSize: 12, color: 'var(--d-text-muted)', marginTop: 2 }}>{stat.label}</div>
                 </div>
@@ -157,8 +157,8 @@ const Profile = ({ currentUser }) => {
         ))}
       </div>
 
-      <div className="row g-4">
-        <div className="col-12 col-lg-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+        <div>
           <div className="d_card">
             <div className="d_card_header">
               <h2 className="d_card_title"><MdCameraAlt className="d_card_icon" /> Profile Photo</h2>
@@ -199,13 +199,13 @@ const Profile = ({ currentUser }) => {
           </div>
         </div>
 
-        <div className="col-12 col-lg-8">
+        <div>
           <div className="d_card">
             <div className="d_card_header">
               <h2 className="d_card_title"><MdPerson className="d_card_icon" /> Personal Information</h2>
             </div>
             <div className="d_card_body">
-              <div className="d_form_row cols-2 mb-3">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                 <div className="d_form_group">
                   <label className="d_form_label">First Name</label>
                   {isEditing ? (
@@ -223,7 +223,7 @@ const Profile = ({ currentUser }) => {
                   )}
                 </div>
               </div>
-              <div className="d_form_row cols-2 mb-3">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                 <div className="d_form_group">
                   <label className="d_form_label">Designation</label>
                   <div className="d_form_value">{formData.designation || '-'}</div>
@@ -233,7 +233,7 @@ const Profile = ({ currentUser }) => {
                   <div className="d_form_value">{formData.workShift || '-'}</div>
                 </div>
               </div>
-              <div className="d_form_group mb-3">
+              <div className="d_form_group" style={{ marginBottom: '1rem' }}>
                 <label className="d_form_label">Address</label>
                 {isEditing ? (
                   <input type="text" className="d_form_control" name="address" value={formData.address} onChange={handleChange} />
@@ -251,13 +251,13 @@ const Profile = ({ currentUser }) => {
           </div>
         </div>
 
-        <div className="col-12 col-lg-4">
-          <div className="d_card mb-4">
+        <div>
+          <div className="d_card" style={{ marginBottom: '1.5rem' }}>
             <div className="d_card_header">
               <h2 className="d_card_title"><MdEmail className="d_card_icon" /> Contact</h2>
             </div>
             <div className="d_card_body">
-              <div className="d_contact_item mb-3">
+              <div className="d_contact_item" style={{ marginBottom: '1rem' }}>
                 <div className="d_contact_label">Email</div>
                 {isEditing ? (
                   <input type="email" className="d_form_control" name="email" value={formData.email} onChange={handleChange} />
@@ -265,7 +265,7 @@ const Profile = ({ currentUser }) => {
                   <div className="d_contact_value">{formData.email}</div>
                 )}
               </div>
-              <div className="d_contact_item mb-3">
+              <div className="d_contact_item" style={{ marginBottom: '1rem' }}>
                 <div className="d_contact_label">Phone</div>
                 {isEditing ? (
                   <input type="text" className="d_form_control" name="phone" value={formData.phone} onChange={handleChange} inputMode="numeric" maxLength={10} />
@@ -288,7 +288,7 @@ const Profile = ({ currentUser }) => {
               <h2 className="d_card_title"><MdSecurity className="d_card_icon" /> Account Status</h2>
             </div>
             <div className="d_card_body">
-              <div className="d_status_item mb-3">
+              <div className="d_status_item" style={{ marginBottom: '1rem' }}>
                 <div className="d_status_label">Role</div>
                 <div className="d_status_value">
                   <span className="d_badge d_primary">{profile?.role || 'User'}</span>

@@ -120,7 +120,8 @@ export default function LeaveTracking() {
     setForm({
       employeeId: leave.employeeId?._id || leave.employeeId,
       from: leave.from || '', to: leave.to || '',
-      fromTime: leave.fromTime||'', toTime: leave.toTime||'',
+      fromTime: leave.fromTime && leave.fromTime.includes(':') ? leave.fromTime.substring(0, 5) : '',
+      toTime: leave.toTime && leave.toTime.includes(':') ? leave.toTime.substring(0, 5) : '',
       type: leave.type || 'Casual', reason: leave.reason || '', status: leave.status || 'Pending',
     });
     setErrors({});
@@ -150,7 +151,7 @@ export default function LeaveTracking() {
           <div className="d_form_row cols-2">
             <div className="d_form_group">
               <label className="d_form_label">Employee <span className="d_req">*</span></label>
-              <select className="d_form_control" value={form.employeeId} onChange={e => setF('employeeId', e.target.value)}>
+              <select className="d_form_control" value={form.employeeId} onChange={e => setF('employeeId', e.target.value)} disabled={!!editId}>
                 <option value="">Select Employee</option>
                 {employees.map(emp => <option key={emp._id} value={emp._id}>{String(emp.name)} ({String(emp.id)})</option>)}
               </select>
