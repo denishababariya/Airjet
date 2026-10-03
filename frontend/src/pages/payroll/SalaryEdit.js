@@ -265,7 +265,7 @@ export default function SalaryEdit({ salaryId, onBack, onSave }) {
           </button>
 
           {form.allowances.length > 0 && (
-            <div style={{ marginTop: '1rem' }}>
+            <div style={{ marginTop: '1rem' , width: '100%', overflowX: 'auto'}}>
               <table className="d_table">
                 <thead>
                   <tr>
@@ -336,7 +336,7 @@ export default function SalaryEdit({ salaryId, onBack, onSave }) {
           </button>
 
           {form.deductions.length > 0 && (
-            <div style={{ marginTop: '1rem' }}>
+            <div style={{ marginTop: '1rem' , width: '100%', overflowX: 'auto'}}>
               <table className="d_table">
                 <thead>
                   <tr>

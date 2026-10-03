@@ -141,11 +141,11 @@ export default function PayslipDownload() {
   return (
     <div>
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div className="d_page_title">Payslip Download</div>
           <div className="d_page_subtitle">View and download employee payslips</div>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <select 
             className="d_btn d_btn_outline" 
             value={month} 
@@ -173,7 +173,7 @@ export default function PayslipDownload() {
             <div className="text-center py-4">No payslips found for {month || 'any month'}</div>
           ) : (
             <div className="d_table_wrap">
-              <table className="d_table" style={{ minWidth: 750 }}>
+              <table className="d_table" style={{ minWidth: 700 }}>
                 <thead>
                   <tr>
                     <th>Emp ID</th>
@@ -239,17 +239,7 @@ export default function PayslipDownload() {
       >
         {modalSalaryData && (
           <div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', justifyContent: 'flex-end' }}>
-              <button 
-                className="d_btn d_btn_primary" 
-                onClick={handleModalDownload}
-                disabled={downloadingId !== null}
-              >
-                <MdDownload /> Download PDF
-              </button>
-              <button className="d_btn d_btn_outline" onClick={handleModalPrint}>
-                <MdPrint /> Print
-              </button>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               <button className="d_btn d_btn_outline" onClick={handleCloseModal}>
                 <MdArrowBack /> Close
               </button>
@@ -308,7 +298,7 @@ export default function PayslipDownload() {
               </div>
 
               {/* Earnings and Deductions */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                 {/* Earnings */}
                 <div style={{ padding: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#333' }}>Earnings</h3>

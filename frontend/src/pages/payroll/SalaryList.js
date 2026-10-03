@@ -131,7 +131,7 @@ export default function SalaryList({ onViewDetails, onEdit, onApprove, onPay, on
       <ConfirmDialog {...confirmState} onCancel={closeConfirm} />
 
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div className="d_page_title">Salary List</div>
           <div className="d_page_subtitle">View and manage all salary records</div>
         </div>
@@ -143,7 +143,7 @@ export default function SalaryList({ onViewDetails, onEdit, onApprove, onPay, on
           <div className="d_card_title"><span className="d_card_icon"><MdFilterList /></span>Search & Filters</div>
         </div>
         <div className="d_card_body">
-          <div className="d_form_row cols-4">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
             <div className="d_form_group">
               <label className="d_form_label">Search</label>
               <div style={{ position: 'relative' }}>
@@ -194,7 +194,7 @@ export default function SalaryList({ onViewDetails, onEdit, onApprove, onPay, on
               </select>
             </div>
           </div>
-          <div className="d_form_row cols-2">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
             <div className="d_form_group">
               <label className="d_form_label">Payment Status</label>
               <select 
@@ -225,7 +225,7 @@ export default function SalaryList({ onViewDetails, onEdit, onApprove, onPay, on
             <div className="text-center py-4">Loading...</div>
           ) : (
             <div className="d_table_wrap">
-              <table className="d_table" style={{ minWidth: 1000 }}>
+              <table className="d_table" style={{ minWidth: 900 }}>
                 <thead>
                   <tr>
                     <th>Employee</th>

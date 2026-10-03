@@ -62,16 +62,16 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
   return (
     <div>
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <button className="d_btn d_btn_outline" onClick={onBack}>
             <MdArrowBack /> Back
           </button>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div className="d_page_title">Salary Details</div>
             <div className="d_page_subtitle">{salary.employeeName} - {salary.month}</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           {salary.status === 'Generated' && (
             <button className="d_btn d_btn_success" onClick={handleApprove}>
               <MdCheckCircle /> Approve
@@ -96,14 +96,14 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
         {/* Employee Information */}
         <div className="d_card">
           <div className="d_card_header">
             <div className="d_card_title"><span className="d_card_icon"><MdPerson /></span>Employee Information</div>
           </div>
           <div className="d_card_body">
-            <div style={{ display: 'flex', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <div style={{ flexShrink: 0, textAlign: 'center' }}>
                 {employee.image ? (
                   <img
@@ -150,7 +150,7 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
                     {salary.designationName || 'N/A'}
                   </p>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', width: '100%' }}>
                   <div style={{ padding: '0.75rem', backgroundColor: '#f8f9fa', borderRadius: '8px', borderLeft: '3px solid #007bff' }}>
                     <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Employee ID</div>
                     <div style={{ fontWeight: 600, color: '#333' }}>{salary.employeeId || 'N/A'}</div>
@@ -313,7 +313,7 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
             <div className="d_card_title"><span className="d_card_icon"><MdCalendarToday /></span>Attendance Summary</div>
           </div>
           <div className="d_card_body">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
               <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
                 <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>Working Days</div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#333' }}>{salary.workingDays || 0}</div>
@@ -351,7 +351,7 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
         {/* Earnings */}
         <div className="d_card">
           <div className="d_card_header">
