@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getErrorMessage } from "./errorMessages";
 
 const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
@@ -24,12 +25,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message =
+    const raw =
       error.response?.data?.error ||
       error.response?.data?.message ||
       error.message ||
-      "Something went wrong";
-    error.displayMessage = message;
+      '';
+    // Map raw server error to a friendly message for display
+    error.displayMessage = getErrorMessage(
+      { ...error, displayMessage: raw },
+      'Something went wrong. Please try again.',
+    );
 
     // Only clear session if error is about invalid/expired token
     if (error.response?.status === 401) {

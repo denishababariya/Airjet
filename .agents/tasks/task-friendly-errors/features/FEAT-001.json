@@ -1,0 +1,22 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Create src/utils/errorMessages.js — a central lookup table and getErrorMessage() helper — and update src/utils/api.js interceptor to map known server error strings to friendly messages before setting error.displayMessage. Also review src/utils/validators.js strings (they are already mostly user-friendly; minor wording improvements only).",
+  "status": "completed",
+  "steps": [
+    "1. Create d:\\Hasti\\Airjet\\frontend\\src\\utils\\errorMessages.js with: (a) an ERROR_MAP object that maps known raw server messages (lowercase substrings) to friendly English sentences, e.g. 'invalid token' -> 'Your session has expired. Please log in again.', 'user not found' -> 'No account found with that email address.', 'authentication required' -> 'You need to log in to access this page.', 'duplicate key' / 'already exists' -> 'A record with this information already exists.', 'validation failed' -> 'Some required fields are missing or invalid. Please check your input.', 'network error' / 'econnrefused' -> 'Unable to connect to the server. Please check your internet connection.', 'timeout' -> 'The request took too long. Please try again.', 'unauthorized' / '401' -> 'You are not authorised to perform this action.', 'forbidden' / '403' -> 'You do not have permission to access this resource.', 'not found' / '404' -> 'The requested item could not be found.', 'internal server error' / '500' -> 'Something went wrong on the server. Please try again later.'; (b) export function getErrorMessage(err, fallback) that: checks err.displayMessage first, then err.response?.data?.error, then err.response?.data?.message, then err.message, lowercases the resulting string, iterates ERROR_MAP keys in order and returns the friendly value if the key is a substring of the lowercased string, finally returns fallback if provided else 'Something went wrong. Please try again.'",
+    "2. Update d:\\Hasti\\Airjet\\frontend\\src\\utils\\api.js response error interceptor: import getErrorMessage (or inline the same ERROR_MAP logic) so that error.displayMessage is set to the friendly message, not the raw server error string. Current code: `const message = error.response?.data?.error || error.response?.data?.message || error.message || 'Something went wrong'; error.displayMessage = message;`. Replace with a call through ERROR_MAP so users see 'A record with this information already exists.' instead of 'MongoServerError: E11000 duplicate key...'",
+    "3. Review d:\\Hasti\\Airjet\\frontend\\src\\utils\\validators.js — the existing strings are already user-friendly (e.g. 'Name must be at least 2 characters'). No changes needed beyond confirming they do not expose stack traces or raw keys. Confirm and record in findings."
+  ],
+  "acceptance_criteria": [
+    "src/utils/errorMessages.js is created and exports getErrorMessage and ERROR_MAP",
+    "api.js interceptor sets error.displayMessage to a friendly string for all known error patterns",
+    "The fallback in api.js is 'Something went wrong. Please try again.' (not the bare 'Something went wrong')",
+    "npm run build from d:\\Hasti\\Airjet\\frontend exits 0 with no compilation errors"
+  ],
+  "verification": [
+    "cd d:\\Hasti\\Airjet\\frontend && npm run build -- --no-progress"
+  ],
+  "blocked_reason": null,
+  "findings": "validators.js confirmed user-friendly: all V.* functions return plain English strings (e.g. 'Name must be at least 2 characters', 'Phone number must be exactly 10 digits'). No stack traces, raw DB keys, or internal codes are exposed. No changes needed to validators.js. For FEAT-002: getErrorMessage is now exported from src/utils/errorMessages.js. All catch blocks in pages should import { getErrorMessage } from '../utils/errorMessages' (depth-1 pages) or '../../utils/errorMessages' (depth-2 pages) and replace `err.displayMessage || 'fallback'` with `getErrorMessage(err, 'context-specific fallback')`. The api.js interceptor already maps all known error patterns, so pages using err.displayMessage directly will automatically benefit; FEAT-002 improves context-specific fallbacks in individual catch blocks."
+}
