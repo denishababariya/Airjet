@@ -3,6 +3,7 @@ import { MdPayment, MdSave, MdCancel } from 'react-icons/md';
 import { payrollApi } from '../../utils/api';
 import ToastContainer from '../../components/Toast';
 import useToast from '../../hooks/useToast';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 export default function SalaryPayment({ salaryId, netSalary, onComplete, onCancel }) {
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -28,7 +29,7 @@ export default function SalaryPayment({ salaryId, netSalary, onComplete, onCance
       toast.success('Payment processed successfully');
       if (onComplete) onComplete();
     } catch (error) {
-      toast.error(error.displayMessage || 'Failed to process payment');
+      toast.error(getErrorMessage(error, 'Unable to process payment. Please try again.'));
     } finally {
       setProcessing(false);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MdAssessment, MdVisibility } from 'react-icons/md';
 import Modal from '../../components/Modal';
 import api from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 export default function ServiceReports() {
   const [data, setData] = useState([]);
@@ -21,8 +22,7 @@ export default function ServiceReports() {
       setData(res.data || []);
       setError(null);
     } catch (err) {
-      setError('Failed to load service requests');
-      console.error(err);
+      setError(getErrorMessage(err, 'Failed to load service requests'));
     } finally {
       setLoading(false);
     }

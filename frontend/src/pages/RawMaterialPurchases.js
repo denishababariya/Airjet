@@ -5,6 +5,7 @@ import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
 import { rawMaterialPurchasesApi, suppliersApi } from '../utils/api';
 import './RawMaterialPurchases.css';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const statusClass = {
   Pending: 'd_warning',
@@ -54,7 +55,7 @@ const RawMaterialPurchases = () => {
       console.log('Suppliers loaded:', supplierRes.data);
     } catch (err) {
       console.error('Error loading data:', err);
-      toast.error(err.response?.data?.error || 'Failed to load raw material purchases');
+      toast.error(getErrorMessage(err, 'Unable to load raw material purchases. Please refresh.'));
     } finally {
       setLoading(false);
     }
@@ -151,7 +152,7 @@ const RawMaterialPurchases = () => {
       setModal(false);
       fetchAll();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to save purchase');
+      toast.error(getErrorMessage(err, 'Unable to save purchase record. Please check the form and try again.'));
     } finally {
       setSaving(false);
     }

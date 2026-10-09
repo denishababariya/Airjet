@@ -12,6 +12,7 @@ import {
   MdLock,
 } from "react-icons/md";
 import { auth } from "../utils/api";
+import { getErrorMessage } from "../utils/errorMessages";
 
 const ALLOWED_ROLES = ["Admin", "Manager"];
 
@@ -76,7 +77,7 @@ const ForgotPassword = ({ setActiveMenu }) => {
       setStep(2);
       startResendTimer();
     } catch (error) {
-      setApiError(error.displayMessage || error.message);
+      setApiError(getErrorMessage(error, 'An error occurred. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -97,7 +98,7 @@ const ForgotPassword = ({ setActiveMenu }) => {
       auth.setResetSession(data.email || formData.email, data.resetToken);
       setActiveMenu && setActiveMenu("ChangePassword");
     } catch (error) {
-      setApiError(error.displayMessage || error.message);
+      setApiError(getErrorMessage(error, 'An error occurred. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -112,7 +113,7 @@ const ForgotPassword = ({ setActiveMenu }) => {
       await auth.checkRole(formData.email);
       startResendTimer();
     } catch (error) {
-      setApiError(error.displayMessage || error.message);
+      setApiError(getErrorMessage(error, 'An error occurred. Please try again.'));
     } finally {
       setLoading(false);
     }

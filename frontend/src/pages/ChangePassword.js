@@ -13,6 +13,7 @@ import {
   MdArrowBack,
 } from "react-icons/md";
 import { auth } from "../utils/api";
+import { getErrorMessage } from "../utils/errorMessages";
 
 const ChangePassword = ({ setActiveMenu }) => {
   const [formData, setFormData] = useState({
@@ -71,7 +72,7 @@ const ChangePassword = ({ setActiveMenu }) => {
         setActiveMenu && setActiveMenu("Login");
       }, 2000);
     } catch (error) {
-      setErrors({ newPassword: error.displayMessage || "Failed to update password" });
+      setErrors({ newPassword: getErrorMessage(error, 'Unable to update password. Please try again.') });
     } finally {
       setLoading(false);
     }

@@ -5,6 +5,7 @@ import {
 } from 'react-icons/md';
 import { usersApi, employeesApi } from '../utils/api';
 import { V, validate } from '../utils/validators';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const formatDate = (d) => {
   if (!d) return '-';
@@ -61,7 +62,7 @@ const Profile = ({ currentUser }) => {
         });
         setImageFile(null);
       } else {
-        setError(err.displayMessage || 'Failed to load profile');
+        setError(getErrorMessage(err, 'Unable to load profile. Please refresh.'));
       }
     } finally {
       setLoading(false);
@@ -117,7 +118,7 @@ const Profile = ({ currentUser }) => {
       }
       setIsEditing(false);
     } catch (err) {
-      setError(err.displayMessage || 'Failed to save profile');
+      setError(getErrorMessage(err, 'Unable to save profile changes. Please try again.'));
     }
   };
 

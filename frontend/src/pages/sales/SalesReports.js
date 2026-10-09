@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MdCalendarToday, MdTrendingUp, MdPeople, MdInventory, MdFilterList } from 'react-icons/md';
 import api from '../../utils/api';
 import ExportMenu from '../../components/ExportMenu';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const tabs = ['Daily', 'Monthly', 'Customer', 'Product', 'GST'];
 
@@ -78,7 +79,7 @@ export default function SalesReports() {
             setData(response.data?.data || []);
             setSummary(response.data?.summary || null);
         } catch (err) {
-            setError('Failed to load report data');
+            setError(getErrorMessage(err, 'Failed to load report data'));
             console.error(err);
         } finally {
             setLoading(false);

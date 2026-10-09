@@ -6,6 +6,7 @@ import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
 import { departmentsApi, employeesApi } from '../utils/api';
 import { V, validate } from '../utils/validators';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const blank = { name: '', head: '', description: '', status: 'Active' };
 
@@ -33,7 +34,7 @@ const Department = () => {
       setData(deptRes.data);
       setEmployees(empRes.data);
     } catch (err) {
-      toast.error(err.displayMessage || 'Failed to load departments');
+      toast.error(getErrorMessage(err, 'Unable to load departments. Please refresh.'));
     } finally {
       setLoading(false);
     }
@@ -95,7 +96,7 @@ const Department = () => {
       toast.success(editId ? 'Department updated successfully!' : 'Department added successfully!');
       fetchDepartments();
     } catch (err) {
-      toast.error(err.displayMessage || 'Failed to save department');
+      toast.error(getErrorMessage(err, 'Unable to save department. Please try again.'));
     } finally {
       setSaving(false);
     }
@@ -117,7 +118,7 @@ const Department = () => {
       fetchDepartments();
     } catch (err) {
       setDeleteId(null);
-      toast.error(err.displayMessage || 'Failed to delete department');
+      toast.error(getErrorMessage(err, 'Unable to delete department. Please try again.'));
     }
   };
 

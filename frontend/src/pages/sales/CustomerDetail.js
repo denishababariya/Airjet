@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdArrowBack, MdEdit, MdShoppingCart, MdReceipt, MdAccountBalance, MdWarning, MdPhone, MdEmail, MdLocationOn, MdBusiness, MdPerson, MdCalendarToday } from 'react-icons/md';
 import api from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 export default function CustomerDetail({ customerId, setActiveMenu, onBack }) {
     const [customer, setCustomer] = useState(null);
@@ -27,7 +28,7 @@ export default function CustomerDetail({ customerId, setActiveMenu, onBack }) {
             setRecentOrders(ordersRes.data || []);
             setError(null);
         } catch (err) {
-            setError('Failed to load customer data');
+            setError(getErrorMessage(err, 'Failed to load customer data'));
             console.error(err);
         } finally {
             setLoading(false);

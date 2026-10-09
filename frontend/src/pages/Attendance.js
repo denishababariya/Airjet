@@ -3,6 +3,7 @@ import { MdAccessTime, MdAdd } from 'react-icons/md';
 import Modal from '../components/Modal';
 import { attendanceApi, employeesApi, auth } from '../utils/api';
 import { canTakeAttendance } from '../utils/roles';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const statusClass = { Present: 'd_success', Late: 'd_warning', Absent: 'd_danger', Leave: 'd_info', Approved: 'd_success', Pending: 'd_warning' };
 
@@ -62,7 +63,7 @@ const Attendance = ({ defaultTab = 'records', setActiveMenu }) => {
       setLeaveData(leaveRes.data);
       setEmployees(empRes.data);
     } catch (err) {
-      setError(err.displayMessage || 'Failed to load attendance');
+      setError(getErrorMessage(err, 'Unable to load attendance records. Please refresh.'));
     } finally {
       setLoading(false);
     }
@@ -107,7 +108,7 @@ const Attendance = ({ defaultTab = 'records', setActiveMenu }) => {
       setModal(false);
       fetchAll();
     } catch (err) {
-      setError(err.displayMessage || 'Failed to save record');
+      setError(getErrorMessage(err, 'Unable to save attendance record. Please try again.'));
     }
   };
 

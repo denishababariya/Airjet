@@ -3,6 +3,7 @@ import { MdAdd, MdEdit, MdVisibility, MdDescription, MdDelete, MdSend, MdCheck, 
 import Modal from '../../components/Modal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import api from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const blankQuotation = {
     customer: '',
@@ -70,8 +71,7 @@ export default function Quotations() {
             setSpareParts(sparePartsRes.data || []);
             setError(null);
         } catch (err) {
-            setError('Failed to load data');
-            console.error(err);
+            setError(getErrorMessage(err, 'Failed to load data'));
         } finally {
             setLoading(false);
         }
@@ -261,7 +261,7 @@ export default function Quotations() {
             setModal(false);
             fetchData();
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to save quotation');
+            setError(getErrorMessage(err, 'Failed to save quotation'));
         }
     };
 
@@ -275,7 +275,7 @@ export default function Quotations() {
                     fetchData();
                     setConfirmModal({ open: false, onConfirm: null, title: '', message: '' });
                 } catch (err) {
-                    setError(err.response?.data?.error || 'Failed to delete quotation');
+                    setError(getErrorMessage(err, 'Failed to delete quotation'));
                 }
             },
             title: 'Delete Quotation',
@@ -288,7 +288,7 @@ export default function Quotations() {
             await api.post(`/quotations/${id}/${action}`);
             fetchData();
         } catch (err) {
-            setError(err.response?.data?.error || `Failed to ${action} quotation`);
+            setError(getErrorMessage(err, `Failed to ${action} quotation`));
         }
     };
 

@@ -12,6 +12,7 @@ import {
   MdCheckCircle,
 } from "react-icons/md";
 import { auth, usersApi } from "../utils/api";
+import { getErrorMessage } from "../utils/errorMessages";
 
 const Settings = ({ currentUser }) => {
   const [profile, setProfile] = useState(null);
@@ -105,7 +106,7 @@ const Settings = ({ currentUser }) => {
         setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
       }, 3000);
     } catch (err) {
-      setPasswordErrors({ currentPassword: err.displayMessage || 'Failed to change password' });
+      setPasswordErrors({ currentPassword: getErrorMessage(err, 'Unable to change password. Please check your current password and try again.') });
     }
   };
 

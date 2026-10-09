@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdVisibility, MdDelete, MdShoppingCart } from 'react-icons/md';
 import Modal from '../../components/Modal';
 import { erpApi, suppliersApi } from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const statusBadge = s => {
   if (s === 'Received') return 'd_success';
@@ -42,7 +43,7 @@ export default function PurchaseOrders() {
       const { data } = await erpApi.getAll('purchase', 'order');
       setOrders(data);
     } catch (err) {
-      setError(err.displayMessage || 'Failed to load purchase orders');
+      setError(getErrorMessage(err, 'Failed to load purchase orders'));
     } finally {
       setLoading(false);
     }
@@ -125,7 +126,7 @@ export default function PurchaseOrders() {
       setModal(false);
       fetchOrders();
     } catch (err) {
-      setError(err.displayMessage || 'Failed to save purchase order');
+      setError(getErrorMessage(err, 'Failed to save purchase order'));
     }
   };
 
@@ -135,7 +136,7 @@ export default function PurchaseOrders() {
       await erpApi.remove(id);
       fetchOrders();
     } catch (err) {
-      setError(err.displayMessage || 'Failed to delete purchase order');
+      setError(getErrorMessage(err, 'Failed to delete purchase order'));
     }
   };
 

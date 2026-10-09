@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { MdFilterList } from 'react-icons/md';
 import { attendanceApi } from '../../utils/api';
 import ExportMenu from '../../components/ExportMenu';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const AttendanceReport = () => {
   const [startDate, setStartDate] = useState('');
@@ -35,7 +36,7 @@ const AttendanceReport = () => {
       });
       setReportData(response.data);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to fetch report');
+      setError(getErrorMessage(err, 'Unable to load attendance report. Please try again.'));
     } finally {
       setLoading(false);
     }

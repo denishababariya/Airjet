@@ -3,6 +3,7 @@ import { MdArrowBack, MdSave, MdAdd, MdDelete } from 'react-icons/md';
 import { payrollApi } from '../../utils/api';
 import ToastContainer from '../../components/Toast';
 import useToast from '../../hooks/useToast';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 export default function SalaryEdit({ salaryId, onBack, onSave }) {
   const [salary, setSalary] = useState(null);
@@ -115,7 +116,7 @@ export default function SalaryEdit({ salaryId, onBack, onSave }) {
       toast.success('Salary updated successfully');
       if (onSave) onSave(salaryId);
     } catch (error) {
-      toast.error(error.displayMessage || 'Failed to update salary');
+      toast.error(getErrorMessage(error, 'Unable to update salary. Please try again.'));
     } finally {
       setSaving(false);
     }

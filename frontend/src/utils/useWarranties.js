@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { warrantiesApi } from './api';
+import { getErrorMessage } from './errorMessages';
 
 export function useWarranties() {
   const [data, setData] = useState([]);
@@ -13,7 +14,7 @@ export function useWarranties() {
       const { data: list } = await warrantiesApi.getAll();
       setData(list);
     } catch (err) {
-      setError(err.displayMessage || 'Failed to load warranties');
+      setError(getErrorMessage(err, 'Unable to load warranties. Please try again.'));
     } finally {
       setLoading(false);
     }

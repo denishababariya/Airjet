@@ -3,6 +3,7 @@ import { MdAdd, MdEdit, MdVisibility, MdAssignmentTurnedIn, MdCameraAlt } from '
 import Modal from '../../components/Modal';
 import { useErpRecords } from '../../utils/useErpRecords';
 import { V, validate as validateFields } from '../../utils/validators';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const SERVICE_TYPES = ['Repair', 'Maintenance', 'Installation', 'Inspection', 'Replacement'];
 const MACHINE_STATUS = ['Running', 'Not Running', 'Partially Running'];
@@ -72,13 +73,13 @@ export default function EngineerVisit() {
       await save(form, editId);
       setModal(false);
     } catch (err) {
-      setError(err.displayMessage || 'Failed to save visit record');
+      setError(getErrorMessage(err, 'Failed to save visit record'));
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this visit record?')) return;
-    try { await remove(id); } catch (err) { setError(err.displayMessage || 'Failed to delete'); }
+    try { await remove(id); } catch (err) { setError(getErrorMessage(err, 'Failed to delete')); }
   };
 
   const f = (field) => ({

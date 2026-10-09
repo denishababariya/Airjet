@@ -3,6 +3,7 @@ import { MdAdd, MdEdit, MdDelete, MdVisibility, MdReceipt, MdSearch, MdFilterLis
 import Modal from '../../components/Modal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import api from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const blankPayment = {
     invoice: '',
@@ -61,8 +62,7 @@ export default function Payments() {
             setCustomers(customersRes.data || []);
             setError(null);
         } catch (err) {
-            setError('Failed to load data');
-            console.error(err);
+            setError(getErrorMessage(err, 'Failed to load data'));
         } finally {
             setLoading(false);
         }
@@ -148,7 +148,7 @@ export default function Payments() {
             setModal(false);
             fetchData();
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to save payment');
+            setError(getErrorMessage(err, 'Failed to save payment'));
         }
     };
 
@@ -162,7 +162,7 @@ export default function Payments() {
                     fetchData();
                     setConfirmModal({ open: false, onConfirm: null, title: '', message: '' });
                 } catch (err) {
-                    setError(err.response?.data?.error || 'Failed to delete payment');
+                    setError(getErrorMessage(err, 'Failed to delete payment'));
                 }
             },
             title: 'Delete Payment',

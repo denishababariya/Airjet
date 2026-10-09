@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdRefresh, MdAccessTime, MdCheckCircle, MdCancel, MdWarning, MdHighlightOff, MdPeople, MdBeachAccess, MdSearch } from 'react-icons/md';
 import { attendanceApi, auth } from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const getStatusBadge = (status) => {
   const statusConfig = {
@@ -49,7 +50,7 @@ const TodayAttendance = () => {
       const filteredData = canManage ? response.data : response.data.filter(r => r.empId === user?.employee?.id);
       setAttendance(filteredData);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to fetch today\'s attendance');
+      setError(getErrorMessage(err, "Unable to load today's attendance. Please refresh."));
     } finally {
       setLoading(false);
     }

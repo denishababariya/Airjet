@@ -3,6 +3,7 @@ import { MdAdd, MdEdit, MdDelete, MdVisibility, MdSearch, MdShoppingBag, MdCheck
 import Modal from '../../components/Modal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import api from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const blankOrder = {
     customer: '',
@@ -88,8 +89,7 @@ export default function SalesOrders() {
             setSpareParts(sparePartsRes.data || []);
             setError(null);
         } catch (err) {
-            setError('Failed to load data');
-            console.error(err);
+            setError(getErrorMessage(err, 'Failed to load data'));
         } finally {
             setLoading(false);
         }
@@ -422,7 +422,7 @@ export default function SalesOrders() {
             setModal(false);
             fetchData();
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to save sales order');
+            setError(getErrorMessage(err, 'Failed to save sales order'));
         }
     };
 
@@ -436,7 +436,7 @@ export default function SalesOrders() {
                     fetchData();
                     setConfirmModal({ open: false, onConfirm: null, title: '', message: '' });
                 } catch (err) {
-                    setError(err.response?.data?.error || 'Failed to delete sales order');
+                    setError(getErrorMessage(err, 'Failed to delete sales order'));
                 }
             },
             title: 'Delete Sales Order',
@@ -449,7 +449,7 @@ export default function SalesOrders() {
             await api.post(`/sales-orders/${id}/${action}`);
             fetchData();
         } catch (err) {
-            setError(err.response?.data?.error || `Failed to ${action} sales order`);
+            setError(getErrorMessage(err, `Failed to ${action} sales order`));
         }
     };
 
@@ -480,7 +480,7 @@ export default function SalesOrders() {
             alert(`Invoice generated successfully for Sales Order ${salesOrder.orderNumber}`);
             fetchData();
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to generate invoice');
+            setError(getErrorMessage(err, 'Failed to generate invoice'));
         }
     };
 

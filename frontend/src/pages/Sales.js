@@ -7,6 +7,7 @@ import useToast from '../hooks/useToast';
 import useConfirm from '../hooks/useConfirm';
 import { customersApi, erpApi, stockApi } from '../utils/api';
 import { V, validate } from '../utils/validators';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const statusClass = {
   Active:'d_success', Inactive:'d_danger', Paid:'d_success', Unpaid:'d_warning',
@@ -60,7 +61,7 @@ const Sales = ({ defaultTab = 'customers', setActiveMenu }) => {
       const { data: list } = await customersApi.getAll();
       setCustomers(list);
     } catch (err) {
-      toast.error(err.displayMessage || 'Failed to load customers');
+      toast.error(getErrorMessage(err, 'Unable to load customers. Please refresh.'));
     } finally { setLoading(false); }
   };
 
@@ -69,7 +70,7 @@ const Sales = ({ defaultTab = 'customers', setActiveMenu }) => {
       const { data } = await erpApi.getAll('sales', TAB_TYPE[tab]);
       setSalesDocs(data);
     } catch (err) {
-      toast.error(err.displayMessage || 'Failed to load sales data');
+      toast.error(getErrorMessage(err, 'Unable to load sales data. Please refresh.'));
     }
   };
 
@@ -78,7 +79,7 @@ const Sales = ({ defaultTab = 'customers', setActiveMenu }) => {
       const { data } = await stockApi.getAll();
       setStockItems(data.filter(item => item.quantity > 0));
     } catch (err) {
-      toast.error(err.displayMessage || 'Failed to load stock items');
+      toast.error(getErrorMessage(err, 'Unable to load stock items. Please refresh.'));
     }
   };
 
@@ -249,7 +250,7 @@ const Sales = ({ defaultTab = 'customers', setActiveMenu }) => {
         setModal(false);
       }
     } catch (err) {
-      toast.error(err.displayMessage || err.response?.data?.error || 'Failed to save');
+      toast.error(getErrorMessage(err, 'Unable to save record. Please check the form and try again.'));
     } finally { setSaving(false); }
   };
 
@@ -263,7 +264,7 @@ const Sales = ({ defaultTab = 'customers', setActiveMenu }) => {
           if (isCus) { await customersApi.remove(id); fetchCustomers(); }
           else       { await erpApi.remove(id); fetchSalesDocs(); }
           toast.success('Record deleted.');
-        } catch (err) { toast.error(err.displayMessage || 'Failed to delete'); }
+        } catch (err) { toast.error(getErrorMessage(err, 'Unable to delete record. Please try again.')); }
       },
     });
   };
