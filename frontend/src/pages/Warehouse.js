@@ -44,17 +44,15 @@ const toISODate = (d) => {
 
 };
 
-const supportedTabs = ['warehouses', 'transfers'];
-
 const Warehouse = ({ defaultTab = 'warehouses', setActiveMenu }) => {
-  const [tab, setTab]             = useState(
-    supportedTabs.includes(defaultTab) ? defaultTab : 'warehouses'
-  );
+  const [tab, setTab]             = useState(defaultTab);
 
   // Map tab keys to sidebar menu labels
   const tabToMenuMap = {
     'warehouses': 'Warehouses',
     'transfers': 'Stock Transfers',
+    'transactions': 'Inventory History',
+    'audits': 'Stock Audits',
   };
   const [warehouses, setWarehouses] = useState([]);
 
@@ -435,11 +433,11 @@ const Warehouse = ({ defaultTab = 'warehouses', setActiveMenu }) => {
 
       <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
 
-        <div><h1 className="d_page_title">Warehouse Management</h1><p className="d_page_subtitle">Manage warehouses and stock transfers</p></div>
+        <div><h1 className="d_page_title">Warehouse Management</h1><p className="d_page_subtitle">Manage warehouses, stock transfers and audits</p></div>
 
         <button className="d_btn d_btn_primary" onClick={openAdd}>
 
-          <MdAdd /> {isWH ? 'Add Warehouse' : 'New Transfer'}
+          <MdAdd /> {isWH ? 'Add Warehouse' : isTRF ? 'New Transfer' : isTXN ? 'Record Transaction' : 'Schedule Audit'}
 
         </button>
 
@@ -449,7 +447,7 @@ const Warehouse = ({ defaultTab = 'warehouses', setActiveMenu }) => {
 
       <div className="d_tabs mb-3">
 
-        {[['warehouses','Warehouses'],['transfers','Stock Transfers']].map(([k,v]) => (
+        {[['warehouses','Warehouses'],['transfers','Stock Transfers'],['transactions','Inventory History'],['audits','Stock Audits']].map(([k,v]) => (
           <button key={k} className={`d_tab_btn ${tab===k?'d_active':''}`} onClick={() => {
             setTab(k);
             if (setActiveMenu) {

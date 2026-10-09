@@ -153,6 +153,7 @@ const Navbar = ({
                   setGlobalSearchQuery(searchQuery.trim());
                   setActiveMenu("Search");
                   setSearchOpen(false);
+                  setSearchQuery("");
                 }
               }}
               onBlur={() => {

@@ -359,6 +359,30 @@ export const purchaseOrdersApi = {
   remove: (id) => api.delete(`/purchase/orders/${id}`),
 };
 
+export const salesOrdersApi = {
+  getAll: (params = {}) => api.get("/sales-orders", { params }),
+  getById: (id) => api.get(`/sales-orders/${id}`),
+  create: (data) => api.post("/sales-orders", data),
+  update: (id, data) => api.put(`/sales-orders/${id}`, data),
+  remove: (id) => api.delete(`/sales-orders/${id}`),
+  confirm: (id) => api.post(`/sales-orders/${id}/confirm`),
+  cancel: (id) => api.post(`/sales-orders/${id}/cancel`),
+  reserveStock: (id, data = {}) =>
+    api.post(`/sales-orders/${id}/reserve-stock`, data),
+};
+
+export const serviceRequestsApi = {
+  getAll: (params = {}) => api.get("/service-requests", { params }),
+  getById: (id) => api.get(`/service-requests/${id}`),
+  create: (data) => api.post("/service-requests", data),
+  update: (id, data) => api.put(`/service-requests/${id}`, data),
+  remove: (id) => api.delete(`/service-requests/${id}`),
+  assignEngineer: (id, data) =>
+    api.post(`/service-requests/${id}/assign-engineer`, data),
+  complete: (id, data = {}) =>
+    api.post(`/service-requests/${id}/complete`, data),
+};
+
 export const purchaseReturnsApi = {
   getAll: (params = {}) => api.get("/purchase/returns", { params }),
   create: (data) => api.post("/purchase/returns", data),

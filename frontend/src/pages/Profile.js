@@ -18,6 +18,7 @@ const Profile = ({ currentUser }) => {
   const [profile, setProfile] = useState(null);
   const [formData, setFormData] = useState({});
   const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
 
   const loadProfile = async () => {
     setLoading(true);
@@ -69,8 +70,27 @@ const Profile = ({ currentUser }) => {
 
   useEffect(() => { loadProfile(); }, []);
 
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview('');
+      return undefined;
+    }
+
+    const previewUrl = URL.createObjectURL(imageFile);
+    setImagePreview(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [imageFile]);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleCancelEdit = () => {
+    setError('');
+    setImageFile(null);
+    setIsEditing(false);
+    loadProfile();
   };
 
   const handleSave = async () => {
@@ -118,6 +138,8 @@ const Profile = ({ currentUser }) => {
   ];
 
   const profileImage = profile?.employee?.image || currentUser?.employee?.image || '';
+  const profileImageSrc = imagePreview || (profileImage ? `http://localhost:5000${profileImage}` : '');
+  const profileInitials = `${formData.firstName?.[0] || ''}${formData.lastName?.[0] || ''}`.trim().toUpperCase() || 'AP';
 
   return (
     <div>
@@ -130,34 +152,36 @@ const Profile = ({ currentUser }) => {
             {/* Profile Image */}
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <div style={{ position: 'relative' }}>
-                {profileImage ? (
+                {profileImageSrc ? (
                   <img
-                    src={`http://localhost:5000${profileImage}`}
+                    src={profileImageSrc}
                     alt="Profile"
-                    style={{ 
-                      width: 150, 
-                      height: 150, 
-                      objectFit: 'cover', 
-                      borderRadius: '50%', 
+                    style={{
+                      width: 150,
+                      height: 150,
+                      objectFit: 'cover',
+                      borderRadius: '50%',
                       border: '4px solid var(--d-primary)',
                       boxShadow: '0 4px 20px rgba(0,123,255,0.3)'
                     }}
                   />
                 ) : (
                   <div style={{
-                    width: 150, 
-                    height: 150, 
-                    borderRadius: '50%', 
-                    border: '4px solid var(--d-primary)',
-                    background: 'linear-gradient(135deg, var(--d-primary) 0%, var(--d-primary-dark) 100%)',
-                    color: 'white',
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    fontSize: 64,
-                    boxShadow: '0 4px 20px rgba(0,123,255,0.3)'
+                    width: 150,
+                    height: 150,
+                    borderRadius: '50%',
+                    border: '4px solid #fff',
+                    background: 'linear-gradient(145deg, var(--d-primary), #69aaf5)',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 24px rgba(13, 110, 253, 0.24)',
+                    fontSize: 42,
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
                   }}>
-                    <MdPerson />
+                    {profileInitials}
                   </div>
                 )}
                 {isEditing && (
@@ -209,7 +233,7 @@ const Profile = ({ currentUser }) => {
                   </button>
                 ) : (
                   <>
-                    <button className="d_btn d_btn_outline" onClick={() => setIsEditing(false)}>Cancel</button>
+                    <button className="d_btn d_btn_outline" onClick={handleCancelEdit}>Cancel</button>
                     <button className="d_btn d_btn_primary" onClick={handleSave}>
                       <MdSave /> Save Changes
                     </button>
@@ -289,8 +313,8 @@ const Profile = ({ currentUser }) => {
               )}
             </div>
             {isEditing && (
-              <div className="d_form_actions">
-                <button className="d_btn d_btn_outline" onClick={() => setIsEditing(false)}>Cancel</button>
+              <div className="profile_form_actions">
+                <button className="d_btn d_btn_outline" onClick={handleCancelEdit}>Cancel</button>
                 <button className="d_btn d_btn_primary" onClick={handleSave}><MdSave /> Save Changes</button>
               </div>
             )}

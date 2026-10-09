@@ -59,9 +59,25 @@ const Department = () => {
     ? employees.filter(e => (e.department?._id || e.department) === editId)
     : employees;
 
-  const validateForm = () => validate({
-    name: V.title(form.name, 'Department name'),
-  });
+  const normalizeDepartmentName = (value) => String(value || '').trim().toLowerCase();
+
+  const validateForm = () => {
+    const errors = validate({
+      name: V.title(form.name, 'Department name'),
+    });
+
+    const normalizedName = normalizeDepartmentName(form.name);
+    const duplicateDepartment = data.find((dep) => {
+      const existingName = normalizeDepartmentName(dep.title || dep.name);
+      return existingName === normalizedName && dep._id !== editId;
+    });
+
+    if (!errors.name && duplicateDepartment) {
+      errors.name = 'Department name already exists';
+    }
+
+    return errors;
+  };
 
   const handleSave = async () => {
     const e = validateForm();

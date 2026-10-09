@@ -473,6 +473,7 @@ const EmployeeMaster = ({ currentUser }) => {
                     <th>Salary</th>
                     <th>Shift</th>
                     <th>Status</th>
+                    <th>Joining Date</th>
                     <th>Profile</th>
                     <th>Doc Image</th>
                     <th>Actions</th>
@@ -481,7 +482,7 @@ const EmployeeMaster = ({ currentUser }) => {
                 <tbody>
                   {filtered.length === 0 && (
                     <tr className="d_empty">
-                      <td colSpan={12}>No employees found.</td>
+                      <td colSpan={13}>No employees found.</td>
                     </tr>
                   )}
                   {filtered.map((e) => (
@@ -508,6 +509,11 @@ const EmployeeMaster = ({ currentUser }) => {
                         >
                           {e.status}
                         </span>
+                      </td>
+                      <td>
+                        {e.joiningDate
+                          ? new Date(e.joiningDate).toLocaleDateString("en-IN")
+                          : "-"}
                       </td>
                       <td>
                         {e.image ? (
@@ -1000,7 +1006,7 @@ const EmployeeMaster = ({ currentUser }) => {
         onConfirm={handleConfirm}
         onCancel={handleConfirmCancel}
       />
-    </div>
+    </div>                                                                                          
   );
 };
 

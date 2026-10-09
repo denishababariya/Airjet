@@ -43,7 +43,6 @@ const ConfirmDialog = ({
   return (
     <div
       className="d_modal_backdrop"
-      onClick={onCancel}
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm_title"

@@ -2211,24 +2211,34 @@ textarea.d_form_control {
 
 .d_form_actions {
 
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 6px;
-  padding: 14px 0 2px;
-  border-top: 1px solid var(--d-light-border);
-  /* Keep the actions visible while a long form scrolls */
-
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  background: var(--d-white);
+display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 6px;
+    padding: 14px 0px 12px;
+    border-top: 1px solid var(--d-light-border);
+    position: sticky;
+    bottom: -14px;
+    z-index: 2;
+    background: var(--d-white);
 }
 
 .d_form_actions .d_btn {
 
   min-width: 104px;
+}
+
+.profile_form_actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 14px 0 12px;
+  border-top: 1px solid var(--d-light-border);
+  position: static;
+  background: transparent;
 }
 
 /* ============================================

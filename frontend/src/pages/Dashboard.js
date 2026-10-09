@@ -6,7 +6,45 @@ import {
   MdAccessTime, MdAccountBalance, MdCheckCircle,
   MdEventBusy, MdCancel,
 } from 'react-icons/md';
-import { dashboardApi, sparePartsApi } from '../utils/api';
+import { dashboardApi, sparePartsApi, salesOrdersApi, serviceRequestsApi } from '../utils/api';
+
+// ── Safe access helpers ──────────────────────────────────────────────
+// Normalises any value that may be a plain string, an object {name} or
+// undefined/null so tables never crash on malformed / partial data.
+const safeText = (v, fallback = '-') => {
+  if (v === undefined || v === null || v === '') return fallback;
+  if (typeof v === 'object') {
+    const candidate = v.name || v.label || v.title || v.text || v.customer || v.supplier || v.emp;
+    return safeText(candidate, fallback);
+  }
+  return String(v);
+};
+
+const safeNumber = (v, fallback = 0) => {
+  if (v === undefined || v === null || v === '') return fallback;
+  if (typeof v === 'object') {
+    const candidate = v.total ?? v.value ?? v.amount ?? v.count ?? v.sum;
+    return safeNumber(candidate, fallback);
+  }
+  const n = Number(v);
+  return Number.isNaN(n) ? fallback : n;
+};
+
+const safeCurrency = (v, fallback = '₹0') => {
+  if (v === undefined || v === null || v === '') return fallback;
+  if (typeof v === 'string' && /^₹?\s?[\d,]+(\.\d+)?$/.test(v.trim())) return v;
+  if (typeof v === 'number' && !Number.isNaN(v)) {
+    return `₹${v.toLocaleString('en-IN')}`;
+  }
+  return fallback;
+};
+
+const safeArray = (v) => Array.isArray(v) ? v : [];
+
+const safeStatus = (s) => {
+  if (s === undefined || s === null || s === '') return 'Unknown';
+  return String(s);
+};
 
 // Icon map: renders the component correctly as JSX
 const ICON_MAP = {
@@ -20,6 +58,7 @@ const ICON_MAP = {
 };
 
 const statusBadge = (s) => {
+  const status = safeStatus(s);
   const map = {
     'In Stock': 'd_success', 'Low Stock': 'd_warning', 'Out of Stock': 'd_danger',
     Delivered: 'd_success', Processing: 'd_info', Confirmed: 'd_primary',
@@ -27,7 +66,7 @@ const statusBadge = (s) => {
     Open: 'd_warning', 'In Progress': 'd_info', Resolved: 'd_success',
     Pending: 'd_warning', 'In Transit': 'd_info',
   };
-  return <span className={`d_badge ${map[s] || 'd_info'}`}>{s}</span>;
+  return <span className={`d_badge ${map[status] || 'd_info'}`}>{status}</span>;
 };
 
 const Dashboard = ({ currentUser, setActiveMenu }) => {
@@ -60,70 +99,129 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
   const [openTickets, setOpenTickets] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // Normalise + validate the dashboard payload so partial / malformed data
+  // never breaks the UI (e.g. when redirected back from a "View All" page).
+  const normaliseDashboard = (d = {}) => {
+    const s = d.stats || {};
+    return {
+      stats: {
+        todaySales: safeCurrency(s.todaySales),
+        todayPurchases: safeCurrency(s.todayPurchases),
+        lowStockAlerts: `${safeNumber(s.lowStockCount)} Parts`,
+        lowStockCount: safeNumber(s.lowStockCount),
+        pendingPayments: safeCurrency(s.pendingPayments),
+        totalReceivables: safeCurrency(s.totalReceivables),
+        totalPayables: safeCurrency(s.totalPayables),
+        totalEmployees: safeNumber(s.totalEmployees),
+        totalStockItems: safeNumber(s.totalStockItems),
+        openTickets: safeNumber(s.openTickets),
+      },
+      recentOrders: safeArray(d.recentOrders).map((o) => ({
+        id: safeText(o.orderNumber || o.id),
+        customer: safeText(o.customer?.name || o.customer),
+        amount: safeCurrency(o.grandTotal ?? o.amount),
+        date: safeText(o.orderDate),
+        status: safeStatus(o.status),
+      })),
+      recentTickets: safeArray(d.recentTickets).map((t) => ({
+        id: safeText(t.requestNumber || t.id),
+        customer: safeText(t.customer?.name || t.customer),
+        machine: safeText(t.machine),
+        issue: safeText(t.complaint),
+        engineer: safeText(t.assignedEngineer?.name || t.assignedEngineer, 'Unassigned'),
+        status: safeStatus(t.status),
+      })),
+      pendingPOs: safeArray(d.pendingPOs).map((p) => ({
+        id: safeText(p.id),
+        supplier: safeText(p.supplier),
+        amount: safeCurrency(p.amount),
+        date: safeText(p.date),
+        delivery: safeText(p.delivery),
+        status: safeStatus(p.status),
+      })),
+    };
+  };
+
+  const normaliseAttendance = (data = {}) => ({
+    todayPresent: safeNumber(data.todayPresent),
+    todayAbsent: safeNumber(data.todayAbsent),
+    todayLeave: safeNumber(data.todayLeave),
+    todayLate: safeNumber(data.todayLate),
+  });
+
+  const normaliseActivity = (data = []) =>
+    safeArray(data).map((a) => ({
+      icon: safeText(a.icon, 'MdAccessTime'),
+      color: safeText(a.color, '#1a3c5e'),
+      text: safeText(a.text, 'Activity'),
+      time: safeText(a.time, 'Just now'),
+    }));
+
+  const normaliseParts = (data = []) =>
+    [...safeArray(data)]
+      .sort((a, b) => safeNumber(b.quantity) - safeNumber(a.quantity))
+      .slice(0, 5)
+      .map((p) => ({
+        part: safeText(p.partName, 'Unknown Part'),
+        partNo: safeText(p.partNumber, '-'),
+        sold: safeNumber(p.quantity),
+        revenue: `₹${(safeNumber(p.sellingPrice) * safeNumber(p.quantity)).toLocaleString('en-IN')}`,
+        status: safeStatus(p.status),
+      }));
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const [dashRes, partsRes, activityRes, attendanceRes] = await Promise.allSettled([
-          dashboardApi.getStats(),
-          sparePartsApi.getAll(),
-          dashboardApi.getActivity(),
-          dashboardApi.getAttendanceStats(),
-        ]);
+        const [dashRes, partsRes, activityRes, attendanceRes, salesRes, serviceRes] =
+          await Promise.allSettled([
+            dashboardApi.getStats(),
+            sparePartsApi.getAll(),
+            dashboardApi.getActivity(),
+            dashboardApi.getAttendanceStats(),
+            salesOrdersApi.getAll(),
+            serviceRequestsApi.getAll(),
+          ]);
 
         if (dashRes.status === 'fulfilled') {
-          const d = dashRes.value.data;
-          setStats(prev => {
-            const newStats = [...prev];
-            newStats[0] = { ...newStats[0], value: d.stats?.todaySales ?? '₹0' };
-            newStats[1] = { ...newStats[1], value: d.stats?.todayPurchases ?? '₹0' };
-            newStats[2] = { ...newStats[2], value: d.stats?.lowStockAlerts ?? '0 Parts' };
-            newStats[3] = { ...newStats[3], value: d.stats?.pendingPayments ?? '₹0' };
-            newStats[4] = { ...newStats[4], value: String(d.stats?.totalEmployees ?? 0) };
-            newStats[5] = { ...newStats[5], value: String(d.stats?.totalStockItems ?? 0) };
-            return newStats;
-          });
-          setLowStockCount(d.stats?.lowStockCount ?? 0);
-          setTotalReceivables(d.stats?.totalReceivables ?? '₹0');
-          setTotalPayables(d.stats?.totalPayables ?? '₹0');
-          setOpenTickets(d.stats?.openTickets ?? 0);
-          setRecentOrders(d.recentOrders || []);
-          setRecentTickets(d.recentTickets || []);
-          setPendingPO(d.pendingPOs || []);
+          const norm = normaliseDashboard(dashRes.value.data);
+          setStats([
+            { label: "Today's Sales", value: norm.stats.todaySales, icon: <MdPointOfSale />, iconClass: 'd_accent', cardClass: 'd_accent', change: '+0%', dir: 'up' },
+            { label: "Today's Purchases", value: norm.stats.todayPurchases, icon: <MdShoppingCart />, iconClass: 'd_primary', cardClass: '', change: '+0%', dir: 'up' },
+            { label: 'Low Stock Alerts', value: `${norm.stats.lowStockCount} Parts`, icon: <MdWarning />, iconClass: 'd_danger', cardClass: 'd_danger', change: '+0 new', dir: 'down' },
+            { label: 'Pending Payments', value: norm.stats.pendingPayments, icon: <MdPayments />, iconClass: 'd_warning', cardClass: 'd_warning', change: '-0%', dir: 'up' },
+            { label: 'Total Employees', value: String(norm.stats.totalEmployees), icon: <MdPeople />, iconClass: 'd_success', cardClass: 'd_success', change: '0', dir: 'up' },
+            { label: 'Total Stock Items', value: String(norm.stats.totalStockItems), icon: <MdInventory2 />, iconClass: 'd_info', cardClass: 'd_info', change: '+0', dir: 'up' },
+          ]);
+          setLowStockCount(norm.stats.lowStockCount);
+          setTotalReceivables(norm.stats.totalReceivables);
+          setTotalPayables(norm.stats.totalPayables);
+          setOpenTickets(norm.stats.openTickets);
+          setPendingPO(norm.pendingPOs);
+        }
+
+        // Recent Orders now come from the SAME endpoint as Sales.js
+        // (/sales-orders → SalesOrder model) so the data matches exactly.
+        if (salesRes.status === 'fulfilled') {
+          setRecentOrders(normaliseDashboard({ recentOrders: salesRes.value.data }).recentOrders);
+        }
+
+        // Recent Service Tickets now come from the SAME endpoint as Service.js
+        // (/service-requests → ServiceRequest model) so the data matches exactly.
+        if (serviceRes.status === 'fulfilled') {
+          setRecentTickets(normaliseDashboard({ recentTickets: serviceRes.value.data }).recentTickets);
         }
 
         if (attendanceRes.status === 'fulfilled') {
-          const todayData = attendanceRes.value.data;
-          setAttendanceStats({
-            todayPresent: todayData.todayPresent ?? 0,
-            todayAbsent: todayData.todayAbsent ?? 0,
-            todayLeave: todayData.todayLeave ?? 0,
-            todayLate: todayData.todayLate ?? 0,
-          });
+          setAttendanceStats(normaliseAttendance(attendanceRes.value.data));
         }
 
         if (activityRes.status === 'fulfilled') {
-          const activities = (activityRes.value.data || []).map(a => ({
-            icon: a.icon,
-            color: a.color,
-            text: a.text,
-            time: a.time,
-          }));
-          setActivityFeed(activities);
+          setActivityFeed(normaliseActivity(activityRes.value.data));
         }
 
         if (partsRes.status === 'fulfilled') {
-          const parts = [...(partsRes.value.data || [])]
-            .sort((a, b) => (b.quantity || 0) - (a.quantity || 0))
-            .slice(0, 5)
-            .map((p) => ({
-              part: p.partName,
-              partNo: p.partNumber,
-              sold: p.quantity,
-              revenue: `₹${((p.sellingPrice || 0) * (p.quantity || 0)).toLocaleString('en-IN')}`,
-              status: p.status,
-            }));
-          setTopPartsList(parts);
+          setTopPartsList(normaliseParts(partsRes.value.data));
         }
       } catch {
         // Keep default zeroed stats on failure.
@@ -230,8 +328,8 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
                     {recentOrders.map((o, i) => (
                       <tr key={i}>
                         <td><code>{o.id}</code></td>
-                        <td><strong>{o.customer && typeof o.customer === 'object' ? o.customer.name || '-' : o.customer || '-'}</strong></td>
-                        <td>{o.amount && typeof o.amount === 'object' ? JSON.stringify(o.amount) : o.amount}</td>
+                        <td><strong>{o.customer}</strong></td>
+                        <td>{o.amount}</td>
                         <td>{o.date}</td>
                         <td>{statusBadge(o.status)}</td>
                       </tr>
@@ -263,8 +361,8 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
                     {pendingPO.map((p, i) => (
                       <tr key={i}>
                         <td><code>{p.id}</code></td>
-                        <td><strong>{p.supplier && typeof p.supplier === 'object' ? p.supplier.name || '-' : p.supplier || '-'}</strong></td>
-                        <td>{p.amount && typeof p.amount === 'object' ? '-' : p.amount}</td>
+                        <td><strong>{p.supplier}</strong></td>
+                        <td>{p.amount}</td>
                         <td>{p.delivery}</td>
                         <td>{statusBadge(p.status)}</td>
                       </tr>
@@ -299,9 +397,9 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
                     {recentTickets.map((t, i) => (
                       <tr key={i}>
                         <td><code>{t.id}</code></td>
-                        <td><strong>{t.customer && typeof t.customer === 'object' ? t.customer.name || '-' : t.customer || '-'}</strong></td>
-                        <td>{t.machine && typeof t.machine === 'object' ? t.machine.name || '-' : t.machine || '-'}</td>
-                        <td>{t.engineer && typeof t.engineer === 'object' ? t.engineer.name || '-' : t.engineer || '-'}</td>
+                        <td><strong>{t.customer}</strong></td>
+                        <td>{t.machine}</td>
+                        <td>{t.engineer}</td>
                         <td>{statusBadge(t.status)}</td>
                       </tr>
                     ))}

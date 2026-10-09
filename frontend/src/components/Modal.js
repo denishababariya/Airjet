@@ -24,7 +24,7 @@ const Modal = ({ open, onClose, title, children, size = 'md' }) => {
   if (!open) return null;
 
   return (
-    <div className="d_modal_backdrop" onClick={onClose} role="dialog" aria-modal="true">
+    <div className="d_modal_backdrop" role="dialog" aria-modal="true">
       <div
         className={`d_modal_box d_modal_${size}`}
         onClick={(e) => e.stopPropagation()}
