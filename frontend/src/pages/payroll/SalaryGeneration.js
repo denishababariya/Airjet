@@ -5,6 +5,7 @@ import ToastContainer from '../../components/Toast';
 import useToast from '../../hooks/useToast';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import useConfirm from '../../hooks/useConfirm';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const statusClass = { Draft:'d_info', Generated:'d_primary', Approved:'d_success', Paid:'d_success', Cancelled:'d_danger' };
 const paymentStatusClass = { Pending:'d_warning', Paid:'d_success', Failed:'d_danger' };
@@ -118,9 +119,9 @@ export default function SalaryGeneration({ onViewSalary, onEditSalary, onDownloa
         } catch (error) {
           // Handle backend error for already generated salaries
           if (error.response?.status === 400 && error.response?.data?.error) {
-            toast.error(error.response.data.error);
+            toast.error(getErrorMessage(error, error.response?.data?.error || 'Unable to generate salaries.'));
           } else {
-            toast.error(error.displayMessage || error.response?.data?.message || 'Failed to generate salaries');
+            toast.error(getErrorMessage(error, 'Unable to generate salaries. Please try again.'));
           }
         } finally {
           setGenerating(false);

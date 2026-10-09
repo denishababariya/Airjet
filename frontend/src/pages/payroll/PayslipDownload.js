@@ -3,6 +3,7 @@ import { MdDownload, MdDescription, MdArrowBack } from 'react-icons/md';
 import { payrollApi } from '../../utils/api';
 import html2pdf from 'html2pdf.js';
 import Modal from '../../components/Modal';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 export default function PayslipDownload() {
   const [payslips, setPayslips] = useState([]);
@@ -57,7 +58,7 @@ export default function PayslipDownload() {
       }
     } catch (error) {
       console.error('Error fetching payslips:', error);
-      setError('Failed to load payslips');
+      setError(getErrorMessage(error, 'Unable to load payslips. Please refresh.'));
     } finally {
       setLoading(false);
     }

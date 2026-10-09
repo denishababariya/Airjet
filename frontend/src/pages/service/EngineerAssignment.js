@@ -54,7 +54,13 @@ export default function EngineerAssignment() {
       setEngineers(engineersRes.data || []);
       setError(null);
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to load data')); = () => {
+      setError(getErrorMessage(err, 'Failed to load data'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openAdd = () => {
     setForm({ ...blank });
     setEditId(null);
     setErrors({});

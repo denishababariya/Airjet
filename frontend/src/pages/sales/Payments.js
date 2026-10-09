@@ -63,6 +63,12 @@ export default function Payments() {
             setError(null);
         } catch (err) {
             setError(getErrorMessage(err, 'Failed to load data'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filtered = payments.filter(p => {
         const matchesTab = activeTab === 'All' || p.status === activeTab;
         const matchesSearch = searchTerm === '' || 
             p.paymentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||

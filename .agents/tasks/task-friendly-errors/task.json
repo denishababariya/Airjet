@@ -1,0 +1,7 @@
+{
+  "task_id": "task-friendly-errors",
+  "task_description": "Replace all raw/technical error messages shown to users in the Airjet ERP frontend with clear, user-friendly English messages. Covers: api.js interceptor, validators.js strings, every catch block that calls toast.error() or setError(), and inline error spans across all pages.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}

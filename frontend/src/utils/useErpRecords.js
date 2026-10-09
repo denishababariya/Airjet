@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { erpApi } from './api';
+import { getErrorMessage } from './errorMessages';
 
 export function useErpRecords(module, recordType) {
   const [data, setData] = useState([]);
@@ -13,7 +14,7 @@ export function useErpRecords(module, recordType) {
       const { data: list } = await erpApi.getAll(module, recordType);
       setData(list);
     } catch (err) {
-      setError(err.displayMessage || 'Failed to load data');
+      setError(getErrorMessage(err, 'Unable to load records. Please try again.'));
     } finally {
       setLoading(false);
     }

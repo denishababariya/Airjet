@@ -5,6 +5,7 @@ import Modal from '../../components/Modal';
 import ToastContainer from '../../components/Toast';
 import useToast from '../../hooks/useToast';
 import { V, validate } from '../../utils/validators';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const statusBadge = (s) => s==='Approved'?'d_success':s==='Rejected'?'d_danger':'d_warning';
 const typeBadge   = (t) => t==='Sick'?'d_danger':t==='Annual'?'d_info':'d_primary';
@@ -60,7 +61,7 @@ export default function LeaveTracking() {
       const records = Array.isArray(res.data) ? res.data : (res.data?.records || []);
       setLeaves(groupLeaves(records));
     } catch (err) {
-      toast.error(err.response?.data?.error || err.displayMessage || 'Failed to fetch leaves');
+      toast.error(getErrorMessage(err, 'Unable to load leave records. Please refresh.'));
     } finally { setLoading(false); }
   };
 
@@ -110,7 +111,7 @@ export default function LeaveTracking() {
       toast.success(editId ? 'Leave updated!' : 'Leave applied successfully!');
       fetchLeaves();
     } catch (err) {
-      toast.error(err.response?.data?.error || err.displayMessage || 'Failed to apply leave');
+      toast.error(getErrorMessage(err, 'Unable to apply for leave. Please try again.'));
     } finally { setSubmitting(false); }
   };
 

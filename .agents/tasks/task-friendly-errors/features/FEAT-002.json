@@ -1,0 +1,125 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Update every catch block and inline validation message across all page and utility files to use getErrorMessage() from the new errorMessages.js utility, replacing raw fallback strings with friendly, context-specific messages. FEAT-002 depends on FEAT-001 (errorMessages.js must exist first).",
+  "status": "pending",
+  "steps": [
+    "IMPORTANT: Read d:\\Hasti\\Airjet\\.agents\\tasks\\task-friendly-errors\\context.json before starting. Read d:\\Hasti\\Airjet\\.agents\\tasks\\task-friendly-errors\\features\\FEAT-001.json findings to confirm errorMessages.js path and API.",
+
+    "STEP A — Import path reference:\n  - Files directly under src/pages/ (e.g. Login.js, Sales.js): import path = '../utils/errorMessages'\n  - Files under src/pages/subdirectory/ (e.g. sales/SalesOrders.js, attendance/CheckInOut.js): import path = '../../utils/errorMessages'\n  - Files under src/utils/ (useErpRecords.js, useWarranties.js): import path = './errorMessages'\n  - Files under src/context/ (SearchContext.js): import path = '../utils/errorMessages'",
+
+    "STEP B — src/utils/useErpRecords.js: replace `setError(err.displayMessage || 'Failed to load data')` with `setError(getErrorMessage(err, 'Unable to load records. Please try again.'))`; add import { getErrorMessage } from './errorMessages'",
+
+    "STEP C — src/utils/useWarranties.js: replace `setError(err.displayMessage || 'Failed to load warranties')` with `setError(getErrorMessage(err, 'Unable to load warranties. Please try again.'))`; add import",
+
+    "STEP D — src/context/SearchContext.js: replace `setSearchError(error.displayMessage || 'Search failed. Please try again.')` with `setSearchError(getErrorMessage(error, 'Search failed. Please try again.'))`; add import",
+
+    "STEP E — src/pages/Login.js: replace `setApiError(error.displayMessage || error.message || 'Login failed')` with `setApiError(getErrorMessage(error, 'Login failed. Please check your email and password.'))`; add import",
+
+    "STEP F — src/pages/ForgotPassword.js: all three catch blocks use `setApiError(error.displayMessage || error.message)`. Replace with `setApiError(getErrorMessage(error, 'An error occurred. Please try again.'))` for all three; add import",
+
+    "STEP G — src/pages/ChangePassword.js: replace `setErrors({ newPassword: error.displayMessage || 'Failed to update password' })` with `setErrors({ newPassword: getErrorMessage(error, 'Unable to update password. Please try again.') })`; add import",
+
+    "STEP H — src/pages/EmployeeMaster.js: three catch blocks. (1) fetchAll: `setError(err.displayMessage || 'Failed to load employees')` → `setError(getErrorMessage(err, 'Unable to load employees. Please refresh the page.'))`. (2) handleSave: `setError(... 'Failed to save employee')` and `toast.error(... 'Failed to save employee')` → use `getErrorMessage(err, 'Unable to save employee. Please check the form and try again.')` in both. (3) handleDelete: both setError and toast.error → `getErrorMessage(err, 'Unable to delete employee. Please try again.')`. Add import from '../utils/errorMessages'",
+
+    "STEP I — src/pages/Department.js: three catch blocks, all using toast.error. (1) fetchDepartments: `toast.error(err.displayMessage || 'Failed to load departments')` → `toast.error(getErrorMessage(err, 'Unable to load departments. Please refresh.'))`. (2) handleSave: → `getErrorMessage(err, 'Unable to save department. Please try again.')`. (3) handleDelete: → `getErrorMessage(err, 'Unable to delete department. Please try again.')`. Add import",
+
+    "STEP J — src/pages/Designation.js: three catch blocks. (1) fetchAll: → `getErrorMessage(err, 'Unable to load designations. Please refresh.')`. (2) handleSave: → `getErrorMessage(err, 'Unable to save designation. Please try again.')`. (3) handleDelete: → `getErrorMessage(err, 'Unable to delete designation. Please try again.')`. Add import",
+
+    "STEP K — src/pages/Attendance.js: two catch blocks. (1) fetchAll: → `getErrorMessage(err, 'Unable to load attendance records. Please refresh.')`. (2) handleSave: → `getErrorMessage(err, 'Unable to save attendance record. Please try again.')`. Add import",
+
+    "STEP L — src/pages/Profile.js: two catch blocks. (1) load: → `getErrorMessage(err, 'Unable to load profile. Please refresh.')`. (2) save: → `getErrorMessage(err, 'Unable to save profile changes. Please try again.')`. Add import",
+
+    "STEP M — src/pages/Sales.js: five catch blocks. (1) fetchCustomers: → `getErrorMessage(err, 'Unable to load customers. Please refresh.')`. (2) fetchSalesDocs: → `getErrorMessage(err, 'Unable to load sales data. Please refresh.')`. (3) fetchStockItems: → `getErrorMessage(err, 'Unable to load stock items. Please refresh.')`. (4) handleSave: → `getErrorMessage(err, 'Unable to save record. Please check the form and try again.')`. (5) handleDelete: → `getErrorMessage(err, 'Unable to delete record. Please try again.')`. Also replace inline validation `toast.error('Please add at least one item')` → keep as-is (it is already clear). Add import",
+
+    "STEP N — src/pages/SpareParts.js: four catch blocks. (1) fetchParts: → `getErrorMessage(err, 'Unable to load spare parts. Please refresh.')`. (2) handleSave (part): → `getErrorMessage(err, 'Unable to save spare part. Please check the form and try again.')`. (3) handleDelete: → `getErrorMessage(err, 'Unable to delete this record. Please try again.')`. (4) handleSaveCategory: → `getErrorMessage(err, 'Unable to save category. Please try again.')`. Add import",
+
+    "STEP O — src/pages/Purchase.js: six catch blocks. (1–4) fetchSuppliers/fetchOrders/fetchGrn/fetchReturns: each → appropriate `getErrorMessage(err, 'Unable to load [suppliers/purchase orders/GRN records/returns]. Please refresh.')`. (5) handleSave: → `getErrorMessage(err, 'Unable to save record. Please check the form and try again.')`. (6) handleDelete: → `getErrorMessage(err, 'Unable to delete record. Please try again.')`. Add import",
+
+    "STEP P — src/pages/Warehouse.js: six catch blocks. (1–4) fetchStock/fetchTransfers/fetchAudits/fetchTransactions: each → `getErrorMessage(err, 'Unable to load [stock/transfers/audits/transactions]. Please refresh.')`. (5) handleSave: → `getErrorMessage(err, 'Unable to save record. Please check the form and try again.')`. (6) handleDelete: → `getErrorMessage(err, 'Unable to delete record. Please try again.')`. Add import",
+
+    "STEP Q — src/pages/Reports.js: one catch block → `getErrorMessage(err, 'Unable to load report. Please try again.')`. Add import",
+
+    "STEP R — src/pages/Accounts.js: three catch blocks. (1) inner fetch: `return { key, error: err.displayMessage || ...}` → `return { key, error: getErrorMessage(err, \`Unable to load \${config.label}.\`) }`. (2) handleSave: → `getErrorMessage(err, 'Unable to save record. Please try again.')`. (3) handleDelete: → `getErrorMessage(err, 'Unable to delete record. Please try again.')`. Add import",
+
+    "STEP S — src/pages/RawMaterials.js: three catch blocks. (1) fetchMaterials: `toast.error('Failed to fetch raw materials')` → `toast.error(getErrorMessage(err, 'Unable to load raw materials. Please refresh.'))`. (2) stock quantity validation: `toast.error('Please enter a valid quantity')` → keep as-is (already clear). (3) handleStockUpdate: → `getErrorMessage(err, 'Unable to update stock. Please try again.')`. Add import",
+
+    "STEP T — src/pages/RawMaterialPurchases.js: two catch blocks. (1) fetchAll: → `getErrorMessage(err, 'Unable to load raw material purchases. Please refresh.')`. (2) handleSave: → `getErrorMessage(err, 'Unable to save purchase record. Please check the form and try again.')`. Add import",
+
+    "STEP U — src/pages/RawMaterialReport.js: one catch block → `getErrorMessage(err, 'Unable to load raw material report. Please try again.')`. Add import",
+
+    "STEP V — src/pages/QrScanner.js: one catch block → `setError(getErrorMessage(err, 'QR scan failed. Please try again.'))`. Add import",
+
+    "STEP W — src/pages/Settings.js: one catch block → `setPasswordErrors({ currentPassword: getErrorMessage(err, 'Unable to change password. Please check your current password and try again.') })`. Add import",
+
+    "STEP X — src/pages/accounts/GSTReports.js: three catch blocks (load, save, delete) → use `getErrorMessage(err, 'Unable to load GST records. Please refresh.')`, `getErrorMessage(err, 'Unable to save GST record. Please try again.')`, `getErrorMessage(err, 'Unable to delete GST record. Please try again.')`. Import path: '../../utils/errorMessages'",
+
+    "STEP Y — src/pages/attendance/AttendanceReport.js: (1) date validation: `setError('Please select start and end dates')` and `setError('End date must be on or after start date')` — these are already clear; leave unchanged. (2) API catch: → `getErrorMessage(err, 'Unable to load attendance report. Please try again.')`. Import path: '../../utils/errorMessages'",
+
+    "STEP Z — src/pages/attendance/CheckInOut.js: catch block → `getErrorMessage(err, 'Unable to load attendance data. Please refresh.')`. Import '../../utils/errorMessages'",
+
+    "STEP AA — src/pages/attendance/EmployeeQRCode.js: three setError calls. (1) fetchEmployees: → `getErrorMessage(err, 'Unable to load employee list. Please refresh.')`. (2) employee not selected: `setError('Please select an employee')` — already clear, leave unchanged. (3) generateQR: → `getErrorMessage(err, 'Unable to generate QR code. Please try again.')`. (4) popup blocked: `setError('Please allow popups to print the QR code')` — already clear, leave unchanged. Import '../../utils/errorMessages'",
+
+    "STEP AB — src/pages/attendance/LeaveTracking.js: two catch blocks. (1) fetchLeaves: → `getErrorMessage(err, 'Unable to load leave records. Please refresh.')`. (2) handleSubmit: → `getErrorMessage(err, 'Unable to apply for leave. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AC — src/pages/attendance/QRScanner.js: (1) cool-down message: `setError('Please wait 3 seconds before scanning again')` — already clear, leave unchanged. (2) API catch: → `getErrorMessage(err, 'QR scan failed. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AD — src/pages/attendance/TodayAttendance.js: catch block → `getErrorMessage(err, 'Unable to load today\\'s attendance. Please refresh.')`. Import '../../utils/errorMessages'",
+
+    "STEP AE — src/pages/payroll/Allowances.js and Deductions.js: validation messages `toast.error('Please fill in all required fields')` are already clear; leave unchanged. No import needed",
+
+    "STEP AF — src/pages/payroll/SalaryEdit.js: (1) allowance/deduction validation toasts — already clear, leave unchanged. (2) handleSave catch: → `getErrorMessage(error, 'Unable to update salary. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AG — src/pages/payroll/SalaryGeneration.js: the catch block has two branches — (1) backend-specific 400 error: `toast.error(error.response.data.error)` — wrap with `getErrorMessage(error, error.response?.data?.error || 'Unable to generate salaries.')` so it still shows the specific backend message if friendly, but falls back gracefully. (2) general: → `getErrorMessage(error, 'Unable to generate salaries. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AH — src/pages/payroll/SalaryList.js: three catch blocks (delete, approve, cancel) → `getErrorMessage(error, 'Unable to delete salary record. Please try again.')`, `getErrorMessage(error, 'Unable to approve salary. Please try again.')`, `getErrorMessage(error, 'Unable to cancel salary. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AI — src/pages/payroll/SalaryPayment.js: catch block → `getErrorMessage(error, 'Unable to process payment. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AJ — src/pages/payroll/PayslipDownload.js: catch block → `setError(getErrorMessage(error, 'Unable to load payslips. Please refresh.'))`. Import '../../utils/errorMessages'",
+
+    "STEP AK — src/pages/purchase/PurchaseOrders.js: three catch blocks (load, save, delete) → `getErrorMessage(err, 'Unable to load purchase orders. Please refresh.')`, `getErrorMessage(err, 'Unable to save purchase order. Please try again.')`, `getErrorMessage(err, 'Unable to delete purchase order. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AL — src/pages/sales/Customers.js: three setError calls (load, save, delete) → `getErrorMessage(err, 'Unable to load customers. Please refresh.')`, `getErrorMessage(err, 'Unable to save customer. Please check the form and try again.')`, `getErrorMessage(err, 'Unable to delete customer. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AM — src/pages/sales/CustomerDetail.js: catch block → `getErrorMessage(err, 'Unable to load customer details. Please refresh.')`. Import '../../utils/errorMessages'",
+
+    "STEP AN — src/pages/sales/Invoices.js: five catch blocks (load, save, delete, action, payment) → `getErrorMessage(err, 'Unable to load invoices. Please refresh.')`, `getErrorMessage(err, 'Unable to save invoice. Please try again.')`, `getErrorMessage(err, 'Unable to delete invoice. Please try again.')`, `getErrorMessage(err, \\`Unable to \${action} invoice. Please try again.\\`)`, `getErrorMessage(err, 'Unable to add payment. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AO — src/pages/sales/Payments.js: three catch blocks → `getErrorMessage(err, 'Unable to load payments. Please refresh.')`, `getErrorMessage(err, 'Unable to save payment. Please try again.')`, `getErrorMessage(err, 'Unable to delete payment. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AP — src/pages/sales/Quotations.js: four catch blocks → `getErrorMessage(err, 'Unable to load quotations. Please refresh.')`, save/delete/action equivalents. Import '../../utils/errorMessages'",
+
+    "STEP AQ — src/pages/sales/QuotationDetail.js: catch block → `getErrorMessage(err, 'Unable to load quotation details. Please refresh.')`. Import '../../utils/errorMessages'",
+
+    "STEP AR — src/pages/sales/SalesDashboard.js: catch block → `getErrorMessage(err, 'Unable to load sales dashboard. Please refresh.')`. Import '../../utils/errorMessages'",
+
+    "STEP AS — src/pages/sales/SalesOrders.js: six catch blocks (load, save, delete, action, invoice generation) → appropriate friendly messages. Import '../../utils/errorMessages'",
+
+    "STEP AT — src/pages/sales/SalesReports.js: catch block → `getErrorMessage(err, 'Unable to load sales report data. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AU — src/pages/sales/SalesReturns.js: four catch blocks → appropriate friendly messages. Import '../../utils/errorMessages'",
+
+    "STEP AV — src/pages/service/EngineerAssignment.js: three situations. (1) fetchData: → `getErrorMessage(err, 'Unable to load service data. Please refresh.')`. (2) request not found validation: `setError('Service request not found')` → `setError('The selected service request could not be found. Please refresh and try again.')`. (3) handleSave: → `getErrorMessage(err, 'Unable to save assignment. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AW — src/pages/service/EngineerVisit.js: two catch blocks → `getErrorMessage(err, 'Unable to save visit record. Please try again.')`, `getErrorMessage(err, 'Unable to delete visit record. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AX — src/pages/service/ServiceReports.js: catch block → `getErrorMessage(err, 'Unable to load service requests. Please refresh.')`. Import '../../utils/errorMessages'",
+
+    "STEP AY — src/pages/service/ServiceTickets.js: three catch blocks → `getErrorMessage(err, 'Unable to load service tickets. Please refresh.')`, `getErrorMessage(err, 'Unable to save ticket. Please try again.')`, `getErrorMessage(err, 'Unable to delete ticket. Please try again.')`. Import '../../utils/errorMessages'",
+
+    "STEP AZ — src/pages/service/SparePartsRequired.js: two catch blocks → `getErrorMessage(err, 'Unable to save parts request. Please try again.')`, `getErrorMessage(err, 'Unable to delete parts request. Please try again.')`. Import '../../utils/errorMessages'"
+  ],
+  "acceptance_criteria": [
+    "No page shows a raw JavaScript error message, MongoServerError, stack trace, or network-level error string to the user",
+    "Every catch block that surfaces an error to the user goes through getErrorMessage() with a meaningful context-specific fallback",
+    "All import paths are correct (../utils/errorMessages for depth-1 pages, ../../utils/errorMessages for depth-2 subdirectory pages, ./errorMessages for files in utils/)",
+    "npm run build from d:\\Hasti\\Airjet\\frontend exits 0 with no compilation errors",
+    "Friendly fallback messages are context-specific (e.g. 'Unable to load customers' not generic 'Error')"
+  ],
+  "verification": [
+    "cd d:\\Hasti\\Airjet\\frontend && npm run build -- --no-progress"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MdQrCode, MdDownload, MdPrint, MdPerson } from 'react-icons/md';
 import { employeesApi, attendanceApi } from '../../utils/api';
 import QRCode from 'qrcode';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const EmployeeQRCode = () => {
   const [selectedEmployee, setSelectedEmployee] = useState('');
@@ -17,7 +18,7 @@ const EmployeeQRCode = () => {
       const response = await employeesApi.getAll();
       setEmployees(response.data);
     } catch (err) {
-      setError('Failed to fetch employees');
+      setError(getErrorMessage(err, 'Unable to load employee list. Please refresh.'));
     }
   };
 
@@ -44,7 +45,7 @@ const EmployeeQRCode = () => {
       });
       setQrImageUrl(qrImage);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to generate QR code');
+      setError(getErrorMessage(err, 'Unable to generate QR code. Please try again.'));
     } finally {
       setLoading(false);
     }

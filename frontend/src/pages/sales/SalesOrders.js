@@ -90,6 +90,12 @@ export default function SalesOrders() {
             setError(null);
         } catch (err) {
             setError(getErrorMessage(err, 'Failed to load data'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filtered = orders.filter(r =>
         activeTab === 'All' || r.status === activeTab
     ).filter(r =>
         r.orderNumber?.toLowerCase().includes(search.toLowerCase()) ||

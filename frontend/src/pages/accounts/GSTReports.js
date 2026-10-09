@@ -8,6 +8,7 @@ import useToast from '../../hooks/useToast';
 import useConfirm from '../../hooks/useConfirm';
 import { gstApi } from '../../utils/api';
 import { V, validate } from '../../utils/validators';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const blank = { month: '', taxable: '', cgst: '', sgst: '', igst: '', total: '', status: 'Pending' };
 const toNum = (v) => parseFloat(String(v||'').replace(/[^\d.]/g,'')) || 0;
@@ -34,7 +35,7 @@ export default function GSTReports() {
       const res = await gstApi.getAll();
       setRecords(res.data || []);
     } catch (err) {
-      toast.error(err.response?.data?.error || err.displayMessage || 'Failed to load GST records');
+      toast.error(getErrorMessage(err, 'Unable to load GST records. Please refresh.'));
     } finally { setLoading(false); }
   };
   useEffect(() => { fetchRecords(); }, []);
@@ -116,7 +117,7 @@ export default function GSTReports() {
       toast.success(editId ? 'GST record updated!' : 'GST record added!');
       fetchRecords();
     } catch (err) {
-      toast.error(err.response?.data?.error || err.displayMessage || 'Failed to save');
+      toast.error(getErrorMessage(err, 'Unable to save GST record. Please try again.'));
     } finally { setSaving(false); }
   };
 
@@ -127,7 +128,7 @@ export default function GSTReports() {
       onConfirm: async () => {
         closeConfirm();
         try { await gstApi.remove(id); toast.success('GST record deleted.'); fetchRecords(); }
-        catch (err) { toast.error(err.response?.data?.error || err.displayMessage || 'Failed to delete'); }
+        catch (err) { toast.error(getErrorMessage(err, 'Unable to delete GST record. Please try again.')); }
       },
     });
   };

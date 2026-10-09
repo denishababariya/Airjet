@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdAccessTime, MdCalendarToday, MdRefresh, MdSearch, MdFilterList } from 'react-icons/md';
 import { attendanceApi, auth } from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const CheckInOut = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -43,7 +44,7 @@ const CheckInOut = () => {
       
       setAttendanceData(filteredData);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to fetch attendance data');
+      setError(getErrorMessage(err, 'Unable to load attendance data. Please refresh.'));
     } finally {
       setLoading(false);
     }

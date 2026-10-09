@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MdQrCodeScanner, MdAccessTime, MdCheckCircle, MdError } from 'react-icons/md';
 import { attendanceApi } from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const QRScanner = () => {
   const [scanning, setScanning] = useState(false);
@@ -41,7 +42,7 @@ const QRScanner = () => {
         setSuccess(false);
       }, 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to scan QR code');
+      setError(getErrorMessage(err, 'QR scan failed. Please try again.'));
     } finally {
       setLoading(false);
     }

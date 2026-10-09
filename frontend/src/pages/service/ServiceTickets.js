@@ -78,7 +78,13 @@ export default function ServiceTickets() {
       setCustomers(customersRes.data || []);
       setError(null);
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to load data')); = async (salesOrderNumber) => {
+      setError(getErrorMessage(err, 'Failed to load data'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkWarrantyStatus = async (salesOrderNumber) => {
     if (!salesOrderNumber) {
       setForm(p => ({ ...p, warranty: 'No', warrantyExpiryDate: '', warrantyStatus: 'N/A', serviceType: 'Paid' }));
       return;
@@ -225,6 +231,8 @@ export default function ServiceTickets() {
       fetchData();
     } catch (err) { 
       setError(getErrorMessage(err, 'Failed to delete'));
+    }
+  };
 
   return (
     <div>

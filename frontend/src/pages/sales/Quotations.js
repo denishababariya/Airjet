@@ -72,6 +72,12 @@ export default function Quotations() {
             setError(null);
         } catch (err) {
             setError(getErrorMessage(err, 'Failed to load data'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filtered = quotations.filter(q => activeTab === 'All' || q.status === activeTab);
 
     const openAdd = () => {
         setForm({ ...blankQuotation, validUntil: calculateValidUntil(30) });

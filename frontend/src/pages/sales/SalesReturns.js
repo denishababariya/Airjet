@@ -74,6 +74,12 @@ export default function SalesReturns() {
             setError(null);
         } catch (err) {
             setError(getErrorMessage(err, 'Failed to load data'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filtered = returns.filter(r => activeTab === 'All' || r.status === activeTab);
 
     const openAdd = () => {
         setForm({ ...blankReturn });

@@ -86,6 +86,12 @@ export default function Invoices() {
             setError(null);
         } catch (err) {
             setError(getErrorMessage(err, 'Failed to load data'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filtered = invoices.filter(i => activeTab === 'All' || i.status === activeTab);
 
     const openAdd = () => {
         setForm({ ...blankInvoice });

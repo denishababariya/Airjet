@@ -5,6 +5,7 @@ import ToastContainer from '../../components/Toast';
 import useToast from '../../hooks/useToast';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import useConfirm from '../../hooks/useConfirm';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const statusClass = { Draft:'d_info', Generated:'d_primary', Approved:'d_success', Paid:'d_success', Cancelled:'d_danger' };
 const paymentStatusClass = { Pending:'d_warning', Paid:'d_success', Failed:'d_danger' };
@@ -74,7 +75,7 @@ export default function SalaryList({ onViewDetails, onEdit, onApprove, onPay, on
           toast.success('Salary record deleted successfully');
           fetchSalaries();
         } catch (error) {
-          toast.error(error.displayMessage || 'Failed to delete salary record');
+          toast.error(getErrorMessage(error, 'Unable to delete salary record. Please try again.'));
         }
       }
     });
@@ -94,7 +95,7 @@ export default function SalaryList({ onViewDetails, onEdit, onApprove, onPay, on
           fetchSalaries();
           if (onApprove) onApprove(id);
         } catch (error) {
-          toast.error(error.displayMessage || 'Failed to approve salary');
+          toast.error(getErrorMessage(error, 'Unable to approve salary. Please try again.'));
         }
       }
     });
@@ -114,7 +115,7 @@ export default function SalaryList({ onViewDetails, onEdit, onApprove, onPay, on
           fetchSalaries();
           if (onCancel) onCancel(id);
         } catch (error) {
-          toast.error(error.displayMessage || 'Failed to cancel salary');
+          toast.error(getErrorMessage(error, 'Unable to cancel salary. Please try again.'));
         }
       }
     });

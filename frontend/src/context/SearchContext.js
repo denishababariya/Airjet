@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const SearchContext = createContext(null);
 
@@ -22,7 +23,7 @@ export const SearchProvider = ({ children }) => {
       const response = await searchApi.global(query.trim());
       setSearchResults(response.data.results || []);
     } catch (error) {
-      setSearchError(error.displayMessage || 'Search failed. Please try again.');
+      setSearchError(getErrorMessage(error, 'Search failed. Please try again.'));
       setSearchResults([]);
     } finally {
       setIsSearching(false);
