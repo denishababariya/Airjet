@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdArrowBack, MdEdit, MdPrint, MdDescription, MdPerson, MdCalendarToday, MdLocationOn, MdAttachMoney, MdCheck, MdClose, MdSend } from 'react-icons/md';
 import api from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 export default function QuotationDetail({ quotationId, setActiveMenu, onBack }) {
     const [quotation, setQuotation] = useState(null);
@@ -20,7 +21,7 @@ export default function QuotationDetail({ quotationId, setActiveMenu, onBack }) 
             setQuotation(res.data);
             setError(null);
         } catch (err) {
-            setError('Failed to load quotation data');
+            setError(getErrorMessage(err, 'Failed to load quotation data'));
             console.error(err);
         } finally {
             setLoading(false);

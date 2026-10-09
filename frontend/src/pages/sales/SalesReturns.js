@@ -3,6 +3,7 @@ import { MdAdd, MdEdit, MdDelete, MdVisibility, MdAssignmentReturn, MdCheck, MdC
 import Modal from '../../components/Modal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import api from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const blankReturn = {
     customer: '',
@@ -72,14 +73,7 @@ export default function SalesReturns() {
             setSpareParts(sparePartsRes.data || []);
             setError(null);
         } catch (err) {
-            setError('Failed to load data');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const filtered = returns.filter(r => activeTab === 'All' || r.status === activeTab);
+            setError(getErrorMessage(err, 'Failed to load data'));
 
     const openAdd = () => {
         setForm({ ...blankReturn });
@@ -269,7 +263,7 @@ export default function SalesReturns() {
             setModal(false);
             fetchData();
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to save sales return');
+            setError(getErrorMessage(err, 'Failed to save sales return'));
         }
     };
 
@@ -283,7 +277,7 @@ export default function SalesReturns() {
                     fetchData();
                     setConfirmModal({ open: false, onConfirm: null, title: '', message: '' });
                 } catch (err) {
-                    setError(err.response?.data?.error || 'Failed to delete sales return');
+                    setError(getErrorMessage(err, 'Failed to delete sales return'));
                 }
             },
             title: 'Delete Sales Return',
@@ -296,7 +290,7 @@ export default function SalesReturns() {
             await api.post(`/sales-returns/${id}/${action}`);
             fetchData();
         } catch (err) {
-            setError(err.response?.data?.error || `Failed to ${action} sales return`);
+            setError(getErrorMessage(err, `Failed to ${action} sales return`));
         }
     };
 

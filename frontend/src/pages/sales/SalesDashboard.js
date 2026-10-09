@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdTrendingUp, MdShoppingBag, MdReceipt, MdPeople, MdAttachMoney, MdWarning, MdCheckCircle, MdCancel, MdArrowUpward, MdArrowDownward } from 'react-icons/md';
 import api from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 export default function SalesDashboard() {
     const [loading, setLoading] = useState(true);
@@ -19,7 +20,7 @@ export default function SalesDashboard() {
             setData(response.data);
             setError(null);
         } catch (err) {
-            setError('Failed to load dashboard data');
+            setError(getErrorMessage(err, 'Failed to load dashboard data'));
             console.error(err);
         } finally {
             setLoading(false);

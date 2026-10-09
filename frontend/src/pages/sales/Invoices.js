@@ -3,6 +3,7 @@ import { MdAdd, MdEdit, MdDelete, MdVisibility, MdReceipt, MdDownload, MdAttachM
 import Modal from '../../components/Modal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import api from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const blankInvoice = {
     customer: '',
@@ -84,14 +85,7 @@ export default function Invoices() {
             setSpareParts(sparePartsRes.data || []);
             setError(null);
         } catch (err) {
-            setError('Failed to load data');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const filtered = invoices.filter(i => activeTab === 'All' || i.status === activeTab);
+            setError(getErrorMessage(err, 'Failed to load data'));
 
     const openAdd = () => {
         setForm({ ...blankInvoice });
@@ -310,7 +304,7 @@ export default function Invoices() {
             setModal(false);
             fetchData();
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to save invoice');
+            setError(getErrorMessage(err, 'Failed to save invoice'));
         }
     };
 
@@ -324,7 +318,7 @@ export default function Invoices() {
                     fetchData();
                     setConfirmModal({ open: false, onConfirm: null, title: '', message: '' });
                 } catch (err) {
-                    setError(err.response?.data?.error || 'Failed to delete invoice');
+                    setError(getErrorMessage(err, 'Failed to delete invoice'));
                 }
             },
             title: 'Delete Invoice',
@@ -337,7 +331,7 @@ export default function Invoices() {
             await api.post(`/invoices/${id}/${action}`);
             fetchData();
         } catch (err) {
-            setError(err.response?.data?.error || `Failed to ${action} invoice`);
+            setError(getErrorMessage(err, `Failed to ${action} invoice`));
         }
     };
 
@@ -363,7 +357,7 @@ export default function Invoices() {
             setPaymentModal(false);
             fetchData();
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to add payment');
+            setError(getErrorMessage(err, 'Failed to add payment'));
         }
     };
 

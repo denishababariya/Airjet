@@ -4,6 +4,7 @@ import Modal from '../../components/Modal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import CustomerDetail from './CustomerDetail';
 import api from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const blankCustomer = {
     name: '',
@@ -53,7 +54,7 @@ export default function Customers({ setActiveMenu }) {
             setCustomers(response.data || []);
             setError(null);
         } catch (err) {
-            setError('Failed to load customers');
+            setError(getErrorMessage(err, 'Failed to load customers'));
             console.error(err);
         } finally {
             setLoading(false);
@@ -138,7 +139,7 @@ export default function Customers({ setActiveMenu }) {
             setModal(false);
             fetchCustomers();
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to save customer');
+            setError(getErrorMessage(err, 'Failed to save customer'));
         }
     };
 
@@ -152,7 +153,7 @@ export default function Customers({ setActiveMenu }) {
                     fetchCustomers();
                     setConfirmModal({ open: false, onConfirm: null, title: '', message: '' });
                 } catch (err) {
-                    setError(err.response?.data?.error || 'Failed to delete customer');
+                    setError(getErrorMessage(err, 'Failed to delete customer'));
                 }
             },
             title: 'Delete Customer',

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdVisibility, MdEngineering } from 'react-icons/md';
 import Modal from '../../components/Modal';
 import api from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const STATUS_OPTIONS = ['Assigned', 'In Progress', 'Completed', 'Cancelled'];
 
@@ -53,14 +54,7 @@ export default function EngineerAssignment() {
       setEngineers(engineersRes.data || []);
       setError(null);
     } catch (err) {
-      setError('Failed to load data');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const openAdd = () => {
+      setError(getErrorMessage(err, 'Failed to load data')); = () => {
     setForm({ ...blank });
     setEditId(null);
     setErrors({});
@@ -115,7 +109,7 @@ export default function EngineerAssignment() {
       setModal(false);
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save assignment');
+      setError(getErrorMessage(err, 'Failed to save assignment'));
     }
   };
 

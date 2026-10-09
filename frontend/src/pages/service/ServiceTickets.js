@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdVisibility, MdConfirmationNumber, MdAttachFile } from 'react-icons/md';
 import Modal from '../../components/Modal';
 import api from '../../utils/api';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const STATUS_OPTIONS = ['Open', 'Verified', 'Assigned', 'In Progress', 'Waiting Parts', 'Completed', 'Closed', 'Cancelled'];
 const PRIORITY_OPTIONS = ['Low', 'Medium', 'High', 'Critical'];
@@ -77,14 +78,7 @@ export default function ServiceTickets() {
       setCustomers(customersRes.data || []);
       setError(null);
     } catch (err) {
-      setError('Failed to load data');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkWarrantyStatus = async (salesOrderNumber) => {
+      setError(getErrorMessage(err, 'Failed to load data')); = async (salesOrderNumber) => {
     if (!salesOrderNumber) {
       setForm(p => ({ ...p, warranty: 'No', warrantyExpiryDate: '', warrantyStatus: 'N/A', serviceType: 'Paid' }));
       return;
@@ -220,7 +214,7 @@ export default function ServiceTickets() {
       setModal(false);
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save ticket');
+      setError(getErrorMessage(err, 'Failed to save ticket'));
     }
   };
 
@@ -230,14 +224,7 @@ export default function ServiceTickets() {
       await api.delete(`/service-requests/${id}`); 
       fetchData();
     } catch (err) { 
-      setError(err.response?.data?.error || 'Failed to delete'); 
-    }
-  };
-
-  const f = (field) => ({
-    value: form[field] ?? '',
-    onChange: (ev) => { setForm(p => ({ ...p, [field]: ev.target.value })); setErrors(p => ({ ...p, [field]: '' })); },
-  });
+      setError(getErrorMessage(err, 'Failed to delete'));
 
   return (
     <div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MdAdd, MdEdit, MdVisibility, MdInventory, MdDelete } from 'react-icons/md';
 import Modal from '../../components/Modal';
 import { useErpRecords } from '../../utils/useErpRecords';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 const blank = {
   ticketNo: '',
@@ -50,13 +51,13 @@ export default function SparePartsRequired() {
       await save(form, editId);
       setModal(false);
     } catch (err) {
-      setError(err.displayMessage || 'Failed to save parts request');
+      setError(getErrorMessage(err, 'Failed to save parts request'));
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this parts request?')) return;
-    try { await remove(id); } catch (err) { setError(err.displayMessage || 'Failed to delete'); }
+    try { await remove(id); } catch (err) { setError(getErrorMessage(err, 'Failed to delete')); }
   };
 
   const f = (field) => ({
