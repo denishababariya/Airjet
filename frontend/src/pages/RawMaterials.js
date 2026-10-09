@@ -12,6 +12,7 @@ import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
 import { rawMaterialsApi } from '../utils/api';
 import { RiSearchAi2Line } from 'react-icons/ri';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const statusClass = {
   'In Stock': 'd_success',
@@ -72,7 +73,7 @@ const RawMaterials = () => {
       const res = await rawMaterialsApi.getAll();
       setMaterials(res.data || []);
     } catch (err) {
-      toast.error('Failed to fetch raw materials');
+      toast.error(getErrorMessage(err, 'Unable to load raw materials. Please refresh.'));
     } finally {
       setLoading(false);
     }
@@ -135,8 +136,7 @@ const RawMaterials = () => {
       });
     } catch (err) {
       toast.error(
-        err.response?.data?.error ||
-          'Failed to deduct stock'
+        getErrorMessage(err, 'Unable to update stock. Please try again.')
       );
     }
   };

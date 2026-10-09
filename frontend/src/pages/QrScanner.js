@@ -3,6 +3,7 @@ import { MdQrCodeScanner, MdCheckCircle, MdPeople, MdAccessTime, MdRefresh } fro
 import { attendanceApi } from '../utils/api';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { canTakeAttendance } from '../utils/roles';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const QrScanner = () => {
   const [scanResult, setScanResult] = useState(null);
@@ -86,7 +87,7 @@ const QrScanner = () => {
       // Refresh today's attendance
       fetchTodayAttendance();
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Scan failed');
+      setError(getErrorMessage(err, 'QR scan failed. Please try again.'));
       playErrorSound();
     } finally {
       setLoading(false);

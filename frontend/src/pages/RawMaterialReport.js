@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MdBarChart, MdInventory2, MdShoppingCart, MdTrendingUp, MdLayers, MdPieChart, MdShowChart } from 'react-icons/md';
 import { rawMaterialsApi } from '../utils/api';
 import ExportMenu from '../components/ExportMenu';
+import { getErrorMessage } from '../utils/errorMessages';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -67,7 +68,7 @@ const RawMaterialReport = ({ setActiveMenu }) => {
         const { data } = await rawMaterialsApi.getReport();
         setReport(data);
       } catch (err) {
-        setError(err.response?.data?.error || 'Failed to load raw material report');
+        setError(getErrorMessage(err, 'Unable to load raw material report. Please try again.'));
       } finally {
         setLoading(false);
       }

@@ -8,6 +8,7 @@ import {
 import Modal from "../components/Modal";
 import { accountsApi, erpApi } from "../utils/api";
 import { V, validate as validateFields } from '../utils/validators';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const statusClass = {
   Pending: "d_warning",
@@ -200,7 +201,7 @@ const Accounts = ({ defaultTab = "receivables", setActiveMenu }) => {
         const { data: result } = await api.getAll(config.apiModule, config.apiType);
         return { key, data: result };
       } catch (err) {
-        return { key, error: err.displayMessage || `Failed to load ${config.label}` };
+        return { key, error: getErrorMessage(err, `Unable to load ${config.label}.`) };
       }
     });
 
@@ -262,7 +263,7 @@ const Accounts = ({ defaultTab = "receivables", setActiveMenu }) => {
       await fetchData();
       setModal(false);
     } catch (err) {
-      setError(err.displayMessage || "Failed to save");
+      setError(getErrorMessage(err, 'Unable to save record. Please try again.'));
     }
   };
 
@@ -272,7 +273,7 @@ const Accounts = ({ defaultTab = "receivables", setActiveMenu }) => {
       await erpApi.remove(id);
       await fetchData();
     } catch (err) {
-      setError(err.displayMessage || "Failed to delete");
+      setError(getErrorMessage(err, 'Unable to delete record. Please try again.'));
     }
   };
 
