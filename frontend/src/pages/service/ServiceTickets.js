@@ -226,13 +226,18 @@ export default function ServiceTickets() {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this ticket?')) return;
-    try { 
-      await api.delete(`/service-requests/${id}`); 
+    try {
+      await api.delete(`/service-requests/${id}`);
       fetchData();
-    } catch (err) { 
+    } catch (err) {
       setError(getErrorMessage(err, 'Failed to delete'));
     }
   };
+
+  const f = (field) => ({
+    value: form[field] ?? '',
+    onChange: (ev) => { setForm(p => ({ ...p, [field]: ev.target.value })); setErrors(p => ({ ...p, [field]: '' })); },
+  });
 
   return (
     <div>
