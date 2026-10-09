@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MdBarChart } from 'react-icons/md';
 import { reportsApi } from '../utils/api';
 import ExportMenu from '../components/ExportMenu';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const statusClass = { 'In Stock':'d_success', 'Low Stock':'d_warning', 'Out of Stock':'d_danger', Generated:'d_info', Paid:'d_success', Available:'d_success' };
 
@@ -28,7 +29,7 @@ const Reports = ({ defaultTab = 'sales', setActiveMenu }) => {
         const { data: report } = await fn();
         setData(report);
       } catch (err) {
-        setError(err.displayMessage || 'Failed to load report');
+        setError(getErrorMessage(err, 'Unable to load report. Please try again.'));
       } finally {
         setLoading(false);
       }

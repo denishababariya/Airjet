@@ -6,6 +6,7 @@ import ToastContainer from '../components/Toast';
 import useToast from '../hooks/useToast';
 import { sparePartsApi } from '../utils/api';
 import { V, validate } from '../utils/validators';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const statusClass = { 'Available': 'd_success', 'Low Stock': 'd_warning', 'Out of Stock': 'd_danger', 'Discontinued': 'd_danger' };
 const blank = { name: '', cat: '', brand: '', model: '', stock: '', minStock: '', price: '', warrantyPeriod: '', warrantyUnit: 'Months', status: 'Available', images: [] };
@@ -52,7 +53,7 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
       const { data: list } = await sparePartsApi.getAll();
       setData(list);
     } catch (err) {
-      toast.error(err.displayMessage || 'Failed to load spare parts');
+      toast.error(getErrorMessage(err, 'Unable to load spare parts. Please refresh.'));
     } finally { setLoading(false); }
   };
 
@@ -213,7 +214,7 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
       toast.success(editId ? 'Spare part updated!' : 'Spare part added!');
       fetchParts();
     } catch (err) {
-      toast.error(err.displayMessage || 'Failed to save spare part');
+      toast.error(getErrorMessage(err, 'Unable to save spare part. Please check the form and try again.'));
     } finally { setSaving(false); }
   };
 
@@ -257,7 +258,7 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
       setDeleteId(null);
       setDeleteType(null);
       setDeleteLabel('');
-      toast.error(err.displayMessage || 'Failed to delete');
+      toast.error(getErrorMessage(err, 'Unable to delete this record. Please try again.'));
     }
   };
 
@@ -324,7 +325,7 @@ const SpareParts = ({ defaultTab = 'parts', setActiveMenu }) => {
       setCategoryModal(false);
       fetchCategories();
     } catch (err) {
-      toast.error(err.displayMessage || 'Failed to save category');
+      toast.error(getErrorMessage(err, 'Unable to save category. Please try again.'));
     } finally {
       setSavingCategory(false);
     }

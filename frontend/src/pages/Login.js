@@ -11,6 +11,7 @@ import {
   MdBuild,
 } from 'react-icons/md';
 import { auth } from '../utils/api';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const Login = ({ onLogin, setActiveMenu }) => {
   const [formData, setFormData] = useState({
@@ -61,7 +62,7 @@ const Login = ({ onLogin, setActiveMenu }) => {
       if (onLogin) onLogin(data.user);
       if (setActiveMenu) setActiveMenu('dashboard');
     } catch (error) {
-      setApiError(error.displayMessage || error.message || 'Login failed');
+      setApiError(getErrorMessage(error, 'Login failed. Please check your email and password.'));
     } finally {
       setLoading(false);
     }

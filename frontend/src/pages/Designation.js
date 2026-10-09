@@ -7,6 +7,7 @@ import useToast from '../hooks/useToast';
 import useConfirm from '../hooks/useConfirm';
 import { designationsApi, departmentsApi } from '../utils/api';
 import { V, validate } from '../utils/validators';
+import { getErrorMessage } from '../utils/errorMessages';
 
 const blank = { title: '', dept: '', status: 'Active' };
 
@@ -30,7 +31,7 @@ const Designation = () => {
       setData(desRes.data);
       setDepartments(deptRes.data);
     } catch (err) {
-      toast.error(err.displayMessage || 'Failed to load designations');
+      toast.error(getErrorMessage(err, 'Unable to load designations. Please refresh.'));
     } finally { setLoading(false); }
   };
 
@@ -66,7 +67,7 @@ const Designation = () => {
       toast.success(editId ? 'Designation updated!' : 'Designation added!');
       fetchAll();
     } catch (err) {
-      toast.error(err.displayMessage || 'Failed to save designation');
+      toast.error(getErrorMessage(err, 'Unable to save designation. Please try again.'));
     } finally { setSaving(false); }
   };
 
@@ -78,7 +79,7 @@ const Designation = () => {
       onConfirm: async () => {
         closeConfirm();
         try { await designationsApi.remove(id); toast.success('Designation deleted.'); fetchAll(); }
-        catch (err) { toast.error(err.displayMessage || 'Failed to delete'); }
+        catch (err) { toast.error(getErrorMessage(err, 'Unable to delete designation. Please try again.')); }
       },
     });
   };

@@ -20,6 +20,7 @@ import {
   hrApi,
 } from "../utils/api";
 import { V, validate as validateFields } from "../utils/validators";
+import { getErrorMessage } from "../utils/errorMessages";
 
 const blank = {
   name: "",
@@ -145,7 +146,7 @@ const EmployeeMaster = ({ currentUser }) => {
       setDepartments(deptRes.data);
       setDesignations(desRes.data);
     } catch (err) {
-      setError(err.displayMessage || "Failed to load employees");
+      setError(getErrorMessage(err, 'Unable to load employees. Please refresh the page.'));
     } finally {
       setLoading(false);
     }
@@ -361,16 +362,8 @@ const EmployeeMaster = ({ currentUser }) => {
           : "Employee added successfully",
       );
     } catch (err) {
-      setError(
-        err.displayMessage ||
-          err.response?.data?.error ||
-          "Failed to save employee",
-      );
-      toast.error(
-        err.displayMessage ||
-          err.response?.data?.error ||
-          "Failed to save employee",
-      );
+      setError(getErrorMessage(err, 'Unable to save employee. Please check the form and try again.'));
+      toast.error(getErrorMessage(err, 'Unable to save employee. Please check the form and try again.'));
     }
   };
 
@@ -394,8 +387,8 @@ const EmployeeMaster = ({ currentUser }) => {
       toast.success("Employee deleted successfully");
     } catch (err) {
       setDeleteId(null);
-      setError(err.displayMessage || "Failed to delete employee");
-      toast.error(err.displayMessage || "Failed to delete employee");
+      setError(getErrorMessage(err, 'Unable to delete employee. Please try again.'));
+      toast.error(getErrorMessage(err, 'Unable to delete employee. Please try again.'));
     }
   };
 

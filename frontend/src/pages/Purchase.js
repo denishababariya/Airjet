@@ -9,6 +9,7 @@ import useConfirm from '../hooks/useConfirm';
 import { V, validate as validateFields } from '../utils/validators';
 import { erpApi, suppliersApi, purchaseOrdersApi, purchaseReturnsApi, grnApi } from '../utils/api';
 import RawMaterialPurchases from './RawMaterialPurchases';
+import { getErrorMessage } from '../utils/errorMessages';
 
 /* ─── Status colour map ────────────────────────────────────── */
 const statusClass = {
@@ -74,19 +75,19 @@ const Purchase = ({ defaultTab = 'suppliers', setActiveMenu }) => {
   /* ── Fetchers ──────────────────────────────────────────── */
   const fetchSuppliers = async () => {
     try { const { data } = await suppliersApi.getAll(); setSuppliers(data); }
-    catch (err) { toast.error(err.displayMessage || 'Failed to load suppliers'); }
+    catch (err) { toast.error(getErrorMessage(err, 'Unable to load suppliers. Please refresh.')); }
   };
   const fetchOrders = async () => {
     try { const { data } = await purchaseOrdersApi.getAll(); setOrders(data); }
-    catch (err) { toast.error(err.displayMessage || 'Failed to load purchase orders'); }
+    catch (err) { toast.error(getErrorMessage(err, 'Unable to load purchase orders. Please refresh.')); }
   };
   const fetchGrn = async () => {
     try { const { data } = await erpApi.getAll('purchase', 'grn'); setGrnList(data); }
-    catch (err) { toast.error(err.displayMessage || 'Failed to load GRN'); }
+    catch (err) { toast.error(getErrorMessage(err, 'Unable to load GRN records. Please refresh.')); }
   };
   const fetchReturns = async () => {
     try { const { data } = await purchaseReturnsApi.getAll(); setReturns(data); }
-    catch (err) { toast.error(err.displayMessage || 'Failed to load returns'); }
+    catch (err) { toast.error(getErrorMessage(err, 'Unable to load returns. Please refresh.')); }
   };
 
   useEffect(() => {
@@ -399,7 +400,7 @@ const Purchase = ({ defaultTab = 'suppliers', setActiveMenu }) => {
       }
       setModal(false);
     } catch (err) {
-      toast.error(err.displayMessage || err.response?.data?.error || 'Failed to save. Please try again.');
+      toast.error(getErrorMessage(err, 'Unable to save record. Please check the form and try again.'));
     } finally {
       setSaving(false);
     }
@@ -421,7 +422,7 @@ const Purchase = ({ defaultTab = 'suppliers', setActiveMenu }) => {
           else { await purchaseOrdersApi.remove(id); fetchOrders(); }
           toast.success('Record deleted successfully.');
         } catch (err) {
-          toast.error(err.displayMessage || 'Failed to delete.');
+          toast.error(getErrorMessage(err, 'Unable to delete record. Please try again.'));
         }
       },
     });

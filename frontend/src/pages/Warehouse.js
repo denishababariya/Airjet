@@ -13,6 +13,7 @@ import useConfirm from '../hooks/useConfirm';
 import { stockApi, erpApi } from '../utils/api';
 
 import { V, validate } from '../utils/validators';
+import { getErrorMessage } from '../utils/errorMessages';
 
 
 
@@ -99,13 +100,13 @@ const Warehouse = ({ defaultTab = 'warehouses', setActiveMenu }) => {
 
 
 
-  const fetchStock     = async () => { setLoading(true); try { const { data } = await stockApi.getAll(); setWarehouses(data); } catch (err) { toast.error(err.displayMessage || 'Failed to load stock'); } finally { setLoading(false); } };
+  const fetchStock     = async () => { setLoading(true); try { const { data } = await stockApi.getAll(); setWarehouses(data); } catch (err) { toast.error(getErrorMessage(err, 'Unable to load stock. Please refresh.')); } finally { setLoading(false); } };
 
-  const fetchTransfers = async () => { try { const { data } = await erpApi.getAll('warehouse','transfer'); setTransfers(data); } catch (err) { toast.error(err.displayMessage || 'Failed to load transfers'); } };
+  const fetchTransfers = async () => { try { const { data } = await erpApi.getAll('warehouse','transfer'); setTransfers(data); } catch (err) { toast.error(getErrorMessage(err, 'Unable to load transfers. Please refresh.')); } };
 
-  const fetchAudits    = async () => { try { const { data } = await erpApi.getAll('warehouse','audit');    setAudits(data);     } catch (err) { toast.error(err.displayMessage || 'Failed to load audits'); } };
+  const fetchAudits    = async () => { try { const { data } = await erpApi.getAll('warehouse','audit');    setAudits(data);     } catch (err) { toast.error(getErrorMessage(err, 'Unable to load audits. Please refresh.')); } };
 
-  const fetchTransactions = async () => { try { const { data } = await erpApi.getAll('warehouse','transaction'); setTransactions(data); } catch (err) { toast.error(err.displayMessage || 'Failed to load transactions'); } };
+  const fetchTransactions = async () => { try { const { data } = await erpApi.getAll('warehouse','transaction'); setTransactions(data); } catch (err) { toast.error(getErrorMessage(err, 'Unable to load transactions. Please refresh.')); } };
 
 
 
@@ -381,7 +382,7 @@ const Warehouse = ({ defaultTab = 'warehouses', setActiveMenu }) => {
 
     } catch (err) {
 
-      toast.error(err.displayMessage || 'Failed to save');
+      toast.error(getErrorMessage(err, 'Unable to save record. Please check the form and try again.'));
 
     } finally { setSaving(false); }
 
@@ -413,7 +414,7 @@ const Warehouse = ({ defaultTab = 'warehouses', setActiveMenu }) => {
 
           toast.success('Record deleted.');
 
-        } catch (err) { toast.error(err.displayMessage || 'Failed to delete'); }
+        } catch (err) { toast.error(getErrorMessage(err, 'Unable to delete record. Please try again.')); }
 
       },
 
