@@ -2218,8 +2218,8 @@ display: flex;
     margin-top: 6px;
     padding: 14px 0px 12px;
     border-top: 1px solid var(--d-light-border);
-    position: sticky;
-    bottom: -14px;
+    /* position: sticky;
+    bottom: -14px; */
     z-index: 2;
     background: var(--d-white);
 }
@@ -3512,4 +3512,77 @@ display: flex;
 
 .d_btn_danger:hover {
   background: #b02a37;
+}
+
+/* Employee QR code page */
+.employee-qr-page {
+  width: 100%;
+  min-width: 0;
+}
+
+.employee-qr-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 24px;
+}
+
+.employee-qr-page-header .d_page_subtitle {
+  margin: 0 0 4px;
+}
+
+.employee-qr-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.25fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.employee-qr-selector,
+.employee-qr-result,
+.employee-qr-result-card {
+  min-width: 0;
+  width: 100%;
+}
+
+.employee-qr-image {
+  display: block;
+  width: clamp(200px, 30vw, 300px);
+  height: auto;
+  max-width: 100%;
+  margin: 0 auto;
+  border: 1px solid #ddd;
+}
+
+.employee-qr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.employee-qr-result-card .d_card_body {
+  padding: clamp(18px, 3vw, 32px);
+}
+
+@media (max-width: 900px) {
+  .employee-qr-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .employee-qr-page-header .d_page_subtitle {
+    font-size: 13px;
+  }
+
+  .employee-qr-actions {
+    flex-direction: column;
+  }
+
+  .employee-qr-actions .d_btn {
+    width: 100%;
+    justify-content: center;
+  }
 }

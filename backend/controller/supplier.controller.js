@@ -7,8 +7,12 @@ const fs = require('fs');
 const path = require('path');
 
 const generateId = async () => {
-  const count = await Supplier.countDocuments();
-  return `SUP${String(count + 1).padStart(3, '0')}`;
+  const suppliers = await Supplier.find({ id: /^SUP\d+$/ }).select('id').lean();
+  const highestNumber = suppliers.reduce((highest, supplier) => {
+    const number = Number(supplier.id.slice(3));
+    return Number.isFinite(number) ? Math.max(highest, number) : highest;
+  }, 0);
+  return `SUP${String(highestNumber + 1).padStart(3, '0')}`;
 };
 
 const syncSupplierProducts = async (supplier) => {
@@ -52,10 +56,22 @@ const createSupplier = async (req, res) => {
     if (req.file) {
       body.image = `/uploads/${req.file.filename}`;
     }
-    const supplier = await Supplier.create({
-      ...body,
-      id: body.id || await generateId(),
-    });
+    let supplier;
+    // A supplier can be created between ID lookup and insert; retry only for
+    // generated-ID collisions so concurrent requests still get unique IDs.
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        supplier = await Supplier.create({
+          ...body,
+          id: body.id || await generateId(),
+        });
+        break;
+      } catch (error) {
+        const generatedIdCollision = !body.id && error.code === 11000 &&
+          (error.keyPattern?.id || error.keyValue?.id);
+        if (!generatedIdCollision || attempt === 4) throw error;
+      }
+    }
     
     // Sync products to Stock/SpareParts
     await syncSupplierProducts(supplier);

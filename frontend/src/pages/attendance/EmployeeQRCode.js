@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MdQrCode, MdDownload, MdPrint, MdPerson } from 'react-icons/md';
+import React, { useState, useEffect } from 'react';
+import { MdQrCode, MdDownload, MdPrint } from 'react-icons/md';
 import { employeesApi, attendanceApi } from '../../utils/api';
 import QRCode from 'qrcode';
 import { getErrorMessage } from '../../utils/errorMessages';
@@ -11,7 +11,6 @@ const EmployeeQRCode = () => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const qrCanvasRef = useRef(null);
 
   const fetchEmployees = async () => {
     try {
@@ -214,50 +213,48 @@ const printIDCard = () => {
   }, []);
 
   return (
-    <div>
-      <div className="d_page_header d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div className="employee-qr-page">
+      <div className="d_page_header employee-qr-page-header">
         <h1 className="d_page_title">Employee QR Codes</h1>
         <p className="d_page_subtitle">Generate and manage employee QR codes for attendance</p>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <div className="row">
-        <div className="col-md-4">
-          <div className="d_card">
-            <div className="d_card_body">
-              <h5 className="d_card_title mb-3">Select Employee</h5>
-              
-              <div className="mb-3">
-                <label className="d_form_label">Employee</label>
-                <select
-                  className="d_form_control"
-                  value={selectedEmployee}
-                  onChange={(e) => setSelectedEmployee(e.target.value)}
-                >
-                  <option value="">Select an employee</option>
-                  {employees.map((emp) => (
-                    <option key={emp._id} value={emp._id}>
-                      {emp.name} ({emp.id})
-                    </option>
-                  ))}
-                </select>
-              </div>
+      <div className="employee-qr-layout">
+        <section className="d_card employee-qr-selector">
+          <div className="d_card_body">
+            <h5 className="d_card_title mb-3">Select Employee</h5>
 
-              <button
-                className="d_btn d_btn_primary w-100"
-                onClick={() => generateQR(selectedEmployee)}
-                disabled={loading || !selectedEmployee}
+            <div className="mb-3">
+              <label className="d_form_label">Employee</label>
+              <select
+                className="d_form_control"
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
               >
-                <MdQrCode /> {loading ? 'Generating...' : 'Generate QR Code'}
-              </button>
+                <option value="">Select an employee</option>
+                {employees.map((emp) => (
+                  <option key={emp._id} value={emp._id}>
+                    {emp.name} ({emp.id})
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
-        </div>
 
-        <div className="col-md-8">
+            <button
+              className="d_btn d_btn_primary w-100"
+              onClick={() => generateQR(selectedEmployee)}
+              disabled={loading || !selectedEmployee}
+            >
+              <MdQrCode /> {loading ? 'Generating...' : 'Generate QR Code'}
+            </button>
+          </div>
+        </section>
+
+        <section className="employee-qr-result">
           {qrData && (
-            <div className="d_card">
+            <div className="d_card employee-qr-result-card">
               <div className="d_card_body">
                 <div className="text-center">
                   <h5 className="d_card_title mb-3">QR Code for {qrData.employeeName}</h5>
@@ -267,7 +264,7 @@ const printIDCard = () => {
                       <img 
                         src={qrImageUrl} 
                         alt="QR Code" 
-                        style={{ width: '200px', height: '200px', border: '1px solid #ddd' }}
+                        className="employee-qr-image"
                       />
                     ) : (
                       <div className="qr-placeholder">
@@ -279,7 +276,7 @@ const printIDCard = () => {
                     )}
                   </div>
 
-                  <div className="d-flex gap-2 justify-content-center">
+                  <div className="employee-qr-actions">
                     <button className="d_btn d_btn_success" onClick={downloadQR}>
                       <MdDownload /> Download QR
                     </button>
@@ -298,7 +295,7 @@ const printIDCard = () => {
               </div>
             </div>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );

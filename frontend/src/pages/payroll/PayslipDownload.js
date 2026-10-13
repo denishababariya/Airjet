@@ -13,6 +13,7 @@ export default function PayslipDownload() {
   const [month, setMonth] = useState('');
   const [availableMonths, setAvailableMonths] = useState([]);
   const [downloadingId, setDownloadingId] = useState(null);
+  const [pdfDownloading, setPdfDownloading] = useState(false);
   const [showPayslipModal, setShowPayslipModal] = useState(null);
   const [modalSalaryData, setModalSalaryData] = useState(null);
   const hiddenPayslipRef = useRef(null);
@@ -66,6 +67,7 @@ export default function PayslipDownload() {
 
   const handleDownload = async (payslip) => {
     setDownloadingId(payslip._id);
+    setError(null);
     
     try {
       // Fetch full payslip details
@@ -75,20 +77,22 @@ export default function PayslipDownload() {
       setShowPayslipModal(payslip._id);
     } catch (error) {
       console.error('Error fetching payslip details:', error);
+      setError(getErrorMessage(error, 'Unable to load payslip details. Please try again.'));
+    } finally {
       setDownloadingId(null);
     }
   };
 
-  const handleModalDownload = () => {
+  const handleModalDownload = async () => {
     if (!hiddenPayslipRef.current || !modalSalaryData) return;
-    
+
     const element = hiddenPayslipRef.current;
     const employeeName = modalSalaryData.employeeName?.replace(/\s+/g, '_') || 'employee';
     const month = modalSalaryData.month?.replace(/\s+/g, '_') || 'month';
     const filename = `Payslip_${employeeName}_${month}.pdf`;
     
     const opt = {
-      margin: 10,
+      margin: [10, 10, 10, 10],
       filename: filename,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
@@ -96,7 +100,8 @@ export default function PayslipDownload() {
         useCORS: true,
         logging: false,
         scrollX: 0,
-        scrollY: 0
+        scrollY: 0,
+        windowWidth: element.scrollWidth,
       },
       jsPDF: { 
         unit: 'mm', 
@@ -105,22 +110,39 @@ export default function PayslipDownload() {
       }
     };
     
-    html2pdf().set(opt).from(element).save()
-      .then(() => {
-        setShowPayslipModal(null);
-        setModalSalaryData(null);
-        setDownloadingId(null);
-      })
-      .catch((error) => {
-        console.error('Error generating PDF:', error);
-        setDownloadingId(null);
-      });
+    const originalStyle = {
+      maxHeight: element.style.maxHeight,
+      overflowY: element.style.overflowY,
+      height: element.style.height,
+    };
+    setPdfDownloading(true);
+    setError(null);
+
+    try {
+      // The preview is scrollable on screen; expand it temporarily so the PDF
+      // includes the entire payslip rather than only the visible portion.
+      element.style.maxHeight = 'none';
+      element.style.overflowY = 'visible';
+      element.style.height = 'auto';
+      await html2pdf().set(opt).from(element).save();
+      setShowPayslipModal(null);
+      setModalSalaryData(null);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setError(getErrorMessage(error, 'Unable to download the payslip. Please try again.'));
+    } finally {
+      element.style.maxHeight = originalStyle.maxHeight;
+      element.style.overflowY = originalStyle.overflowY;
+      element.style.height = originalStyle.height;
+      setPdfDownloading(false);
+    }
   };
 
   const handleCloseModal = () => {
     setShowPayslipModal(null);
     setModalSalaryData(null);
     setDownloadingId(null);
+    setPdfDownloading(false);
   };
 
   return (
@@ -216,13 +238,14 @@ export default function PayslipDownload() {
       >
         {modalSalaryData && (
           <div>
+            {error && <div className="alert alert-danger" role="alert">{error}</div>}
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               <button 
                 className="d_btn d_btn_primary" 
                 onClick={handleModalDownload}
-                disabled={downloadingId !== null}
+                disabled={pdfDownloading}
               >
-                <MdDownload /> Download PDF
+                <MdDownload /> {pdfDownloading ? 'Preparing PDF…' : 'Download PDF'}
               </button>
               <button className="d_btn d_btn_outline" onClick={handleCloseModal}>
                 <MdArrowBack /> Close

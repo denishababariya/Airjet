@@ -38,7 +38,7 @@ const LateEntryReport = () => {
           <h1 className="d_page_title">Late Entry Report</h1>
           <p className="d_page_subtitle">Employees with late check-in entries</p>
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 flex-wrap">
           <input
             type="date"
             className="d_form_control"

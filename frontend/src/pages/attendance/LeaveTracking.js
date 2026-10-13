@@ -51,6 +51,7 @@ export default function LeaveTracking() {
   const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId]       = useState(null);
   const [editLeave, setEditLeave] = useState(null);
+  const [viewLeave, setViewLeave] = useState(null);
 
   const { toasts, toast, removeToast } = useToast();
 
@@ -131,7 +132,7 @@ export default function LeaveTracking() {
 
   const handleEdit = (leave) => openLeave(leave);
 
-  const handleView = (leave) => openLeave(leave);
+  const handleView = (leave) => setViewLeave(leave);
 
   const handleAddNew = () => {
     setEditId(null); setEditLeave(null); setForm(blankForm); setErrors({}); setShowModal(true);
@@ -212,6 +213,54 @@ export default function LeaveTracking() {
         </form>
       </Modal>
 
+      <Modal open={!!viewLeave} onClose={() => setViewLeave(null)} title="Leave Request Details" size="md">
+        {viewLeave && (
+          <div className="d_form_row cols-2">
+            <div className="d_form_group">
+              <label className="d_form_label">Employee</label>
+              <div className="d_form_control" aria-readonly="true">{viewLeave.emp || viewLeave.employeeId?.name || '—'}</div>
+            </div>
+            <div className="d_form_group">
+              <label className="d_form_label">Leave Type</label>
+              <div className="d_form_control" aria-readonly="true">{viewLeave.type || '—'}</div>
+            </div>
+            <div className="d_form_group">
+              <label className="d_form_label">From Date</label>
+              <div className="d_form_control" aria-readonly="true">{viewLeave.from || '—'}</div>
+            </div>
+            <div className="d_form_group">
+              <label className="d_form_label">From Time</label>
+              <div className="d_form_control" aria-readonly="true">{viewLeave.fromTime || '—'}</div>
+            </div>
+            <div className="d_form_group">
+              <label className="d_form_label">To Date</label>
+              <div className="d_form_control" aria-readonly="true">{viewLeave.to || '—'}</div>
+            </div>
+            <div className="d_form_group">
+              <label className="d_form_label">To Time</label>
+              <div className="d_form_control" aria-readonly="true">{viewLeave.toTime || '—'}</div>
+            </div>
+            <div className="d_form_group">
+              <label className="d_form_label">Days</label>
+              <div className="d_form_control" aria-readonly="true">{viewLeave.recordCount || viewLeave.days || 1}</div>
+            </div>
+            <div className="d_form_group">
+              <label className="d_form_label">Status</label>
+              <div><span className={`d_badge ${statusBadge(viewLeave.status)}`}>{viewLeave.status || 'Pending'}</span></div>
+            </div>
+            <div className="d_form_group" style={{ gridColumn: '1 / -1' }}>
+              <label className="d_form_label">Reason</label>
+              <div className="d_form_control" aria-readonly="true" style={{ minHeight: 72, height: 'auto', whiteSpace: 'pre-wrap' }}>
+                {viewLeave.reason || '—'}
+              </div>
+            </div>
+            <div className="d_form_actions" style={{ gridColumn: '1 / -1' }}>
+              <button type="button" className="d_btn d_btn_outline" onClick={() => setViewLeave(null)}>Close</button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       <div className="d_card mb-4">
         <div className="d_card_body">
           <div className="d_tabs">{tabs.map(t => <button key={t} className={`d_tab_btn${activeTab===t?' d_active':''}`} onClick={() => setActiveTab(t)}>{t}</button>)}</div>
@@ -248,8 +297,8 @@ export default function LeaveTracking() {
                     <td style={{ maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{l.reason}</td>
                     <td><span className={`d_badge ${statusBadge(l.status)}`}>{l.status}</span></td>
                     <td><div className="d_action_btns">
-                      <button className="d_icon_btn d_view" onClick={() => handleView(l)}><MdVisibility /></button>
-                      <button className="d_icon_btn d_edit" onClick={() => handleEdit(l)}><MdEdit /></button>
+                      <button className="d_icon_btn d_view" title="View leave request" aria-label="View leave request" onClick={() => handleView(l)}><MdVisibility /></button>
+                      <button className="d_icon_btn d_edit" title="Edit leave request" aria-label="Edit leave request" onClick={() => handleEdit(l)}><MdEdit /></button>
                     </div></td>
                   </tr>
                 ))}
