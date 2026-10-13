@@ -3566,7 +3566,7 @@ display: flex;
   padding: clamp(18px, 3vw, 32px);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1440px) {
   .employee-qr-layout {
     grid-template-columns: minmax(0, 1fr);
   }
