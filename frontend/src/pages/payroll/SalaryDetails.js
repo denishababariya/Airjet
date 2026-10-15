@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MdArrowBack, MdEdit, MdCheckCircle, MdPayment, MdDownload, MdPrint, MdPerson, MdCalendarToday, MdWork, MdAttachMoney, MdRemoveCircle } from 'react-icons/md';
 import { payrollApi } from '../../utils/api';
 import Modal from '../../components/Modal';
 import SalaryPayment from './SalaryPayment';
-import html2pdf from 'html2pdf.js';
+import { jsPDF } from 'jspdf';
 
 const statusClass = { Draft: 'd_info', Generated: 'd_primary', Approved: 'd_success', Paid: 'd_success', Cancelled: 'd_danger' };
 
@@ -12,7 +12,7 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const payslipRef = useRef(null);
+  const [downloadError, setDownloadError] = useState('');
 
   useEffect(() => {
     if (salaryId) {
@@ -45,6 +45,153 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
   const handlePaymentComplete = () => {
     setShowPaymentModal(false);
     fetchSalaryDetails();
+  };
+
+  const handleDownloadPayslip = async () => {
+    if (downloading) return;
+
+    setDownloading(true);
+    setDownloadError('');
+    try {
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 16;
+      const contentWidth = pageWidth - margin * 2;
+      let y = 18;
+
+      const safeName = `${salary.employeeName || 'employee'}-${salary.month || 'payslip'}`
+        .replace(/[^a-z0-9-_]+/gi, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      const formatAmount = (amount) => `Rs. ${Number(amount || 0).toLocaleString('en-IN')}`;
+      const formatDate = (date) => date ? new Date(date).toLocaleDateString('en-IN') : 'N/A';
+      const addPageIfNeeded = (height = 10) => {
+        if (y + height > pageHeight - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+      };
+      const section = (title) => {
+        addPageIfNeeded(14);
+        pdf.setFillColor(239, 244, 250);
+        pdf.rect(margin, y, contentWidth, 8, 'F');
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(10);
+        pdf.setTextColor(32, 55, 80);
+        pdf.text(title, margin + 3, y + 5.5);
+        y += 11;
+      };
+      const row = (label, value, options = {}) => {
+        const labelWidth = options.labelWidth || 52;
+        const valueLines = pdf.splitTextToSize(String(value ?? 'N/A'), contentWidth - labelWidth - 6);
+        const rowHeight = Math.max(7, valueLines.length * 5 + 2);
+        addPageIfNeeded(rowHeight);
+        if (options.fill) {
+          pdf.setFillColor(248, 250, 252);
+          pdf.rect(margin, y - 4, contentWidth, rowHeight, 'F');
+        }
+        pdf.setFont('helvetica', options.bold ? 'bold' : 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(55, 65, 75);
+        pdf.text(String(label), margin + 2, y);
+        pdf.text(valueLines, margin + labelWidth, y);
+        y += rowHeight;
+      };
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(20);
+      pdf.setTextColor(25, 55, 85);
+      pdf.text('AIRJET', pageWidth / 2, y, { align: 'center' });
+      y += 7;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 110, 120);
+      pdf.text('Machine Spare Parts Manufacturing & Trading', pageWidth / 2, y, { align: 'center' });
+      y += 5;
+      pdf.setDrawColor(45, 75, 105);
+      pdf.setLineWidth(0.7);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 8;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(15);
+      pdf.setTextColor(35, 45, 55);
+      pdf.text('SALARY SLIP', pageWidth / 2, y, { align: 'center' });
+      y += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.text(`Pay period: ${salary.month || 'N/A'}`, pageWidth / 2, y, { align: 'center' });
+      y += 10;
+
+      section('EMPLOYEE INFORMATION');
+      row('Employee name', salary.employeeName || employee.name || 'N/A');
+      row('Employee ID', salary.employeeId || employee.id || 'N/A');
+      row('Department', salary.departmentName || department.title || department.name || 'N/A');
+      row('Designation', salary.designationName || designation.title || designation.name || 'N/A');
+      row('Joining date', formatDate(salary.joiningDate || employee.joiningDate));
+      y += 3;
+
+      section('ATTENDANCE SUMMARY');
+      row('Working days', salary.workingDays ?? 0);
+      row('Present days', salary.presentDays ?? 0);
+      row('Absent days', salary.absentDays ?? 0);
+      row('Paid leave', salary.paidLeave ?? 0);
+      row('Unpaid leave', salary.unpaidLeave ?? 0);
+      row('Late entries', salary.lateEntries ?? 0);
+      row('Half days', salary.halfDays ?? 0);
+      row('Overtime hours', salary.overtimeHours ?? 0);
+      y += 3;
+
+      section('EARNINGS');
+      row('Basic salary', formatAmount(salary.basicSalary), { labelWidth: 75 });
+      (salary.allowances || []).forEach((item) => row(item.name || 'Allowance', formatAmount(item.amount), { labelWidth: 75 }));
+      row('Overtime', formatAmount(salary.overtimeAmount), { labelWidth: 75 });
+      row('Gross salary', formatAmount(salary.grossSalary), { labelWidth: 75, bold: true, fill: true });
+      y += 3;
+
+      section('DEDUCTIONS');
+      (salary.deductions || []).forEach((item) => row(item.name || 'Deduction', formatAmount(item.amount), { labelWidth: 75 }));
+      row('Leave deduction', formatAmount(salary.leaveDeduction), { labelWidth: 75 });
+      row('Total deductions', formatAmount(salary.totalDeduction), { labelWidth: 75, bold: true, fill: true });
+      y += 5;
+
+      addPageIfNeeded(20);
+      pdf.setFillColor(35, 55, 75);
+      pdf.roundedRect(margin, y, contentWidth, 16, 2, 2, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('NET SALARY', margin + 4, y + 6);
+      pdf.setFontSize(14);
+      pdf.text(formatAmount(salary.netSalary), pageWidth - margin - 4, y + 11, { align: 'right' });
+      y += 22;
+
+      section('PAYMENT INFORMATION');
+      row('Salary status', salary.status || 'N/A');
+      row('Payment status', salary.paymentStatus || 'N/A');
+      if (salary.paymentDate) row('Payment date', formatDate(salary.paymentDate));
+      if (salary.paymentMode) row('Payment mode', salary.paymentMode);
+      if (salary.transactionReference) row('Transaction reference', salary.transactionReference);
+      if (salary.paymentNotes) row('Payment notes', salary.paymentNotes);
+
+      addPageIfNeeded(12);
+      y += 6;
+      pdf.setDrawColor(210, 215, 220);
+      pdf.setLineWidth(0.3);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 5;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(110, 115, 120);
+      pdf.text('Computer-generated payslip. No signature required.', pageWidth / 2, y, { align: 'center' });
+      pdf.save(`${safeName}-payslip.pdf`);
+    } catch (error) {
+      console.error('Error downloading payslip:', error);
+      setDownloadError('Could not download the payslip. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (loading) {
@@ -87,14 +234,16 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
               <MdEdit /> Edit
             </button>
           )}
-          <button className="d_btn d_btn_outline">
-            <MdDownload /> Download Payslip
+          <button className="d_btn d_btn_outline" onClick={handleDownloadPayslip} disabled={downloading}>
+            <MdDownload /> {downloading ? 'Preparing Payslip...' : 'Download Payslip'}
           </button>
           <button className="d_btn d_btn_outline">
             <MdPrint /> Print
           </button>
         </div>
       </div>
+
+      {downloadError && <div className="alert alert-danger" role="alert">{downloadError}</div>}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
         {/* Employee Information */}
@@ -130,7 +279,7 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
                     height: '90px',
                     borderRadius: '12px',
                     backgroundColor: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
-                    color: '#fff',
+                    color: 'rgb(13 32 51)',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: '2rem',
@@ -175,7 +324,7 @@ export default function SalaryDetails({ salaryId, onBack, onEdit, onApprove }) {
 
         {/* Hidden Payslip for PDF Generation */}
         <div 
-          ref={payslipRef}
+          id="salary-payslip-content"
           style={{
             position: 'absolute',
             left: '-9999px',

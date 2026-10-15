@@ -19,6 +19,7 @@ export default function SalaryGeneration({ onViewSalary, onEditSalary, onDownloa
   const [designations, setDesignations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generationErrors, setGenerationErrors] = useState([]);
   
   // Filters
   const [filters, setFilters] = useState({
@@ -104,6 +105,7 @@ export default function SalaryGeneration({ onViewSalary, onEditSalary, onDownloa
       onConfirm: async () => {
         closeConfirm();
         setGenerating(true);
+        setGenerationErrors([]);
         try {
           const res = await payrollApi.generateAll({
             month: filters.month,
@@ -111,12 +113,33 @@ export default function SalaryGeneration({ onViewSalary, onEditSalary, onDownloa
             department: filters.department || undefined,
             overtimeRate: 150
           });
-          toast.success(`Generated ${res.data.results.length} salaries`);
-          if (res.data.errors.length > 0) {
-            toast.warning(`${res.data.errors.length} errors occurred`);
+          const generatedCount = res.data.results?.length || 0;
+          const errors = res.data.errors || [];
+          const generatedRows = (await Promise.allSettled(
+            (res.data.results || []).map(({ payrollId }) => payrollApi.getById(payrollId))
+          ))
+            .filter((result) => result.status === 'fulfilled')
+            .map((result) => result.value.data);
+          toast.success(`Generated ${generatedCount} salaries`);
+          if (errors.length > 0) {
+            setGenerationErrors(errors);
+            toast.warning(`${errors.length} employees could not be generated. See details below.`);
           }
-          fetchSalaries();
+          await fetchSalaries();
+          if (generatedRows.length) {
+            // Keep the newly created records visible even if the list endpoint
+            // is briefly stale while its month/year filter catches up.
+            setSalaries((current) => {
+              const generatedIds = new Set(generatedRows.map((row) => row._id));
+              return [...generatedRows, ...current.filter((row) => !generatedIds.has(row._id))];
+            });
+          }
         } catch (error) {
+          const errors = error.response?.data?.errors;
+          if (Array.isArray(errors) && errors.length) {
+            setGenerationErrors(errors);
+            await fetchSalaries();
+          }
           // Handle backend error for already generated salaries
           if (error.response?.status === 400 && error.response?.data?.error) {
             toast.error(getErrorMessage(error, error.response?.data?.error || 'Unable to generate salaries.'));
@@ -169,6 +192,19 @@ export default function SalaryGeneration({ onViewSalary, onEditSalary, onDownloa
           </button>
         </div>
       </div>
+
+      {generationErrors.length > 0 && (
+        <div className="alert alert-warning" role="alert" style={{ marginBottom: '1.5rem' }}>
+          <strong>{generationErrors.length} employee{generationErrors.length === 1 ? '' : 's'} could not be generated:</strong>
+          <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.25rem' }}>
+            {generationErrors.map((item, index) => (
+              <li key={`${item.employee || 'employee'}-${index}`}>
+                <strong>{item.employee || 'Employee'}:</strong> {item.error || 'Unknown error'}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="d_card" style={{ marginBottom: '1.5rem' }}>

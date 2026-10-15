@@ -5,6 +5,32 @@ import ExportMenu from '../components/ExportMenu';
 import { getErrorMessage } from '../utils/errorMessages';
 
 const statusClass = { 'In Stock':'d_success', 'Low Stock':'d_warning', 'Out of Stock':'d_danger', Generated:'d_info', Paid:'d_success', Available:'d_success' };
+const monthNumbers = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+
+const formatReportPeriod = (period, fallbackYear) => {
+  const value = String(period || '').trim();
+  let year;
+  let month;
+
+  const yearMonth = value.match(/^(\d{4})-(\d{1,2})(?:-\d{1,2})?$/);
+  const dayMonth = value.match(/^\d{1,2}-([a-z]{3})-?(\d{4})?$/i);
+  const monthYear = value.match(/^([a-z]{3,9})\s+(\d{4})$/i);
+
+  if (yearMonth) {
+    year = Number(yearMonth[1]);
+    month = Number(yearMonth[2]) - 1;
+  } else if (dayMonth) {
+    month = monthNumbers[dayMonth[1].toLowerCase()];
+    year = Number(dayMonth[2] || fallbackYear);
+  } else if (monthYear) {
+    month = monthNumbers[monthYear[1].slice(0, 3).toLowerCase()];
+    year = Number(monthYear[2]);
+  }
+
+  if (!Number.isInteger(month) || month < 0 || month > 11 || !Number.isInteger(year)) return value || '—';
+  return new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(year, month, 1)));
+};
 
 const Reports = ({ defaultTab = 'sales', setActiveMenu }) => {
   const [tab, setTab] = useState(defaultTab);
@@ -27,7 +53,14 @@ const Reports = ({ defaultTab = 'sales', setActiveMenu }) => {
       try {
         const fn = { sales: reportsApi.sales, purchase: reportsApi.purchase, inventory: reportsApi.inventory, payroll: reportsApi.payroll }[tab];
         const { data: report } = await fn();
-        setData(report);
+        const inferredYear = report
+          .map(row => String((tab === 'payroll' ? row.month : row.period) || '').match(/\b(19|20)\d{2}\b/))
+          .find(Boolean)?.[0];
+        const fallbackYear = Number(inferredYear || new Date().getFullYear());
+        setData(report.map(row => tab === 'payroll'
+          ? { ...row, month: formatReportPeriod(row.month, fallbackYear) }
+          : { ...row, period: formatReportPeriod(row.period, fallbackYear) }
+        ));
       } catch (err) {
         setError(getErrorMessage(err, 'Unable to load report. Please try again.'));
       } finally {

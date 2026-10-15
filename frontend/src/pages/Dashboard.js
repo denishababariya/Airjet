@@ -419,7 +419,7 @@ const Dashboard = ({ currentUser, setActiveMenu }) => {
               </h2>
               {/* <button className="d_btn d_btn_outline d_btn_sm" onClick={() => navigateTo('reports')}>View All</button> */}
             </div>
-            <div className="d_card_body" style={{ padding: '2px 16px', height: '300px', overflowY: 'scroll' }}>
+            <div className="d_card_body" style={{ padding: '2px 16px', height: '600px', overflowY: 'scroll' }}>
               {activityFeed.length === 0 && <p className="text-center text-muted py-3">No recent activity</p>}
               {activityFeed.map((a, i) => (
                 <div key={i} className="d_activity_item d-flex gap-3 my-2 border p-2">

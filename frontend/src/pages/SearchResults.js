@@ -77,7 +77,7 @@ const SearchResults = ({ setActiveMenu }) => {
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Searching...</span>
               </div>
-              <p className="mt-3 d_text_muted">Searching across all modules...</p>
+              <p className="mt-3 d_text_muted">Searching all database records...</p>
             </div>
           )}
 
@@ -98,7 +98,7 @@ const SearchResults = ({ setActiveMenu }) => {
           {!isSearching && !searchError && searchResults.length > 0 && (
             <div>
               <p className="d_text_muted mb-3">
-                Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} across {Object.keys(groupedResults).length} categor{Object.keys(groupedResults).length !== 1 ? 'ies' : 'y'}
+                Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} across {Object.keys(groupedResults).length} database categor{Object.keys(groupedResults).length !== 1 ? 'ies' : 'y'}
               </p>
 
               {Object.entries(groupedResults).map(([type, items]) => {
@@ -129,6 +129,8 @@ const SearchResults = ({ setActiveMenu }) => {
                           <tr>
                             <th>Name</th>
                             <th>Description</th>
+                            <th>Matched field</th>
+                            <th>Matched value</th>
                             <th>Action</th>
                           </tr>
                         </thead>
@@ -140,6 +142,24 @@ const SearchResults = ({ setActiveMenu }) => {
                               </td>
                               <td>
                                 <span className="d_text_muted">{item.description}</span>
+                              </td>
+                              <td>
+                                <span className="d_text_muted">
+                                  {item.matchedDetails?.length
+                                    ? item.matchedDetails.map((detail, detailIndex) => (
+                                      <div key={`${detail.field}-${detailIndex}`}>{detail.field}</div>
+                                    ))
+                                    : '—'}
+                                </span>
+                              </td>
+                              <td>
+                                <span className="d_text_muted">
+                                  {item.matchedDetails?.length
+                                    ? item.matchedDetails.map((detail, detailIndex) => (
+                                      <div key={`${detail.value}-${detailIndex}`}>{detail.value}</div>
+                                    ))
+                                    : '—'}
+                                </span>
                               </td>
                               <td>
                                 <button

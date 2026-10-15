@@ -96,7 +96,12 @@ exports.getAllPayroll = async (req, res) => {
     const { month, year, department, status, paymentStatus, employee } = req.query;
     const filter = {};
     
-    if (month) filter.month = month;
+    if (month) {
+      const monthPart = month.trim().split(/\s+/)[0];
+      // Include legacy records saved as just "Oct" as well as the normalized
+      // "Oct 2026" format used by the salary generation page.
+      filter.month = monthPart === month.trim() ? month : { $in: [month, monthPart] };
+    }
     if (year) filter.year = parseInt(year);
     if (department) filter.department = department;
     if (status) filter.status = status;
@@ -208,6 +213,9 @@ exports.generateAllSalaries = async (req, res) => {
     if (!month || !year) {
       return res.status(400).json({ error: 'Month and year are required' });
     }
+
+    const monthPart = month.trim().split(/\s+/)[0];
+    const payrollMonth = `${monthPart} ${year}`;
     
     // Get employees to generate salary for
     const employeeFilter = { status: 'Active' };
@@ -221,7 +229,11 @@ exports.generateAllSalaries = async (req, res) => {
     for (const employee of employees) {
       try {
         // Check if payroll already exists
-        const existingPayroll = await Payroll.findOne({ employee: employee._id, month, year });
+        const existingPayroll = await Payroll.findOne({
+          employee: employee._id,
+          year,
+          month: { $in: [monthPart, payrollMonth] }
+        });
         if (existingPayroll) {
           errors.push({ employee: employee.name, error: 'Salary already generated' });
           continue;
@@ -249,7 +261,7 @@ exports.generateAllSalaries = async (req, res) => {
           departmentName: employee.department?.title || '',
           designation: employee.designation?._id,
           designationName: employee.designation?.title || '',
-          month,
+          month: payrollMonth,
           year,
           joiningDate: employee.joiningDate,
           ...calculations,

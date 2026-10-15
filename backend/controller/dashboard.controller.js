@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Employee = require("../model/Empl.model");
 const Attendance = require("../model/Attendance.model");
 const Stock = require("../model/Stock.model");
@@ -252,130 +253,102 @@ const getAllModuleDataController = async (req, res) => {
 
 const globalSearch = async (req, res) => {
   try {
-    const { query } = req.query;
-    if (!query || query.trim() === "") {
-      return res.status(200).json({ results: [], total: 0 });
-    }
+    const query = String(req.query.query || '').trim();
+    if (!query) return res.status(200).json({ results: [], total: 0 });
 
-    const searchTerm = query.trim().toLowerCase();
+    const normalizeSearchText = (value) => String(value ?? '')
+      .toLowerCase()
+      .replace(/[,₹]/g, '')
+      .replace(/\b(?:rs|inr)\.?\s*/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const terms = normalizeSearchText(query).split(/\s+/).filter(Boolean);
+    const sensitiveField = /(password|secret|token|credential|reset|verification)/i;
+    const modelLinks = {
+      employee: 'employee', department: 'Department', designation: 'Designation',
+      customer: 'Customers', supplier: 'Suppliers', stock: 'warehouse',
+      spareParts: 'spareparts', category: 'Category', rawMaterial: 'Raw Materials',
+      rawMaterialPurchase: 'Raw Material Purchases', rawMaterialTransaction: 'Raw Materials',
+      purchaseOrder: 'Purchase Orders', purchaseReturn: 'Returns',
+      salesOrder: 'Sales Orders', salesReturn: 'Sales Returns', quotation: 'Quotations',
+      invoice: 'Invoices', payment: 'Payments', serviceRequest: 'service',
+      warranty: 'service', attendance: 'attendance', payroll: 'payroll',
+      income: 'accounts', erprecord: 'Search', user: 'Settings', role: 'Settings',
+      permission: 'Settings', rolePermission: 'Settings',
+    };
+    const humanize = (value) => value
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/[._-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^\w/, (letter) => letter.toUpperCase());
+    const flattenValues = (value, prefix = '', output = []) => {
+      if (value == null) return output;
+      if (value instanceof Date) {
+        if (prefix) output.push({ path: prefix, value: value.toISOString().slice(0, 10) });
+        return output;
+      }
+      if (Array.isArray(value)) {
+        value.forEach((item, index) => flattenValues(item, `${prefix}[${index}]`, output));
+        return output;
+      }
+      if (typeof value === 'object') {
+        if (value._bsontype === 'ObjectId') {
+          if (prefix) output.push({ path: prefix, value: String(value) });
+          return output;
+        }
+        Object.entries(value).forEach(([key, item]) => {
+          if (key === '__v' || sensitiveField.test(key)) return;
+          const path = prefix ? `${prefix}.${key}` : key;
+          flattenValues(item, path, output);
+        });
+        return output;
+      }
+      if (prefix) output.push({ path: prefix, value: String(value) });
+      return output;
+    };
+
     const results = [];
+    const excludedModels = new Set(['system.profile']);
+    for (const modelName of mongoose.modelNames()) {
+      if (excludedModels.has(modelName)) continue;
+      const Model = mongoose.model(modelName);
+      const modelQuery = Model.find();
+      if (modelName === 'employee') modelQuery.populate('department').populate('designation');
+      const cursor = modelQuery.lean().cursor();
 
-    // Search Employees
-    const employees = await Employee.find({
-      $or: [
-        { name: { $regex: searchTerm, $options: "i" } },
-        { email: { $regex: searchTerm, $options: "i" } },
-      ],
-    }).limit(10);
-    employees.forEach((emp) => {
-      results.push({
-        type: "Employee",
-        id: emp.id,
-        name: emp.name,
-        description: `${emp.department?.name || "N/A"} - ${emp.designation?.name || "N/A"}`,
-        link: "employee",
-      });
-    });
+      for await (const document of cursor) {
+        const values = flattenValues(document);
+        const searchableText = [modelName, ...values.map((entry) => `${entry.path} ${entry.value}`)]
+          .map(normalizeSearchText)
+          .join(' ');
+        if (!terms.every((term) => searchableText.includes(term))) continue;
 
-    // Search Customers
-    const customers = await Customer.find({
-      $or: [
-        { name: { $regex: searchTerm, $options: "i" } },
-        { email: { $regex: searchTerm, $options: "i" } },
-        { phone: { $regex: searchTerm, $options: "i" } },
-        { companyName: { $regex: searchTerm, $options: "i" } },
-      ],
-    }).limit(10);
-    customers.forEach((cust) => {
-      results.push({
-        type: "Customer",
-        id: cust.id,
-        name: cust.name,
-        description: cust.companyName || cust.city || "Customer",
-        link: "sales",
-      });
-    });
-
-    // Search Suppliers
-    const suppliers = await Supplier.find({
-      $or: [
-        { name: { $regex: searchTerm, $options: "i" } },
-        { contact: { $regex: searchTerm, $options: "i" } },
-        { phone: { $regex: searchTerm, $options: "i" } },
-        { city: { $regex: searchTerm, $options: "i" } },
-      ],
-    }).limit(10);
-    suppliers.forEach((sup) => {
-      results.push({
-        type: "Supplier",
-        id: sup.id,
-        name: sup.name,
-        description: sup.city || "Supplier",
-        link: "purchase",
-      });
-    });
-
-    // Search Stock
-    const stockItems = await Stock.find({
-      $or: [
-        { itemName: { $regex: searchTerm, $options: "i" } },
-        { itemCode: { $regex: searchTerm, $options: "i" } },
-        { category: { $regex: searchTerm, $options: "i" } },
-      ],
-    }).limit(10);
-    stockItems.forEach((item) => {
-      results.push({
-        type: "Stock",
-        id: item.id,
-        name: item.itemName,
-        description: `${item.category} - Qty: ${item.quantity}`,
-        link: "warehouse",
-      });
-    });
-
-    // Search Spare Parts
-    const spareParts = await SpareParts.find({
-      $or: [
-        { partName: { $regex: searchTerm, $options: "i" } },
-        { partNumber: { $regex: searchTerm, $options: "i" } },
-        { category: { $regex: searchTerm, $options: "i" } },
-        { brand: { $regex: searchTerm, $options: "i" } },
-      ],
-    }).limit(10);
-    spareParts.forEach((part) => {
-      results.push({
-        type: "Spare Part",
-        id: part.id,
-        name: part.partName,
-        description: `${part.partNumber} - ${part.brand}`,
-        link: "spareparts",
-      });
-    });
-
-    // Search ERP Records
-    const erpRecords = await ErpRecord.find({
-      $or: [
-        { customer: { $regex: searchTerm, $options: "i" } },
-        { supplier: { $regex: searchTerm, $options: "i" } },
-        { emp: { $regex: searchTerm, $options: "i" } },
-        { part: { $regex: searchTerm, $options: "i" } },
-        { id: { $regex: searchTerm, $options: "i" } },
-      ],
-    }).limit(15);
-    erpRecords.forEach((record) => {
-      results.push({
-        type: record.module.toUpperCase(),
-        id: record.id,
-        name:
-          record.customer ||
-          record.supplier ||
-          record.emp ||
-          record.part ||
-          record.id,
-        description: `${record.recordType} - ${record.status || "Active"}`,
-        link: record.module,
-      });
-    });
+        const matchedDetails = values
+          .filter((entry) => terms.some((term) =>
+            normalizeSearchText(entry.path).includes(term) || normalizeSearchText(entry.value).includes(term)
+          ))
+          .map((entry) => ({ field: humanize(entry.path), value: entry.value }));
+        const preferredFields = [
+          'name', 'title', 'employeeName', 'customerName', 'supplierName', 'itemName',
+          'partName', 'orderNumber', 'invoiceNumber', 'paymentId', 'partNumber',
+          'customer', 'supplier', 'emp', 'part', 'id',
+        ];
+        const preferred = preferredFields
+          .map((field) => document[field])
+          .find((value) => value != null && typeof value !== 'object');
+        const name = preferred == null ? `${humanize(modelName)} ${String(document._id).slice(-6)}` : String(preferred);
+        const displayType = humanize(modelName);
+        results.push({
+          type: displayType,
+          id: String(document._id),
+          name,
+          description: `${displayType} record`,
+          matchedDetails,
+          link: modelLinks[modelName] || 'Search',
+        });
+      }
+    }
 
     res.status(200).json({ results, total: results.length });
   } catch (error) {

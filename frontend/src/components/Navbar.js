@@ -145,7 +145,8 @@ const Navbar = ({
               ref={searchInputRef}
               type="text"
               className="d_search_input"
-              placeholder="Search..."
+              placeholder="Search all records..."
+              aria-label="Search all database records"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
