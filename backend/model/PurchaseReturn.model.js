@@ -8,7 +8,7 @@ const purchaseReturnSchema = new mongoose.Schema({
   supplierId: { type: mongoose.Types.ObjectId, ref: 'supplier' },
   date: { type: String, required: true },
   reason: { type: String, required: true },
-  status: { type: String, default: 'Pending', enum: ['Pending', 'Approved', 'Rejected', 'Processed'] },
+  status: { type: String, default: 'Pending', enum: ['Pending', 'Approved', 'Rejected', 'Processed', 'Cancelled'] },
   items: [{
     itemCode: String,
     itemName: String,

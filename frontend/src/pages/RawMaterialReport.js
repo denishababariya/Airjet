@@ -288,7 +288,7 @@ const RawMaterialReport = ({ setActiveMenu }) => {
             <div className="d_card_header" style={{ padding: isMobile ? '14px 16px' : '20px 24px' }}>
               <h2 className="d_card_title" style={{ fontSize: titleFontSize, display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '10px', margin: 0, flex: 1, minWidth: 0 }}>
                 <MdBarChart className="d_card_icon" />
-                <span style={{ whiteSpace: isMobile ? 'normal' : 'nowrap' }}>Material Purchase &amp; Stock Summary</span>
+                <span>Material Purchase &amp; Stock Summary</span>
               </h2>
 
               <button

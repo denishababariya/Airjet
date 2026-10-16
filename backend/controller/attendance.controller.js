@@ -762,18 +762,12 @@ const applyLeave = async (req, res) => {
 
     const fromStr = toDateStr(from);
     const toStr = toDateStr(to);
-    const todayStr = toDateStr(new Date());
-
     if (!fromStr || !toStr) {
       return res.status(400).json({ error: 'From and To dates are invalid' });
     }
 
     if (toStr < fromStr) {
       return res.status(400).json({ error: 'To date must be on or after from date' });
-    }
-
-    if (fromStr < todayStr) {
-      return res.status(400).json({ error: 'Cannot apply leave for past dates' });
     }
 
     // Build list of dates (local time, no UTC shifting)

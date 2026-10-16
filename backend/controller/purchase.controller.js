@@ -17,7 +17,7 @@ const generateId = async (prefix, model) => {
 // ──────────────────────────────────────────────────────────────
 const createPurchaseOrder = async (req, res) => {
   try {
-    const { supplier, supplierId, date, delivery, items, notes } = req.body;
+    const { supplier, supplierId, date, delivery, status, items, notes } = req.body;
     const userId = req.user?._id;
 
     if (!supplier || !date || !items || !Array.isArray(items) || items.length === 0) {
@@ -54,7 +54,7 @@ const createPurchaseOrder = async (req, res) => {
       supplierId: supplierId || null,
       date,
       delivery: delivery || '',
-      status: 'Pending',
+      status: status || 'Pending',
       items: processedItems,
       totalAmount,
       grandTotal,
@@ -77,7 +77,7 @@ const createPurchaseOrder = async (req, res) => {
       gstRate,
       gstAmount,
       delivery: delivery || '',
-      status: 'Pending',
+      status: status || 'Pending',
       notes: notes || ''
     });
 
@@ -143,7 +143,7 @@ const deletePurchaseOrder = async (req, res) => {
 // ──────────────────────────────────────────────────────────────
 const createPurchaseReturn = async (req, res) => {
   try {
-    const { po, poId, supplier, supplierId, date, reason, items } = req.body;
+    const { po, poId, supplier, supplierId, date, reason, status, items } = req.body;
     const userId = req.user?._id;
 
     if (!po || !supplier || !date || !reason || !items || !Array.isArray(items) || items.length === 0) {
@@ -177,7 +177,7 @@ const createPurchaseReturn = async (req, res) => {
       supplierId: supplierId || null,
       date,
       reason,
-      status: 'Pending',
+      status: status || 'Pending',
       items: processedItems,
       totalAmount,
       createdBy: userId,
@@ -196,7 +196,7 @@ const createPurchaseReturn = async (req, res) => {
       qty: processedItems.reduce((sum, i) => sum + i.quantity, 0),
       amount: totalAmount,
       totalAmount,
-      status: 'Pending'
+      status: status || 'Pending'
     });
 
     res.status(201).json(purchaseReturn);

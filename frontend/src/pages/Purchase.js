@@ -8,7 +8,6 @@ import useConfirm from '../hooks/useConfirm';
 // import { suppliersApi, erpApi } from '../utils/api';
 import { V, validate as validateFields } from '../utils/validators';
 import { erpApi, suppliersApi, purchaseOrdersApi, purchaseReturnsApi, grnApi } from '../utils/api';
-import RawMaterialPurchases from './RawMaterialPurchases';
 import { getErrorMessage } from '../utils/errorMessages';
 
 /* ─── Status colour map ────────────────────────────────────── */
@@ -280,8 +279,8 @@ const Purchase = ({ defaultTab = 'suppliers', setActiveMenu }) => {
           if (!item.itemName?.trim()) e[`items_${index}_itemName`] = 'Item name is required';
           if (!item.quantity || isNaN(Number(item.quantity)) || Number(item.quantity) <= 0)
             e[`items_${index}_quantity`] = 'Quantity must be a positive number';
-          if (item.unitPrice && isNaN(Number(String(item.unitPrice).replace(/[^\d.]/g, ''))))
-            e[`items_${index}_unitPrice`] = 'Unit price must be a valid number';
+          if (item.unitPrice === '' || item.unitPrice == null || isNaN(Number(String(item.unitPrice).replace(/[^\d.]/g, ''))) || Number(String(item.unitPrice).replace(/[^\d.]/g, '')) < 0)
+            e[`items_${index}_unitPrice`] = 'Unit price is required and must be 0 or more';
         });
       }
       if (form.delivery && form.date && form.delivery < form.date)
@@ -529,9 +528,38 @@ const Purchase = ({ defaultTab = 'suppliers', setActiveMenu }) => {
 
       {/* ── Purchase Orders tab ───────────────────────────── */}
       {tab === 'orders' && (
-        // <div className="d_card p-2">
-          <RawMaterialPurchases></RawMaterialPurchases>
-        // </div>
+        <div className="d_card">
+          <div className="d_card_header">
+            <h2 className="d_card_title"><MdShoppingCart className="d_card_icon" /> Purchase Orders ({orders.length})</h2>
+          </div>
+          <div className="d_card_body p-0">
+            {loading ? <div className="text-center py-4">Loading…</div> : (
+              <div className="d_table_wrap">
+                <table className="d_table">
+                  <thead><tr><th>PO No.</th><th>Supplier</th><th>Order Date</th><th>Delivery</th><th>Items</th><th>Amount (₹)</th><th>Status</th><th>Actions</th></tr></thead>
+                  <tbody>
+                    {orders.length === 0 && <tr className="d_empty"><td colSpan={8}>No purchase orders found.</td></tr>}
+                    {orders.map(order => (
+                      <tr key={order._id}>
+                        <td><code>{String(order.id || order._id)}</code></td>
+                        <td><strong>{strField(order.supplier) || '-'}</strong></td>
+                        <td>{String(order.date || '-')}</td>
+                        <td>{String(order.delivery || '-')}</td>
+                        <td>{itemsCount(order.items) || '-'}</td>
+                        <td><strong>₹{Number(order.totalAmount ?? order.amount ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+                        <td><span className={`d_badge ${statusClass[order.status] || 'd_warning'}`}>{String(order.status || 'Pending')}</span></td>
+                        <td><div className="d_action_btns">
+                          <button className="d_icon_btn d_edit" title="Edit purchase order" onClick={() => openEdit(order)}><MdEdit /></button>
+                          <button className="d_icon_btn d_del" title="Delete purchase order" onClick={() => handleDelete(order._id, `purchase order \"${order.id || order._id}\"`)}><MdDelete /></button>
+                        </div></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ── GRN tab ───────────────────────────────────────── */}
@@ -594,11 +622,11 @@ const Purchase = ({ defaultTab = 'suppliers', setActiveMenu }) => {
                       <tr key={r._id}>
                         <td><code>{String(r.id)}</code></td>
                         <td><strong>{strField(r.supplier) || '-'}</strong></td>
-                        <td>{strField(r.part) || '-'}</td>
-                        <td>{String(r.qty || '-')}</td>
+                        <td>{(r.items || []).map(item => item.itemName || item.itemCode).filter(Boolean).join(', ') || strField(r.part) || '-'}</td>
+                        <td>{(r.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) || r.qty || '-'}</td>
                         <td>{String(r.date || '-')}</td>
                         <td>{String(r.reason || '-')}</td>
-                        <td><strong>₹{(r.amount || 0).toLocaleString('en-IN')}</strong></td>
+                        <td><strong>₹{Number(r.totalAmount ?? r.amount ?? 0).toLocaleString('en-IN')}</strong></td>
                         <td><span className={`d_badge ${statusClass[r.status] || 'd_warning'}`}>{String(r.status)}</span></td>
                         <td><div className="d_action_btns">
                           <button className="d_icon_btn d_edit" title="Edit" onClick={() => openEdit(r)}><MdEdit /></button>

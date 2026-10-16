@@ -257,7 +257,9 @@ export default function PayslipDownload() {
             className='payslip-container'
               ref={hiddenPayslipRef}
               style={{
+                width: '100%',
                 maxWidth: '800px',
+                boxSizing: 'border-box',
                 margin: '0 auto',
                 padding: '2rem',
                 background: 'white',
@@ -282,7 +284,7 @@ export default function PayslipDownload() {
               {/* Employee Information */}
               <div style={{ marginBottom: '2rem', padding: '1rem', background: '#f9f9f9', borderRadius: '4px' }}>
                 <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#333' }}>Employee Information</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '0.5rem' }}>
                   <div><strong>Name:</strong> {modalSalaryData.employeeName}</div>
                   <div><strong>Employee ID:</strong> {modalSalaryData.employeeId}</div>
                   <div><strong>Department:</strong> {modalSalaryData.departmentName}</div>
@@ -294,7 +296,7 @@ export default function PayslipDownload() {
               {/* Attendance Summary */}
               <div style={{ marginBottom: '2rem', padding: '1rem', background: '#f9f9f9', borderRadius: '4px' }}>
                 <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#333' }}>Attendance Summary</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(150px, 100%), 1fr))', gap: '0.5rem' }}>
                   <div><strong>Working Days:</strong> {modalSalaryData.workingDays}</div>
                   <div><strong>Present Days:</strong> {modalSalaryData.presentDays}</div>
                   <div><strong>Absent Days:</strong> {modalSalaryData.absentDays}</div>
@@ -306,7 +308,7 @@ export default function PayslipDownload() {
               </div>
 
               {/* Earnings and Deductions */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                 {/* Earnings */}
                 <div style={{ padding: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#333' }}>Earnings</h3>
