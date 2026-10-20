@@ -27,7 +27,20 @@ const Navbar = ({
   const searchInputRef = useRef(null);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const { setSearchQuery: setGlobalSearchQuery } = useSearch();
+  const {
+    setSearchQuery: setGlobalSearchQuery,
+    clearSearch,
+  } = useSearch();
+
+  // A search belongs to the Search page. Clear it when navigating elsewhere
+  // so opening the navbar search again starts with a fresh search state.
+  useEffect(() => {
+    if (activeMenu !== "Search") {
+      clearSearch();
+      setSearchQuery("");
+      setSearchOpen(false);
+    }
+  }, [activeMenu, clearSearch]);
 
   // Close dropdown on outside click
   useEffect(() => {

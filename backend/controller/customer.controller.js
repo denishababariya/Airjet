@@ -9,29 +9,49 @@ const generateCustomerId = async () => {
 const createCustomer = async (req, res) => {
     try {
         // Validate required fields
-        if (!req.body.name) {
+        if (!req.body.name?.trim()) {
             return res.status(400).json({ error: 'Customer name is required' });
         }
-        if (!req.body.contactPerson) {
+        if (!req.body.contactPerson?.trim()) {
             return res.status(400).json({ error: 'Contact person is required' });
         }
-        if (!req.body.companyName) {
+        if (!req.body.companyName?.trim()) {
             return res.status(400).json({ error: 'Company name is required' });
         }
-        if (!req.body.email) {
+        if (!req.body.email?.trim()) {
             return res.status(400).json({ error: 'Email is required' });
         }
-        if (!req.body.phone) {
+        if (!req.body.phone?.trim()) {
             return res.status(400).json({ error: 'Phone number is required' });
         }
-        if (!req.body.city) {
+        if (!req.body.city?.trim()) {
             return res.status(400).json({ error: 'City is required' });
         }
-        if (!req.body.state) {
+        if (!req.body.state?.trim()) {
             return res.status(400).json({ error: 'State is required' });
         }
-        if (!req.body.pincode) {
+        if (!req.body.pincode?.trim()) {
             return res.status(400).json({ error: 'Pincode is required' });
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(req.body.email.trim())) {
+            return res.status(400).json({ error: 'Enter a valid email address' });
+        }
+        if (!/^\d{10}$/.test(req.body.phone.trim())) {
+            return res.status(400).json({ error: 'Enter a valid 10 digit phone number' });
+        }
+        if (!/^\d{6}$/.test(req.body.pincode.trim())) {
+            return res.status(400).json({ error: 'Enter a valid 6 digit pincode' });
+        }
+        if (req.body.alternatePhone && !/^\d{10}$/.test(req.body.alternatePhone.trim())) {
+            return res.status(400).json({ error: 'Enter a valid 10 digit alternate phone number' });
+        }
+        const gstNumber = req.body.gstNumber?.trim().toUpperCase();
+        const panNumber = req.body.panNumber?.trim().toUpperCase();
+        if (gstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gstNumber)) {
+            return res.status(400).json({ error: 'Enter a valid GST number' });
+        }
+        if (panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(panNumber)) {
+            return res.status(400).json({ error: 'Enter a valid PAN number' });
         }
         if (req.body.creditLimit < 0 || req.body.creditLimit > 10000000) {
             return res.status(400).json({ error: 'Credit limit must be between 0 and 10,000,000' });
@@ -40,7 +60,19 @@ const createCustomer = async (req, res) => {
             return res.status(400).json({ error: 'Opening balance must be between 0 and 10,000,000' });
         }
 
-        const body = { ...req.body };
+        const body = {
+            ...req.body,
+            name: req.body.name.trim(),
+            contactPerson: req.body.contactPerson.trim(),
+            companyName: req.body.companyName.trim(),
+            email: req.body.email.trim().toLowerCase(),
+            phone: req.body.phone.trim(),
+            city: req.body.city.trim(),
+            state: req.body.state.trim(),
+            pincode: req.body.pincode.trim(),
+            gstNumber: gstNumber || '',
+            panNumber: panNumber || '',
+        };
         if (req.file) {
             body.image = `/uploads/${req.file.filename}`;
         }
@@ -50,10 +82,23 @@ const createCustomer = async (req, res) => {
         });
         
         // Sync customer data across relevant modules
-        await syncEntityAcrossModules(customer, 'customer', 'create');
+        try {
+            await syncEntityAcrossModules(customer, 'customer', 'create');
+        } catch (syncError) {
+            // Customer creation has succeeded; a secondary ERP sync issue must
+            // not tell the client that the create failed and invite duplicates.
+            console.error('Customer created, but ERP sync failed:', syncError);
+        }
         
         res.status(201).json(customer);
     } catch (error) {
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern || {})[0] || 'value';
+            return res.status(409).json({ error: `A customer with this ${field} already exists.` });
+        }
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ error: error.message });
+        }
         res.status(500).json({ error: error.message });
     }
 };
@@ -92,7 +137,7 @@ const updateCustomer = async (req, res) => {
         if (req.file) {
             body.image = `/uploads/${req.file.filename}`;
         }
-        const customer = await Customer.findByIdAndUpdate(req.params.id, body, { new: true });
+        const customer = await Customer.findByIdAndUpdate(req.params.id, body, { new: true, runValidators: true });
         if (!customer) {
             return res.status(404).json({ error: 'Customer not found' });
         }

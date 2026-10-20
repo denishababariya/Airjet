@@ -4,6 +4,8 @@ import Modal from '../../components/Modal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import api from '../../utils/api';
 import { getErrorMessage } from '../../utils/errorMessages';
+import ToastContainer from '../../components/Toast';
+import useToast from '../../hooks/useToast';
 
 const blankQuotation = {
     customer: '',
@@ -50,6 +52,8 @@ export default function Quotations() {
     const [form, setForm] = useState(blankQuotation);
     const [editId, setEditId] = useState(null);
     const [errors, setErrors] = useState({});
+    const [saving, setSaving] = useState(false);
+    const { toasts, toast, removeToast } = useToast();
     const [viewModal, setViewModal] = useState(false);
     const [viewQuotation, setViewQuotation] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ open: false, onConfirm: null, title: '', message: '' });
@@ -96,7 +100,12 @@ export default function Quotations() {
             shippingAddress: quotation.shippingAddress || '',
             paymentTerms: quotation.paymentTerms || '30 Days',
             deliveryTerms: quotation.deliveryTerms || '',
-            items: quotation.items || [],
+            // The list endpoint populates sparePart; the edit form and update
+            // API need the referenced id rather than the populated object.
+            items: (quotation.items || []).map(item => ({
+                ...item,
+                sparePart: item.sparePart?._id || item.sparePart || '',
+            })),
             notes: quotation.notes || '',
             terms: quotation.terms || '',
             status: quotation.status || 'Draft'
@@ -204,10 +213,13 @@ export default function Quotations() {
         const e = validate();
         if (Object.keys(e).length) {
             setErrors(e);
+            toast.error(Object.values(e).join(' '));
+            setModal(false);
             return;
         }
 
         try {
+            setSaving(true);
             const customer = customers.find(c => c._id === form.customer);
             const isInterState = customer?.state !== 'Gujarat';
 
@@ -232,6 +244,7 @@ export default function Quotations() {
 
                 return {
                     ...item,
+                    sparePart: item.sparePart?._id || item.sparePart,
                     description: part?.partName || '',
                     taxableAmount: itemTaxableAmount,
                     cgstAmount,
@@ -261,7 +274,10 @@ export default function Quotations() {
             setModal(false);
             fetchData();
         } catch (err) {
-            setError(getErrorMessage(err, 'Failed to save quotation'));
+            toast.error(getErrorMessage(err, 'Could not save the quotation. Please try again.'));
+            setModal(false);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -401,7 +417,7 @@ export default function Quotations() {
                 </div>
             </div>
 
-            <Modal open={modal} onClose={() => setModal(false)} title={editId ? 'Edit Quotation' : 'New Quotation'} size="xl">
+            <Modal open={modal} onClose={() => !saving && setModal(false)} title={editId ? 'Edit Quotation' : 'New Quotation'} size="xl">
                 <div className="d_form_row cols-2">
                     <div className="d_form_group">
                         <label className="d_form_label">Customer <span className="d_req">*</span></label>
@@ -609,8 +625,8 @@ export default function Quotations() {
                 </div>
 
                 <div className="d_form_actions">
-                    <button className="d_btn d_btn_outline" onClick={() => setModal(false)}>Cancel</button>
-                    <button className="d_btn d_btn_primary" onClick={handleSave}>{editId ? 'Update Quotation' : 'Create Quotation'}</button>
+                    <button className="d_btn d_btn_outline" onClick={() => setModal(false)} disabled={saving}>Cancel</button>
+                    <button className="d_btn d_btn_primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : editId ? 'Update Quotation' : 'Create Quotation'}</button>
                 </div>
             </Modal>
 
@@ -772,6 +788,7 @@ export default function Quotations() {
                 cancelLabel="Cancel"
                 variant="danger"
             />
+            <ToastContainer toasts={toasts} onRemove={removeToast} />
         </div>
     );
 }

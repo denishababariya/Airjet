@@ -1244,6 +1244,25 @@ a {
   position: relative;
 }
 
+/* Keep the items grid in the Sales Order Details modal scrollable. */
+.sales_order_items_view_wrap {
+  max-height: min(40vh, 360px);
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--d-accent) var(--d-light);
+}
+
+.sales_order_items_view_wrap .d_table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.sales_order_items_view_wrap::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
 /* Thin amber scrollbar on the table */
 
 .d_table_wrap::-webkit-scrollbar {
