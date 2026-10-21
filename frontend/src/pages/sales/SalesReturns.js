@@ -657,32 +657,34 @@ export default function SalesReturns() {
                         <div className="d_form_row cols-1">
                             <div className="d_form_group">
                                 <label className="d_form_label">Items</label>
-                                <table className="d_table">
-                                    <thead>
-                                        <tr>
-                                            <th>Part Number</th>
-                                            <th>Description</th>
-                                            <th>Qty</th>
-                                            <th>Rate</th>
-                                            <th>Reason</th>
-                                            <th>Condition</th>
-                                            <th>Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {viewReturn.items?.map((item, index) => (
-                                            <tr key={index}>
-                                                <td>{item.partNumber}</td>
-                                                <td>{item.description}</td>
-                                                <td>{item.quantity}</td>
-                                                <td>{formatCurrency(item.rate)}</td>
-                                                <td>{item.returnReason}</td>
-                                                <td>{item.condition}</td>
-                                                <td>{formatCurrency(item.total)}</td>
+                                <div className="d_table_wrap">
+                                    <table className="d_table">
+                                        <thead>
+                                            <tr>
+                                                <th>Part Number</th>
+                                                <th>Description</th>
+                                                <th>Qty</th>
+                                                <th>Rate</th>
+                                                <th>Reason</th>
+                                                <th>Condition</th>
+                                                <th>Total</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {viewReturn.items?.map((item, index) => (
+                                                <tr key={index}>
+                                                    <td>{item.partNumber}</td>
+                                                    <td>{item.description}</td>
+                                                    <td>{item.quantity}</td>
+                                                    <td>{formatCurrency(item.rate)}</td>
+                                                    <td>{item.returnReason}</td>
+                                                    <td>{item.condition}</td>
+                                                    <td>{formatCurrency(item.total)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
 

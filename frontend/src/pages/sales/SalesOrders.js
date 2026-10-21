@@ -804,30 +804,32 @@ export default function SalesOrders() {
                 {stockCheck.length > 0 && (
                     <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
                         <strong>Stock Availability:</strong>
-                        <table className="d_table" style={{ marginTop: '10px' }}>
-                            <thead>
-                                <tr>
-                                    <th>Part</th>
-                                    <th>Required</th>
-                                    <th>Available</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {stockCheck.map((item, index) => (
-                                    <tr key={index}>
-                                        <td>{item.partNumber} - {item.partName}</td>
-                                        <td>{item.requiredQty}</td>
-                                        <td>{item.availableQty}</td>
-                                        <td>
-                                            <span className={`d_badge ${item.isAvailable ? 'd_success' : 'd_danger'}`}>
-                                                {item.isAvailable ? 'Available' : 'Shortage'}
-                                            </span>
-                                        </td>
+                        <div className="d_table_wrap">
+                            <table className="d_table" style={{ marginTop: '10px' }}>
+                                <thead>
+                                    <tr>
+                                        <th>Part</th>
+                                        <th>Required</th>
+                                        <th>Available</th>
+                                        <th>Status</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {stockCheck.map((item, index) => (
+                                        <tr key={index}>
+                                            <td>{item.partNumber} - {item.partName}</td>
+                                            <td>{item.requiredQty}</td>
+                                            <td>{item.availableQty}</td>
+                                            <td>
+                                                <span className={`d_badge ${item.isAvailable ? 'd_success' : 'd_danger'}`}>
+                                                    {item.isAvailable ? 'Available' : 'Shortage'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
 

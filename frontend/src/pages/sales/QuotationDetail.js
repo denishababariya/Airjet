@@ -148,34 +148,36 @@ export default function QuotationDetail({ quotationId, setActiveMenu, onBack }) 
                     <h3>Items</h3>
                 </div>
                 <div className="d_card_body">
-                    <table className="d_table">
-                        <thead>
-                            <tr>
-                                <th>Part Number</th>
-                                <th>Description</th>
-                                <th>Quantity</th>
-                                <th>Rate</th>
-                                <th>Discount</th>
-                                <th>Taxable</th>
-                                <th>GST</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {quotation.items?.map((item, index) => (
-                                <tr key={index}>
-                                    <td>{item.partNumber}</td>
-                                    <td>{item.description}</td>
-                                    <td>{item.quantity}</td>
-                                    <td>{formatCurrency(item.rate)}</td>
-                                    <td>{formatCurrency(item.discount)}</td>
-                                    <td>{formatCurrency(item.taxableAmount)}</td>
-                                    <td>{item.gstRate}%</td>
-                                    <td>{formatCurrency(item.total)}</td>
+                    <div className="d_table_wrap">
+                        <table className="d_table">
+                            <thead>
+                                <tr>
+                                    <th>Part Number</th>
+                                    <th>Description</th>
+                                    <th>Quantity</th>
+                                    <th>Rate</th>
+                                    <th>Discount</th>
+                                    <th>Taxable</th>
+                                    <th>GST</th>
+                                    <th>Total</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {quotation.items?.map((item, index) => (
+                                    <tr key={index}>
+                                        <td>{item.partNumber}</td>
+                                        <td>{item.description}</td>
+                                        <td>{item.quantity}</td>
+                                        <td>{formatCurrency(item.rate)}</td>
+                                        <td>{formatCurrency(item.discount)}</td>
+                                        <td>{formatCurrency(item.taxableAmount)}</td>
+                                        <td>{item.gstRate}%</td>
+                                        <td>{formatCurrency(item.total)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 

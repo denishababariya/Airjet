@@ -172,7 +172,7 @@ const AttendanceReport = () => {
           {/* Report Table */}
           <div className="d_card">
             <div className="d_card_body">
-              <div className="table-responsive">
+              <div className="d_table_wrap">
                 <table className="d_table">
                   <thead>
                     <tr>
