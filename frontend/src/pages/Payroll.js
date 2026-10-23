@@ -63,8 +63,8 @@ const Payroll = ({ defaultTab = 'dashboard', setActiveMenu }) => {
   };
 
   const renderContent = () => {
-    // Handle sub-page navigation for Salary List
-    if (activeTab === 'salary-list') {
+    // Handle salary sub-pages opened from either salary table.
+    if (activeTab === 'salary-list' || activeTab === 'salary-generation') {
       if (viewMode === 'details' && selectedSalaryId) {
         return <SalaryDetails salaryId={selectedSalaryId} onBack={handleBack} onEdit={handleEditSalary} />;
       }
@@ -74,14 +74,20 @@ const Payroll = ({ defaultTab = 'dashboard', setActiveMenu }) => {
       if (viewMode === 'payslip' && selectedSalaryId) {
         return <Payslip salaryId={selectedSalaryId} onBack={handleBack} />;
       }
-      return <SalaryList onViewDetails={handleViewSalary} onEdit={handleEditSalary} />;
+      if (activeTab === 'salary-list') {
+        return <SalaryList onViewDetails={handleViewSalary} onEdit={handleEditSalary} />;
+      }
     }
 
     switch (activeTab) {
       case 'dashboard':
         return <PayrollDashboard />;
       case 'salary-generation':
-        return <SalaryGeneration onViewSalary={handleViewSalary} onEdit={handleEditSalary} />;
+        return <SalaryGeneration
+          onViewSalary={handleViewSalary}
+          onEditSalary={handleEditSalary}
+          onDownloadPayslip={handleViewPayslip}
+        />;
       case 'salary-list':
         return <SalaryList onViewDetails={handleViewSalary} onEdit={handleEditSalary} />;
       case 'reports':

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MdVisibility, MdDownload, MdPeople, MdMonetizationOn, MdCheckCircle, MdPendingActions, MdRefresh, MdFilterList } from 'react-icons/md';
+import { MdVisibility, MdDownload, MdEdit, MdPeople, MdMonetizationOn, MdCheckCircle, MdPendingActions, MdRefresh, MdFilterList } from 'react-icons/md';
 import { payrollApi, employeesApi, departmentsApi, designationsApi } from '../../utils/api';
 import ToastContainer from '../../components/Toast';
 import useToast from '../../hooks/useToast';
@@ -363,18 +363,25 @@ export default function SalaryGeneration({ onViewSalary, onEditSalary, onDownloa
                       <td>
                         <div className="d_action_btns">
                           <button 
-                            className="d_icon_btn d_view" 
+                            className="d_icon_btn d_view"
                             onClick={() => onViewSalary && onViewSalary(r._id)}
                             title="View Details"
                           >
                             <MdVisibility />
                           </button>
                           <button 
-                            className="d_icon_btn d_edit" 
-                            onClick={() => onEditSalary && onEditSalary(r._id)}
-                            title="Edit"
+                            className="d_icon_btn d_view" 
+                            onClick={() => onDownloadPayslip && onDownloadPayslip(r._id)}
+                            title="View and download payslip"
                           >
                             <MdDownload />
+                          </button>
+                          <button
+                            className="d_icon_btn d_edit"
+                            onClick={() => onEditSalary && onEditSalary(r._id)}
+                            title="Edit salary"
+                          >
+                            <MdEdit />
                           </button>
                         </div>
                       </td>
